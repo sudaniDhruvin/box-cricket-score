@@ -71,10 +71,11 @@ export function MatchCard({ match: m, onPress }: MatchCardProps) {
       ? { color: 'rgba(1, 180, 137, 0.18)', foreground: false }
       : undefined;
 
+  const tied = !live && m.margin.kind === 'tie';
   const winnerFirst =
-    !live && first.teamId === m.winnerTeamId;
+    !live && !tied && first.teamId === m.winnerTeamId;
   const winnerSecond =
-    !live && second.teamId === m.winnerTeamId;
+    !live && !tied && second.teamId === m.winnerTeamId;
 
   return (
     <Animated.View style={[styles.cardOuter, { transform: [{ scale }] }]}>

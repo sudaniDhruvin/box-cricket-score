@@ -22,6 +22,32 @@ export function formatOvers(o: OversBowled): string {
   return `${o.fullOvers}.${o.balls}`;
 }
 
+/** Completed legal deliveries in the innings (6 per full over + balls in the current over). */
+export function legalBallsBowled(o: OversBowled): number {
+  return o.fullOvers * 6 + o.balls;
+}
+
+/**
+ * Runs per over from legal balls faced.
+ * Returns null when no legal ball has been bowled yet.
+ */
+export function runRateFromLegalBalls(
+  runs: number,
+  legalBalls: number,
+): number | null {
+  if (legalBalls <= 0) {
+    return null;
+  }
+  return (runs * 6) / legalBalls;
+}
+
+export function formatRunRate(rr: number | null): string {
+  if (rr == null) {
+    return '—';
+  }
+  return rr.toFixed(2);
+}
+
 export function matchAggregateRuns(m: MatchSummary): number {
   return m.innings[0].runs + m.innings[1].runs;
 }
@@ -77,6 +103,14 @@ export function formatMatchResult(m: MatchSummary): {
     return {
       headline: 'Match in progress',
       loserDetail: `${lim} · scores update when you add ball-by-ball scoring.`,
+    };
+  }
+
+  if (m.margin.kind === 'tie') {
+    const runs = m.innings[0].runs;
+    return {
+      headline: 'Match tied',
+      loserDetail: `Scores level at ${runs} · ${m.innings[0].teamName} & ${m.innings[1].teamName}`,
     };
   }
 

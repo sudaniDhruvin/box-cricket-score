@@ -268,10 +268,11 @@ export function MatchDetailScreen() {
   const live = isMatchLive(match);
   const activeInnings = activeTab === 0 ? inn1 : inn2;
   const matchComplete = !live;
+  const tied = matchComplete && match.margin.kind === 'tie';
   const activeIsWinner =
-    matchComplete && activeInnings.teamId === match.winnerTeamId;
+    matchComplete && !tied && activeInnings.teamId === match.winnerTeamId;
   const inningsLabel = activeTab === 0 ? '1st innings' : '2nd innings';
-  const winnerForTabs = matchComplete ? match.winnerTeamId : null;
+  const winnerForTabs = matchComplete && !tied ? match.winnerTeamId : null;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>

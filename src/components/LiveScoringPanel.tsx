@@ -23,13 +23,20 @@ import type {
 } from '../types/match';
 import {
   applyDeliveryToMatch,
+  finalizeLiveMatchIfNeeded,
   isInningsComplete,
   legalCountInOver,
   prepareNextOverSlot,
   runsDelivery,
   wicketDelivery,
 } from '../utils/applyScoringDelivery';
-import { formatOvers } from '../utils/cricketFormat';
+import {
+  formatMatchResult,
+  formatOvers,
+  formatRunRate,
+  legalBallsBowled,
+  runRateFromLegalBalls,
+} from '../utils/cricketFormat';
 import { countsAsLegalBall, tallyDeliveryRuns } from '../utils/deliveryScoring';
 import { fontSize, hp, wp } from '../utils';
 
@@ -124,6 +131,9 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
   const [overCompleteModal, setOverCompleteModal] = useState<OverReplay | null>(
     null,
   );
+  const [matchOverModal, setMatchOverModal] = useState<MatchSummary | null>(
+    null,
+  );
   const [editA, setEditA] = useState('');
   const [editB, setEditB] = useState('');
 
@@ -150,6 +160,39 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
     match != null &&
     isInningsComplete(match.innings[0], match.oversPerSide ?? 0);
   const showStartSecondCta = match != null && activeIdx === 0 && firstInnDone;
+
+  const legalBowledActive =
+    activeInn != null ? legalBallsBowled(activeInn.overs) : 0;
+  const currentRR =
+    activeInn != null
+      ? runRateFromLegalBalls(activeInn.runs, legalBowledActive)
+      : null;
+  const oversCapBalls = oversCap > 0 ? oversCap * 6 : 0;
+  const legalBallsRemaining =
+    oversCapBalls > 0 ? Math.max(0, oversCapBalls - legalBowledActive) : null;
+  const oversLeftDisplay =
+    legalBallsRemaining != null
+      ? formatOvers({
+          fullOvers: Math.floor(legalBallsRemaining / 6),
+          balls: legalBallsRemaining % 6,
+        })
+      : null;
+
+  const chase =
+    activeIdx === 1 && firstInnDone && match != null && activeInn != null
+      ? (() => {
+          const firstRuns = match.innings[0].runs;
+          const target = firstRuns + 1;
+          const need = Math.max(0, target - activeInn.runs);
+          const rrr =
+            need > 0 &&
+            legalBallsRemaining != null &&
+            legalBallsRemaining > 0
+              ? (need * 6) / legalBallsRemaining
+              : null;
+          return { target, need, rrr };
+        })()
+      : null;
 
   const openEdit = useCallback(() => {
     if (!match) {
@@ -194,18 +237,28 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
       const result = applyDeliveryToMatch(cur, d);
       if (!result.ok) {
         stack.pop();
+        if (result.reason === 'match_complete') {
+          return;
+        }
         if (result.reason === 'innings_overs_complete') {
+          const idx = cur.scoringActiveInnings ?? 0;
           Alert.alert(
             'Overs complete',
-            'This innings has used all allocated overs. Start the second innings when ready.',
+            idx === 0
+              ? 'This innings has used all allocated overs. Start the second innings when ready.'
+              : 'All overs for this innings have been bowled.',
           );
         } else {
           Alert.alert('Innings over', 'All wickets are down for this innings.');
         }
         return;
       }
-      updateMatch(matchId, () => result.match);
-      if (result.overJustCompleted) {
+      const finalized = finalizeLiveMatchIfNeeded(result.match);
+      updateMatch(matchId, () => finalized);
+      if (finalized.status === 'completed') {
+        setOverCompleteModal(null);
+        setMatchOverModal(finalized);
+      } else if (result.overJustCompleted) {
         setOverCompleteModal(result.overJustCompleted);
       }
     },
@@ -218,6 +271,7 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
       return;
     }
     setOverCompleteModal(null);
+    setMatchOverModal(null);
     updateMatch(matchId, () => prev);
   }, [matchId, updateMatch]);
 
@@ -258,6 +312,16 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
         : null,
     [overCompleteModal],
   );
+
+  const matchOverCopy = useMemo(
+    () => (matchOverModal != null ? formatMatchResult(matchOverModal) : null),
+    [matchOverModal],
+  );
+
+  const dismissMatchOver = useCallback(() => {
+    setMatchOverModal(null);
+    onClose();
+  }, [onClose]);
 
   if (!match || !activeInn) {
     return (
@@ -361,6 +425,51 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
               <Text style={styles.scoreMetaLbl}>Legal this over</Text>
               <Text style={styles.scoreMetaVal}>{legalInCurrent}/6</Text>
             </View>
+          </View>
+          <View style={styles.scoreCardStats}>
+            {chase != null ? (
+              <>
+                <View style={styles.scoreCardStatCell}>
+                  <Text style={styles.scoreCardStatLbl}>Target</Text>
+                  <Text style={styles.scoreCardStatVal}>{chase.target}</Text>
+                </View>
+                <View style={styles.scoreCardStatCell}>
+                  <Text style={styles.scoreCardStatLbl}>Need</Text>
+                  <Text style={styles.scoreCardStatVal}>
+                    {chase.need === 0 ? '0' : chase.need}
+                  </Text>
+                </View>
+                <View style={styles.scoreCardStatCell}>
+                  <Text style={styles.scoreCardStatLbl}>CRR</Text>
+                  <Text style={styles.scoreCardStatVal}>
+                    {formatRunRate(currentRR)}
+                  </Text>
+                </View>
+                <View style={styles.scoreCardStatCell}>
+                  <Text style={styles.scoreCardStatLbl}>RRR</Text>
+                  <Text style={styles.scoreCardStatVal}>
+                    {chase.need === 0 ? '—' : formatRunRate(chase.rrr)}
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.scoreCardStatCell}>
+                  <Text style={styles.scoreCardStatLbl}>Run rate</Text>
+                  <Text style={styles.scoreCardStatVal}>
+                    {formatRunRate(currentRR)}
+                  </Text>
+                </View>
+                {oversLeftDisplay != null ? (
+                  <View style={styles.scoreCardStatCell}>
+                    <Text style={styles.scoreCardStatLbl}>Overs left</Text>
+                    <Text style={styles.scoreCardStatVal}>
+                      {oversLeftDisplay}
+                    </Text>
+                  </View>
+                ) : null}
+              </>
+            )}
           </View>
         </View>
 
@@ -663,6 +772,54 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
       </Modal>
 
       <Modal
+        visible={matchOverModal != null}
+        transparent
+        animationType="fade"
+        onRequestClose={dismissMatchOver}
+      >
+        <View style={styles.matchOverBackdrop}>
+          <View style={styles.matchOverSheet}>
+            <Text style={styles.matchOverTitle}>Match over</Text>
+            {matchOverCopy != null ? (
+              <>
+                <Text style={styles.matchOverHeadline}>
+                  {matchOverCopy.headline}
+                </Text>
+                <Text style={styles.matchOverSub}>{matchOverCopy.loserDetail}</Text>
+              </>
+            ) : null}
+            {matchOverModal != null ? (
+              <View style={styles.matchOverScores}>
+                <Text style={styles.matchOverScoreLine}>
+                  1st · {matchOverModal.innings[0].teamName}:{' '}
+                  {matchOverModal.innings[0].runs}/
+                  {matchOverModal.innings[0].wickets} (
+                  {formatOvers(matchOverModal.innings[0].overs)} ov)
+                </Text>
+                <Text style={styles.matchOverScoreLine}>
+                  2nd · {matchOverModal.innings[1].teamName}:{' '}
+                  {matchOverModal.innings[1].runs}/
+                  {matchOverModal.innings[1].wickets} (
+                  {formatOvers(matchOverModal.innings[1].overs)} ov)
+                </Text>
+              </View>
+            ) : null}
+            <Pressable
+              onPress={dismissMatchOver}
+              style={({ pressed }) => [
+                styles.matchOverCta,
+                pressed && styles.matchOverCtaPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Close and return home"
+            >
+              <Text style={styles.matchOverCtaText}>Done</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         visible={editOpen}
         transparent
         animationType="fade"
@@ -864,6 +1021,38 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: colors.text,
     marginBottom: hp(0.4),
+  },
+  scoreCardStats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: wp(2),
+    marginTop: hp(1.2),
+    paddingTop: hp(1),
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  scoreCardStatCell: {
+    minWidth: wp(22),
+    flexGrow: 1,
+    flexBasis: '45%',
+    backgroundColor: colors.background,
+    borderRadius: wp(2),
+    paddingVertical: hp(0.8),
+    paddingHorizontal: wp(2.5),
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  scoreCardStatLbl: {
+    fontSize: fontSize(9),
+    fontWeight: '800',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    marginBottom: hp(0.15),
+  },
+  scoreCardStatVal: {
+    fontSize: fontSize(15),
+    fontWeight: '900',
+    color: colors.text,
   },
   sectionKicker: {
     fontSize: fontSize(10),
@@ -1153,6 +1342,68 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   overCompleteCtaText: {
+    fontSize: fontSize(16),
+    fontWeight: '800',
+    color: colors.background,
+  },
+  matchOverBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(7,7,7,0.5)',
+    justifyContent: 'center',
+    padding: wp(5),
+  },
+  matchOverSheet: {
+    backgroundColor: colors.background,
+    borderRadius: wp(3),
+    padding: wp(4),
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  matchOverTitle: {
+    fontSize: fontSize(12),
+    fontWeight: '800',
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+    marginBottom: hp(0.6),
+  },
+  matchOverHeadline: {
+    fontSize: fontSize(20),
+    fontWeight: '900',
+    color: colors.text,
+    marginBottom: hp(0.5),
+  },
+  matchOverSub: {
+    fontSize: fontSize(14),
+    fontWeight: '600',
+    color: colors.textMuted,
+    marginBottom: hp(1.2),
+  },
+  matchOverScores: {
+    gap: hp(0.4),
+    marginBottom: hp(1.5),
+    paddingVertical: hp(1),
+    paddingHorizontal: wp(2.5),
+    borderRadius: wp(2),
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  matchOverScoreLine: {
+    fontSize: fontSize(13),
+    fontWeight: '700',
+    color: colors.text,
+  },
+  matchOverCta: {
+    backgroundColor: colors.primary,
+    borderRadius: wp(2.5),
+    paddingVertical: hp(1.4),
+    alignItems: 'center',
+  },
+  matchOverCtaPressed: {
+    opacity: 0.92,
+  },
+  matchOverCtaText: {
     fontSize: fontSize(16),
     fontWeight: '800',
     color: colors.background,

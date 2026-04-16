@@ -9,7 +9,13 @@ import { countsAsLegalBall, tallyDeliveryRuns } from './deliveryScoring';
 
 export type ApplyDeliveryResult =
   | { ok: true; match: MatchSummary; overJustCompleted?: OverReplay }
-  | { ok: false; reason: 'innings_overs_complete' | 'all_out' };
+  | {
+      ok: false;
+      reason:
+        | 'innings_overs_complete'
+        | 'all_out'
+        | 'match_complete';
+    };
 
 const MAX_WICKETS = 10;
 
@@ -152,6 +158,10 @@ export function applyDeliveryToMatch(
   match: MatchSummary,
   d: Delivery,
 ): ApplyDeliveryResult {
+  if (match.status === 'completed') {
+    return { ok: false, reason: 'match_complete' };
+  }
+
   const idx = match.scoringActiveInnings ?? 0;
   const oversCap = match.oversPerSide;
   if (oversCap == null) {
@@ -203,6 +213,63 @@ export function isInningsComplete(
 ): boolean {
   const legal = legalBallsBowled(inn);
   return inn.wickets >= MAX_WICKETS || legal >= oversPerSide * 6;
+}
+
+/**
+ * After a delivery in the second innings, set status + winner/margin when the
+ * match outcome is decided (chase, all-out/overs exhausted, or tie).
+ */
+export function finalizeLiveMatchIfNeeded(match: MatchSummary): MatchSummary {
+  if (match.status === 'completed') {
+    return match;
+  }
+  if (match.scoringActiveInnings !== 1) {
+    return match;
+  }
+  const oversCap = match.oversPerSide;
+  if (oversCap == null) {
+    return match;
+  }
+
+  const first = match.innings[0];
+  const second = match.innings[1];
+
+  if (second.runs > first.runs) {
+    const ballsRem = Math.max(0, oversCap * 6 - legalBallsBowled(second));
+    return {
+      ...match,
+      status: 'completed',
+      winnerTeamId: second.teamId,
+      loserTeamId: first.teamId,
+      margin: {
+        kind: 'wickets',
+        wicketsRemaining: MAX_WICKETS - second.wickets,
+        ballsRemaining: ballsRem > 0 ? ballsRem : undefined,
+      },
+    };
+  }
+
+  if (!isInningsComplete(second, oversCap)) {
+    return match;
+  }
+
+  if (second.runs === first.runs) {
+    return {
+      ...match,
+      status: 'completed',
+      winnerTeamId: first.teamId,
+      loserTeamId: second.teamId,
+      margin: { kind: 'tie' },
+    };
+  }
+
+  return {
+    ...match,
+    status: 'completed',
+    winnerTeamId: first.teamId,
+    loserTeamId: second.teamId,
+    margin: { kind: 'runs', byRuns: first.runs - second.runs },
+  };
 }
 
 /**

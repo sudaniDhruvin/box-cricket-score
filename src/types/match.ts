@@ -69,7 +69,9 @@ export type MatchMargin =
       kind: 'wickets';
       wicketsRemaining: number;
       ballsRemaining?: number;
-    };
+    }
+  /** Scores level when the second innings ends (same total). */
+  | { kind: 'tie' };
 
 export type MatchStatus = 'live' | 'completed';
 

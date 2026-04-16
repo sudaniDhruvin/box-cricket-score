@@ -13,20 +13,28 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const RootNavigator = () => {
   const hasCompletedOnboarding = useUserStore(s => s.hasCompletedOnboarding);
-
+  console.log('hasCompletedOnboarding', hasCompletedOnboarding);
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName={hasCompletedOnboarding ? 'Home' : 'Onboarding'}
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="NewMatch" component={NewMatchScreen} />
-        <Stack.Screen name="MatchDetail" component={MatchDetailScreen} />
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-      </Stack.Navigator>
+      {!hasCompletedOnboarding ? (
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        </Stack.Navigator>
+      ) : (
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="NewMatch" component={NewMatchScreen} />
+          <Stack.Screen name="MatchDetail" component={MatchDetailScreen} />
+        </Stack.Navigator>
+      )}
     </NavigationContainer>
   );
 };
