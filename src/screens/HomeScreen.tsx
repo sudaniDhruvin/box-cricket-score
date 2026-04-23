@@ -1,8 +1,9 @@
-import { useNavigation } from '@react-navigation/native';
+import { DrawerActions, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import {
+  Alert,
   ListRenderItemInfo,
   Platform,
   Pressable,
@@ -13,7 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MatchCard } from '../components/MatchCard';
-import type { RootStackParamList } from '../navigation/types';
+import type { MainStackParamList } from '../navigation/types';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import type { MatchSummary } from '../types/match';
@@ -27,10 +28,31 @@ const FAB_HIDE_Y = 72;
 export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList, 'Home'>>();
+    useNavigation<NativeStackNavigationProp<MainStackParamList, 'Home'>>();
   const [fabVisible, setFabVisible] = useState(false);
   const fabShownRef = useRef(false);
   const savedMatches = useMatchStore(s => s.matches);
+  const removeMatch = useMatchStore(s => s.removeMatch);
+
+  const confirmDeleteMatch = useCallback(
+    (match: MatchSummary) => {
+      const a = match.innings[0].teamName;
+      const b = match.innings[1].teamName;
+      Alert.alert(
+        'Delete match?',
+        `Remove "${a} vs ${b}" from your saved list. This cannot be undone.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => removeMatch(match.id),
+          },
+        ],
+      );
+    },
+    [removeMatch],
+  );
 
   const sections = useMemo(
     () => groupMatchesByDay(savedMatches),
@@ -48,6 +70,7 @@ export function HomeScreen() {
       onPress={() =>
         navigation.navigate('MatchDetail', { matchId: item.id })
       }
+      onLongPress={() => confirmDeleteMatch(item)}
     />
   );
 
@@ -90,6 +113,24 @@ export function HomeScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
+            <View style={styles.headerRow}>
+              <Pressable
+                onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+                style={({ pressed }) => [
+                  styles.menuBtn,
+                  pressed && styles.menuBtnPressed,
+                ]}
+                android_ripple={{
+                  color: 'rgba(255, 255, 255, 0.2)',
+                  borderless: true,
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Open menu">
+                <Text style={styles.menuIcon} pointerEvents="none">
+                  {`\u2630`}
+                </Text>
+              </Pressable>
+            </View>
             <Text style={styles.kicker}>BOX CRICKET</Text>
             <Text style={styles.title}>Your matches</Text>
             <Text style={styles.subtitle}>
@@ -182,6 +223,24 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: hp(1.5),
     paddingHorizontal: wp(2),
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: -wp(1.5),
+    marginBottom: hp(0.4),
+  },
+  menuBtn: {
+    padding: wp(2.5),
+    borderRadius: wp(2),
+  },
+  menuBtnPressed: {
+    opacity: 0.7,
+  },
+  menuIcon: {
+    fontSize: fontSize(20),
+    color: colors.text,
+    lineHeight: fontSize(22),
   },
   kicker: {
     fontSize: fontSize(11),

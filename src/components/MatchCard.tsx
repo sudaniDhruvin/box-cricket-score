@@ -35,6 +35,8 @@ interface MatchCardProps {
   match: MatchSummary;
   /** Optional — e.g. navigate to match detail */
   onPress?: () => void;
+  /** Optional — e.g. show delete confirmation (long-press) */
+  onLongPress?: () => void;
 }
 
 const SPRING = {
@@ -43,7 +45,7 @@ const SPRING = {
   useNativeDriver: true as const,
 };
 
-export function MatchCard({ match: m, onPress }: MatchCardProps) {
+export function MatchCard({ match: m, onPress, onLongPress }: MatchCardProps) {
   const [first, second] = m.innings;
   const live = isMatchLive(m);
   const { headline, loserDetail } = formatMatchResult(m);
@@ -83,6 +85,8 @@ export function MatchCard({ match: m, onPress }: MatchCardProps) {
       <View style={styles.cardInner}>
         <Pressable
           onPress={onPress}
+          onLongPress={onLongPress}
+          delayLongPress={420}
           onPressIn={pump}
           onPressOut={release}
           android_ripple={ripple}
@@ -92,7 +96,11 @@ export function MatchCard({ match: m, onPress }: MatchCardProps) {
           ]}
           accessibilityRole={onPress ? 'button' : undefined}
           accessibilityHint={
-            onPress ? 'Opens match details' : undefined
+            onPress
+              ? onLongPress
+                ? 'Opens match details. Long press to delete this match.'
+                : 'Opens match details'
+              : undefined
           }>
           <View style={styles.cardTop}>
             <Text style={live ? styles.liveBadge : styles.liveHint}>

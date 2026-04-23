@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { InningsBallByBall } from '../components/InningsBallByBall';
-import type { RootStackParamList } from '../navigation/types';
+import type { MainStackParamList } from '../navigation/types';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import type { TeamInnings } from '../types/match';
@@ -35,8 +35,11 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-type MatchDetailNav = NativeStackNavigationProp<RootStackParamList, 'MatchDetail'>;
-type MatchDetailRoute = RouteProp<RootStackParamList, 'MatchDetail'>;
+type MatchDetailNav = NativeStackNavigationProp<
+  MainStackParamList,
+  'MatchDetail'
+>;
+type MatchDetailRoute = RouteProp<MainStackParamList, 'MatchDetail'>;
 
 function InningsDetail({
   label,

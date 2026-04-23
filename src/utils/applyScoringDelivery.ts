@@ -211,8 +211,13 @@ export function isInningsComplete(
   inn: TeamInnings,
   oversPerSide: number,
 ): boolean {
-  const legal = legalBallsBowled(inn);
-  return inn.wickets >= MAX_WICKETS || legal >= oversPerSide * 6;
+  if (inn.wickets >= MAX_WICKETS) {
+    return true;
+  }
+  if (oversPerSide > 0) {
+    return legalBallsBowled(inn) >= oversPerSide * 6;
+  }
+  return false;
 }
 
 /**

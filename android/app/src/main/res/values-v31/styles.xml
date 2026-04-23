@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Parent v30 avoids windowSplashScreenAnimatedIcon (centered icon); full art is the windowBackground. -->
+    <style name="BootTheme" parent="Theme.BootSplash.v30">
+        <item name="bootSplashBackground">@color/bootsplash_background</item>
+        <item name="bootSplashLogo">@drawable/bootsplash_logo</item>
+        <item name="postBootSplashTheme">@style/AppTheme</item>
+        <item name="android:windowBackground">@drawable/splash_fullscreen</item>
+    </style>
+</resources>

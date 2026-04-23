@@ -156,9 +156,40 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
     return replay.slice(0, -1).slice(-3);
   }, [replay]);
 
-  const firstInnDone =
-    match != null &&
-    isInningsComplete(match.innings[0], match.oversPerSide ?? 0);
+  const firstInnDone = useMemo(() => {
+    if (match == null) {
+      return false;
+    }
+    const cap = match.oversPerSide;
+    if (cap == null || cap <= 0) {
+      return false;
+    }
+    return isInningsComplete(match.innings[0], cap);
+  }, [match]);
+
+  const firstInningsBreakTagline = useMemo(() => {
+    if (match == null) {
+      return '';
+    }
+    const inn = match.innings[0];
+    if (inn.wickets >= 10) {
+      return 'All wickets are down for this innings.';
+    }
+    const cap = match.oversPerSide;
+    if (cap != null) {
+      return `All ${cap} ${cap === 1 ? 'over' : 'overs'} for this innings are bowled.`;
+    }
+    return 'This innings is complete.';
+  }, [match]);
+
+  const firstInningsLastOver = useMemo(() => {
+    const r = match?.innings[0].overReplay;
+    if (r == null || r.length === 0) {
+      return null;
+    }
+    return r[r.length - 1];
+  }, [match]);
+
   const showStartSecondCta = match != null && activeIdx === 0 && firstInnDone;
 
   const legalBowledActive =
@@ -259,7 +290,19 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
         setOverCompleteModal(null);
         setMatchOverModal(finalized);
       } else if (result.overJustCompleted) {
-        setOverCompleteModal(result.overJustCompleted);
+        const inn0 = finalized.innings[0];
+        const cap = finalized.oversPerSide;
+        if (
+          cap != null &&
+          cap > 0 &&
+          (finalized.scoringActiveInnings ?? 0) === 0 &&
+          isInningsComplete(inn0, cap)
+        ) {
+          // 1st innings finished (e.g. last ball of the last over) — show
+          // the dedicated 1st-innings break modal, not the generic over sheet.
+        } else {
+          setOverCompleteModal(result.overJustCompleted);
+        }
       }
     },
     [matchId, updateMatch],
@@ -276,6 +319,7 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
   }, [matchId, updateMatch]);
 
   const startSecond = useCallback(() => {
+    setOverCompleteModal(null);
     if (!match) {
       return;
     }
@@ -295,6 +339,10 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
     updateMatch(matchId, m => {
       const idx = m.scoringActiveInnings ?? 0;
       const inn = m.innings[idx];
+      const cap = m.oversPerSide;
+      if (cap != null && cap > 0 && isInningsComplete(inn, cap)) {
+        return m;
+      }
       const nextInn = prepareNextOverSlot(inn);
       if (nextInn === inn) {
         return m;
@@ -304,6 +352,7 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
       return { ...m, innings };
     });
   }, [matchId, updateMatch]);
+
 
   const overCompleteStats = useMemo(
     () =>
@@ -376,9 +425,14 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
       </View>
 
       <ScrollView
+        style={styles.scrollFill}
         contentContainerStyle={[
           styles.scroll,
-          { paddingBottom: Math.max(insets.bottom, hp(3)) },
+          {
+            paddingBottom: showStartSecondCta
+              ? hp(1.5)
+              : Math.max(insets.bottom, hp(3)),
+          },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -391,23 +445,11 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
             {activeInn.teamName}
           </Text>
           <Text style={styles.limitHint}>
-            {oversCap} overs · {activeInn.wickets}/{MAX_WICKETS_DISPLAY} wkts
+            {showStartSecondCta
+              ? 'Innings complete'
+              : `${oversCap} overs · ${activeInn.wickets}/${MAX_WICKETS_DISPLAY} wkts`}
           </Text>
         </View>
-
-        {showStartSecondCta ? (
-          <Pressable
-            onPress={startSecond}
-            style={({ pressed }) => [
-              styles.secondBanner,
-              pressed && styles.secondBannerPressed,
-            ]}
-          >
-            <Text style={styles.secondBannerText}>
-              First innings complete — start 2nd innings
-            </Text>
-          </Pressable>
-        ) : null}
 
         <View style={styles.scoreCard}>
           <View style={styles.scoreCardRow}>
@@ -531,128 +573,137 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
           </View>
         ) : null}
 
-        <View style={styles.runsSectionHeader}>
-          <Text
-            style={styles.runsSectionKicker}
-            {...(Platform.OS === 'android'
-              ? { includeFontPadding: false }
-              : {})}
-          >
-            Runs off the bat 00
-          </Text>
-        </View>
-        <View style={styles.runsGrid}>
-          {RUNS_ROW.map(r => (
-            <Pressable
-              key={r}
-              onPress={() => apply(runsDelivery(r))}
-              style={({ pressed }) => [
-                styles.runCell,
-                pressed && styles.runCellPressed,
-              ]}
-              // accessibilityRole="button"
-              // accessibilityLabel={`${r} runs`}
-            >
+        {showStartSecondCta ? (
+          <View style={styles.inningsCompleteHint}>
+            <Text style={styles.inningsCompleteHintText}>
+              First innings is complete. When you are ready, start the second
+              innings using the button below.
+            </Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.runsSectionHeader}>
               <Text
-                style={styles.runCellText}
+                style={styles.runsSectionKicker}
                 {...(Platform.OS === 'android'
                   ? { includeFontPadding: false }
                   : {})}
               >
-                {r}
+                Runs off the bat 00
               </Text>
-            </Pressable>
-          ))}
-        </View>
+            </View>
+            <View style={styles.runsGrid}>
+              {RUNS_ROW.map(r => (
+                <Pressable
+                  key={r}
+                  onPress={() => apply(runsDelivery(r))}
+                  style={({ pressed }) => [
+                    styles.runCell,
+                    pressed && styles.runCellPressed,
+                  ]}
+                >
+                  <Text
+                    style={styles.runCellText}
+                    {...(Platform.OS === 'android'
+                      ? { includeFontPadding: false }
+                      : {})}
+                  >
+                    {r}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
 
-        <Text style={styles.sectionKicker}>Extras</Text>
-        <View style={styles.extrasRow}>
-          <Pressable
-            onPress={() => apply({ type: 'wide', label: 'Wd', wideRuns: 0 })}
-            style={({ pressed }) => [
-              styles.extraBtn,
-              { borderColor: colors.ballWide },
-              pressed && styles.runCellPressed,
-            ]}
-          >
-            <Text style={styles.extraBtnText}>Wd</Text>
-          </Pressable>
-          <Pressable
-            onPress={() =>
-              apply({ type: 'no-ball', label: 'Nb', noBallRuns: 0 })
-            }
-            style={({ pressed }) => [
-              styles.extraBtn,
-              { borderColor: colors.ballNoBall },
-              pressed && styles.runCellPressed,
-            ]}
-          >
-            <Text style={styles.extraBtnText}>Nb</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => apply({ type: 'bye', label: 'By' })}
-            style={({ pressed }) => [
-              styles.extraBtn,
-              { borderColor: colors.ballBye },
-              pressed && styles.runCellPressed,
-            ]}
-          >
-            <Text style={styles.extraBtnText}>By</Text>
-          </Pressable>
-        </View>
-        <View style={styles.extrasSubRow}>
-          {[1, 2, 4].map(n => (
+            <Text style={styles.sectionKicker}>Extras</Text>
+            <View style={styles.extrasRow}>
+              <Pressable
+                onPress={() => apply({ type: 'wide', label: 'Wd', wideRuns: 0 })}
+                style={({ pressed }) => [
+                  styles.extraBtn,
+                  { borderColor: colors.ballWide },
+                  pressed && styles.runCellPressed,
+                ]}
+              >
+                <Text style={styles.extraBtnText}>Wd</Text>
+              </Pressable>
+              <Pressable
+                onPress={() =>
+                  apply({ type: 'no-ball', label: 'Nb', noBallRuns: 0 })
+                }
+                style={({ pressed }) => [
+                  styles.extraBtn,
+                  { borderColor: colors.ballNoBall },
+                  pressed && styles.runCellPressed,
+                ]}
+              >
+                <Text style={styles.extraBtnText}>Nb</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => apply({ type: 'bye', label: 'By' })}
+                style={({ pressed }) => [
+                  styles.extraBtn,
+                  { borderColor: colors.ballBye },
+                  pressed && styles.runCellPressed,
+                ]}
+              >
+                <Text style={styles.extraBtnText}>By</Text>
+              </Pressable>
+            </View>
+            <View style={styles.extrasSubRow}>
+              {[1, 2, 4].map(n => (
+                <Pressable
+                  key={`wd${n}`}
+                  onPress={() =>
+                    apply({
+                      type: 'wide',
+                      label: `Wd+${n}`,
+                      wideRuns: n,
+                    })
+                  }
+                  style={({ pressed }) => [
+                    styles.extraSmall,
+                    { borderColor: colors.ballWideExtra },
+                    pressed && styles.runCellPressed,
+                  ]}
+                >
+                  <Text style={styles.extraSmallText}>Wd+{n}</Text>
+                </Pressable>
+              ))}
+              {[1, 4, 6].map(n => (
+                <Pressable
+                  key={`nb${n}`}
+                  onPress={() =>
+                    apply({
+                      type: 'no-ball',
+                      label: `Nb+${n}`,
+                      noBallRuns: n,
+                    })
+                  }
+                  style={({ pressed }) => [
+                    styles.extraSmall,
+                    { borderColor: colors.ballNoBallRuns },
+                    pressed && styles.runCellPressed,
+                  ]}
+                >
+                  <Text style={styles.extraSmallText}>Nb+{n}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.sectionKicker}>Wicket</Text>
             <Pressable
-              key={`wd${n}`}
-              onPress={() =>
-                apply({
-                  type: 'wide',
-                  label: `Wd+${n}`,
-                  wideRuns: n,
-                })
-              }
+              onPress={() => setWicketOpen(true)}
               style={({ pressed }) => [
-                styles.extraSmall,
-                { borderColor: colors.ballWideExtra },
+                styles.wicketBtn,
                 pressed && styles.runCellPressed,
               ]}
+              accessibilityRole="button"
+              accessibilityLabel="Log wicket"
             >
-              <Text style={styles.extraSmallText}>Wd+{n}</Text>
+              <Text style={styles.wicketBtnText}>Wicket — choose dismissal</Text>
             </Pressable>
-          ))}
-          {[1, 4, 6].map(n => (
-            <Pressable
-              key={`nb${n}`}
-              onPress={() =>
-                apply({
-                  type: 'no-ball',
-                  label: `Nb+${n}`,
-                  noBallRuns: n,
-                })
-              }
-              style={({ pressed }) => [
-                styles.extraSmall,
-                { borderColor: colors.ballNoBallRuns },
-                pressed && styles.runCellPressed,
-              ]}
-            >
-              <Text style={styles.extraSmallText}>Nb+{n}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text style={styles.sectionKicker}>Wicket</Text>
-        <Pressable
-          onPress={() => setWicketOpen(true)}
-          style={({ pressed }) => [
-            styles.wicketBtn,
-            pressed && styles.runCellPressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Log wicket"
-        >
-          <Text style={styles.wicketBtnText}>Wicket — choose dismissal</Text>
-        </Pressable>
+          </>
+        )}
       </ScrollView>
 
       <Modal
@@ -754,21 +805,94 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
                     <MiniBall key={`oc-${i}`} d={d} />
                   ))}
                 </ScrollView>
-                <Pressable
-                  onPress={dismissOverCompleteModal}
-                  style={({ pressed }) => [
-                    styles.overCompleteCta,
-                    pressed && styles.overCompleteCtaPressed,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Close over summary"
-                >
-                  <Text style={styles.overCompleteCtaText}>Continue</Text>
-                </Pressable>
+                {firstInnDone && activeIdx === 0 ? (
+                  <Pressable
+                    onPress={startSecond}
+                    style={({ pressed }) => [
+                      styles.overCompleteCta,
+                      pressed && styles.overCompleteCtaPressed,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Start second innings"
+                  >
+                    <Text style={styles.overCompleteCtaText}>
+                      Start 2nd innings
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    onPress={dismissOverCompleteModal}
+                    style={({ pressed }) => [
+                      styles.overCompleteCta,
+                      pressed && styles.overCompleteCtaPressed,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close over summary"
+                  >
+                    <Text style={styles.overCompleteCtaText}>Continue</Text>
+                  </Pressable>
+                )}
               </>
             ) : null}
           </Pressable>
         </Pressable>
+      </Modal>
+
+      <Modal
+        visible={showStartSecondCta}
+        transparent
+        animationType="fade"
+        onRequestClose={() => undefined}
+        statusBarTranslucent
+      >
+        <View style={styles.matchOverBackdrop}>
+          <View style={styles.matchOverSheet}>
+            <Text style={styles.matchOverTitle}>1st innings complete</Text>
+            <Text style={styles.firstBreakHeadline}>
+              {activeInn.teamName} — {activeInn.runs}/{activeInn.wickets}
+              <Text style={styles.firstBreakOversSub}>
+                {' '}
+                ({formatOvers(activeInn.overs)} ov)
+              </Text>
+            </Text>
+            <Text style={styles.matchOverSub}>{firstInningsBreakTagline}</Text>
+            {firstInningsLastOver != null &&
+            firstInningsLastOver.deliveries.length > 0 ? (
+              <>
+                <Text style={styles.firstBreakKicker}>
+                  {legalCountInOver(firstInningsLastOver.deliveries) === 6
+                    ? `Over ${firstInningsLastOver.overNumber} (last over)`
+                    : `Over ${firstInningsLastOver.overNumber}`}
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.firstBreakChipsRow}
+                >
+                  {firstInningsLastOver.deliveries.map((d, i) => (
+                    <MiniBall key={`fb-${i}`} d={d} />
+                  ))}
+                </ScrollView>
+              </>
+            ) : null}
+            <View style={styles.firstBreakCtaBlock}>
+              <Text style={styles.firstBreakCtaNote}>
+                When both sides are ready, start the second innings.
+              </Text>
+              <Pressable
+                onPress={startSecond}
+                style={({ pressed }) => [
+                  styles.matchOverCta,
+                  pressed && styles.matchOverCtaPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Start second innings"
+              >
+                <Text style={styles.matchOverCtaText}>Start 2nd innings</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
       </Modal>
 
       <Modal
@@ -875,9 +999,64 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  scrollFill: {
+    flex: 1,
+  },
   scroll: {
     paddingHorizontal: wp(4),
     paddingTop: hp(1),
+  },
+  firstBreakHeadline: {
+    fontSize: fontSize(20),
+    fontWeight: '900',
+    color: colors.text,
+    marginBottom: hp(0.5),
+  },
+  firstBreakOversSub: {
+    fontSize: fontSize(16),
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  firstBreakKicker: {
+    fontSize: fontSize(11),
+    fontWeight: '800',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: hp(0.4),
+    marginBottom: hp(0.4),
+  },
+  firstBreakChipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(1),
+    paddingBottom: hp(0.5),
+  },
+  firstBreakCtaBlock: {
+    marginTop: hp(0.4),
+  },
+  firstBreakCtaNote: {
+    fontSize: fontSize(13),
+    fontWeight: '600',
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: hp(1),
+  },
+  inningsCompleteHint: {
+    marginTop: hp(0.5),
+    marginBottom: hp(2),
+    padding: wp(3.5),
+    borderRadius: wp(2.5),
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  inningsCompleteHintText: {
+    fontSize: fontSize(14),
+    fontWeight: '600',
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: fontSize(20),
   },
   toolbar: {
     flexDirection: 'row',
@@ -964,23 +1143,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textMuted,
     marginTop: hp(0.2),
-  },
-  secondBanner: {
-    backgroundColor: colors.primarySoft,
-    borderRadius: wp(2.5),
-    padding: wp(3),
-    marginBottom: hp(1.2),
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  secondBannerPressed: {
-    opacity: 0.92,
-  },
-  secondBannerText: {
-    fontSize: fontSize(13),
-    fontWeight: '800',
-    color: colors.text,
-    textAlign: 'center',
   },
   scoreCard: {
     borderWidth: 1,

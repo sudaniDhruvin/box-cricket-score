@@ -16,15 +16,15 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { RootStackParamList } from '../navigation/types';
+import type { MainStackParamList } from '../navigation/types';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import { LiveScoringPanel } from '../components/LiveScoringPanel';
 import { createLiveMatch } from '../utils/createLiveMatch';
 import { fontSize, hp, wp } from '../utils';
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'NewMatch'>;
-type NewMatchRoute = RouteProp<RootStackParamList, 'NewMatch'>;
+type Nav = NativeStackNavigationProp<MainStackParamList, 'NewMatch'>;
+type NewMatchRoute = RouteProp<MainStackParamList, 'NewMatch'>;
 
 const OVERS_OPTIONS = [6, 8, 10, 12] as const;
 const OVERS_MIN = 1;
