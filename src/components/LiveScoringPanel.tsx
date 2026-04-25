@@ -29,6 +29,7 @@ import {
   prepareNextOverSlot,
   runsDelivery,
   wicketDelivery,
+  wicketsCapForMatch,
 } from '../utils/applyScoringDelivery';
 import {
   formatMatchResult,
@@ -39,6 +40,7 @@ import {
 } from '../utils/cricketFormat';
 import { countsAsLegalBall, tallyDeliveryRuns } from '../utils/deliveryScoring';
 import { fontSize, hp, wp } from '../utils';
+import { StickyBottomBannerAd } from './StickyBottomBannerAd';
 
 function cloneMatch(m: MatchSummary): MatchSummary {
   return JSON.parse(JSON.stringify(m)) as MatchSummary;
@@ -156,6 +158,8 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
     return replay.slice(0, -1).slice(-3);
   }, [replay]);
 
+  const wkCap = match != null ? wicketsCapForMatch(match) : 10;
+
   const firstInnDone = useMemo(() => {
     if (match == null) {
       return false;
@@ -164,7 +168,11 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
     if (cap == null || cap <= 0) {
       return false;
     }
-    return isInningsComplete(match.innings[0], cap);
+    return isInningsComplete(
+      match.innings[0],
+      cap,
+      wicketsCapForMatch(match),
+    );
   }, [match]);
 
   const firstInningsBreakTagline = useMemo(() => {
@@ -172,7 +180,8 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
       return '';
     }
     const inn = match.innings[0];
-    if (inn.wickets >= 10) {
+    const capW = wicketsCapForMatch(match);
+    if (inn.wickets >= capW) {
       return 'All wickets are down for this innings.';
     }
     const cap = match.oversPerSide;
@@ -296,7 +305,7 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
           cap != null &&
           cap > 0 &&
           (finalized.scoringActiveInnings ?? 0) === 0 &&
-          isInningsComplete(inn0, cap)
+          isInningsComplete(inn0, cap, wicketsCapForMatch(finalized))
         ) {
           // 1st innings finished (e.g. last ball of the last over) — show
           // the dedicated 1st-innings break modal, not the generic over sheet.
@@ -340,7 +349,11 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
       const idx = m.scoringActiveInnings ?? 0;
       const inn = m.innings[idx];
       const cap = m.oversPerSide;
-      if (cap != null && cap > 0 && isInningsComplete(inn, cap)) {
+      if (
+        cap != null &&
+        cap > 0 &&
+        isInningsComplete(inn, cap, wicketsCapForMatch(m))
+      ) {
         return m;
       }
       const nextInn = prepareNextOverSlot(inn);
@@ -424,19 +437,13 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scrollFill}
-        contentContainerStyle={[
-          styles.scroll,
-          {
-            paddingBottom: showStartSecondCta
-              ? hp(1.5)
-              : Math.max(insets.bottom, hp(3)),
-          },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.mainColumn}>
+        <ScrollView
+          style={styles.scrollFill}
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View style={styles.inningsBanner}>
           <Text style={styles.inningsTag}>
             {activeIdx === 0 ? '1st innings' : '2nd innings'}
@@ -447,7 +454,7 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
           <Text style={styles.limitHint}>
             {showStartSecondCta
               ? 'Innings complete'
-              : `${oversCap} overs · ${activeInn.wickets}/${MAX_WICKETS_DISPLAY} wkts`}
+              : `${oversCap} overs · ${activeInn.wickets}/${wkCap} wkts`}
           </Text>
         </View>
 
@@ -704,7 +711,16 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
             </Pressable>
           </>
         )}
-      </ScrollView>
+        </ScrollView>
+        <View
+          style={[
+            styles.bottomAdStrip,
+            { paddingBottom: Math.max(insets.bottom, hp(0.5)) },
+          ]}
+        >
+          <StickyBottomBannerAd />
+        </View>
+      </View>
 
       <Modal
         visible={wicketOpen}
@@ -992,19 +1008,28 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
   );
 }
 
-const MAX_WICKETS_DISPLAY = 10;
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.background,
   },
+  mainColumn: {
+    flex: 1,
+  },
   scrollFill: {
     flex: 1,
+  },
+  bottomAdStrip: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+    alignItems: 'center',
   },
   scroll: {
     paddingHorizontal: wp(4),
     paddingTop: hp(1),
+    paddingBottom: hp(3),
   },
   firstBreakHeadline: {
     fontSize: fontSize(20),

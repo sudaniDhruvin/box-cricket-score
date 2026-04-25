@@ -18,6 +18,8 @@ export interface NewMatchInput {
   teamAName: string;
   teamBName: string;
   oversPerSide: number;
+  /** Dismissals before all out (e.g. 4 for four players, 10 for a full team). */
+  wicketsPerSide: number;
   /** 0 = team A bats first (1st innings), 1 = team B bats first */
   batFirst: 0 | 1;
 }
@@ -41,6 +43,7 @@ export function createLiveMatch(input: NewMatchInput): MatchSummary {
     margin: { kind: 'runs', byRuns: 0 },
     status: 'live',
     oversPerSide: input.oversPerSide,
+    wicketsPerSide: input.wicketsPerSide,
     scoringActiveInnings: 0,
   };
 }

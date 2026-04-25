@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Overrides react-native-bootsplash default (centered logo). RNBootSplashView uses this name. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android" android:opacity="opaque">
+  <item>
+    <bitmap
+      android:gravity="fill"
+      android:src="@drawable/splash_fullscreen_bg" />
+  </item>
+</layer-list>

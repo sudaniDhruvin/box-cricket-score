@@ -1,4 +1,7 @@
 {
   "name": "boxCricketScore",
-  "displayName": "boxCricketScore"
+  "displayName": "boxCricketScore",
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-7085320120847108~5292647329"
+  }
 }

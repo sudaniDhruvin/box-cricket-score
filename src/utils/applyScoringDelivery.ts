@@ -17,7 +17,11 @@ export type ApplyDeliveryResult =
         | 'match_complete';
     };
 
-const MAX_WICKETS = 10;
+export const DEFAULT_WICKETS_PER_SIDE = 10;
+
+export function wicketsCapForMatch(m: MatchSummary): number {
+  return m.wicketsPerSide ?? DEFAULT_WICKETS_PER_SIDE;
+}
 
 function cloneInnings(inn: TeamInnings): TeamInnings {
   return {
@@ -168,6 +172,8 @@ export function applyDeliveryToMatch(
     return { ok: false, reason: 'innings_overs_complete' };
   }
 
+  const wkCap = wicketsCapForMatch(match);
+
   let inn = cloneInnings(match.innings[idx]);
 
   const legalSoFar = legalBallsBowled(inn);
@@ -176,7 +182,7 @@ export function applyDeliveryToMatch(
     return { ok: false, reason: 'innings_overs_complete' };
   }
 
-  if (inn.wickets >= MAX_WICKETS) {
+  if (inn.wickets >= wkCap) {
     return { ok: false, reason: 'all_out' };
   }
 
@@ -210,8 +216,9 @@ export function applyDeliveryToMatch(
 export function isInningsComplete(
   inn: TeamInnings,
   oversPerSide: number,
+  wicketsPerSide: number = DEFAULT_WICKETS_PER_SIDE,
 ): boolean {
-  if (inn.wickets >= MAX_WICKETS) {
+  if (inn.wickets >= wicketsPerSide) {
     return true;
   }
   if (oversPerSide > 0) {
@@ -238,6 +245,7 @@ export function finalizeLiveMatchIfNeeded(match: MatchSummary): MatchSummary {
 
   const first = match.innings[0];
   const second = match.innings[1];
+  const wkCap = wicketsCapForMatch(match);
 
   if (second.runs > first.runs) {
     const ballsRem = Math.max(0, oversCap * 6 - legalBallsBowled(second));
@@ -248,13 +256,13 @@ export function finalizeLiveMatchIfNeeded(match: MatchSummary): MatchSummary {
       loserTeamId: first.teamId,
       margin: {
         kind: 'wickets',
-        wicketsRemaining: MAX_WICKETS - second.wickets,
+        wicketsRemaining: wkCap - second.wickets,
         ballsRemaining: ballsRem > 0 ? ballsRem : undefined,
       },
     };
   }
 
-  if (!isInningsComplete(second, oversCap)) {
+  if (!isInningsComplete(second, oversCap, wkCap)) {
     return match;
   }
 

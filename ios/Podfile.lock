@@ -1,5 +1,8 @@
 PODS:
   - FBLazyVector (0.85.1)
+  - Google-Mobile-Ads-SDK (13.1.0):
+    - GoogleUserMessagingPlatform (>= 1.1)
+  - GoogleUserMessagingPlatform (3.1.0)
   - hermes-engine (250829098.0.10):
     - hermes-engine/Pre-built (= 250829098.0.10)
   - hermes-engine/Pre-built (250829098.0.10)
@@ -29,7 +32,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - NitroModules (0.35.4):
+  - NitroModules (0.35.5):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -75,6 +78,7 @@ PODS:
     - React-RCTText (= 0.85.1)
     - React-RCTVibration (= 0.85.1)
   - React-callinvoker (0.85.1)
+  - React-Codegen (0.1.0)
   - React-Core (0.85.1):
     - hermes-engine
     - RCTDeprecation
@@ -1411,6 +1415,13 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
+  - react-native-keep-awake (1.4.0):
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Codegen
+    - React-Core
+    - React-RCTFabric
+    - ReactCommon/turbomodule/core
   - react-native-safe-area-context (5.7.0):
     - hermes-engine
     - RCTRequired
@@ -1909,6 +1920,30 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - RNGoogleMobileAds (16.3.3):
+    - Google-Mobile-Ads-SDK (= 13.1.0)
+    - GoogleUserMessagingPlatform (= 3.1.0)
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - RNReanimated (4.3.0):
     - hermes-engine
     - RCTRequired
@@ -2145,6 +2180,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - "react-native-keep-awake (from `../node_modules/@sayem314/react-native-keep-awake`)"
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-networking (from `../node_modules/react-native/ReactCommon/react/networking`)
@@ -2182,6 +2218,7 @@ DEPENDENCIES:
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
   - RNBootSplash (from `../node_modules/react-native-bootsplash`)
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
+  - RNGoogleMobileAds (from `../node_modules/react-native-google-mobile-ads`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNWorklets (from `../node_modules/react-native-worklets`)
@@ -2189,7 +2226,10 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - Google-Mobile-Ads-SDK
+    - GoogleUserMessagingPlatform
     - MMKVCore
+    - React-Codegen
 
 EXTERNAL SOURCES:
   FBLazyVector:
@@ -2273,6 +2313,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-keep-awake:
+    :path: "../node_modules/@sayem314/react-native-keep-awake"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
   React-NativeModulesApple:
@@ -2347,6 +2389,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-bootsplash"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
+  RNGoogleMobileAds:
+    :path: "../node_modules/react-native-google-mobile-ads"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
@@ -2358,10 +2402,12 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   FBLazyVector: ed7eadee1965b0b918ca9d0f2c2328f7eb3fd095
+  Google-Mobile-Ads-SDK: 8429bef6ee1a4e322b0a5571b64217ed8317a3d5
+  GoogleUserMessagingPlatform: befe603da6501006420c206222acd449bba45a9c
   hermes-engine: 220d80da429543d643db294f9b15ecdae029f0a8
   MMKVCore: 3d16ce9f7d411e135020915fde98a056859a1efa
   NitroMmkv: 1ff46eceb958298b1d7c013a6314432438b77a62
-  NitroModules: 34dac28aead549182b66023e9126336548b521a5
+  NitroModules: 8f762af6a2a12a66d23fbc7110e114bccaac247f
   RCTDeprecation: d69f6f20a20f669a0aa3115ab1109f28e98ae03e
   RCTRequired: 305a8212b9d90fa335b6a6a960e5212bbb434484
   RCTSwiftUI: 00bb3e8491b1368a47563ef0c8824601d9875ed3
@@ -2369,6 +2415,7 @@ SPEC CHECKSUMS:
   RCTTypeSafety: a5b1d1d5a4612ad3533a4a1302e158e0253b3dac
   React: 6dbd7825a18782848e8c62f1feb16b344cb17ac6
   React-callinvoker: 90c70d14c7ca646fdae3e25e8d9fbb0fbb20459c
+  React-Codegen: 4b8b4817cea7a54b83851d4c1f91f79aa73de30a
   React-Core: 4ad703355b1bccd3fcaf0b9a415be2eefe7e77a7
   React-Core-prebuilt: 82c8af7922257233158f36efe69c2515a3bd1206
   React-CoreModules: 1758a77f98c49750fbd746a7fe502466b973f0ae
@@ -2398,6 +2445,7 @@ SPEC CHECKSUMS:
   React-logger: 906faf87e9aeb8676b2243f490bb4e10cec4b6fc
   React-Mapbuffer: 2bb410418bfb328f22949227f7e95773757c0dc9
   React-microtasksnativemodule: 613449e4279f5ec223b2cc327483191c092a6a41
+  react-native-keep-awake: f1e9b76f4cf5665bf5547dcd86e8ee69823856cd
   react-native-safe-area-context: a2325922b8594ddd27f98fb13437aec126be2502
   React-NativeModulesApple: 45937c331fdba17eda34a57eae0b5700916c5a94
   React-networking: 671f2dfb2b0ebb29acebf63e3667119e99535c6f
@@ -2435,6 +2483,7 @@ SPEC CHECKSUMS:
   ReactNativeDependencies: 456482b698d86b106ff64e5146c939c8f895cd42
   RNBootSplash: 6168038330c842a9f6c8ac70ebdacac3daeac978
   RNGestureHandler: 8f110d136971c0d720c3fe78dc352ccfce1cde9c
+  RNGoogleMobileAds: e29a0409b9327ecef2ae8a1d88a13138e96ae947
   RNReanimated: f135e23c1949b766bec8fa6f0fe43103839dd749
   RNScreens: 63cc2156368ac1a8239e9131103c2fef901fc381
   RNWorklets: dbecc41a4461a49df8c65f3aabc4402ecf56389a

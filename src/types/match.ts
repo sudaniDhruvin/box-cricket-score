@@ -87,6 +87,11 @@ export interface MatchSummary {
   status?: MatchStatus;
   /** Box limit per innings (for display / future scorer). */
   oversPerSide?: number;
+  /**
+   * Wickets to lose before an innings is all out (e.g. 4 for 4-a-side, 10 for full sides).
+   * Omitted in older saves — treat as 10.
+   */
+  wicketsPerSide?: number;
   /** While live: which innings index is being scored (0 = first). */
   scoringActiveInnings?: 0 | 1;
 }

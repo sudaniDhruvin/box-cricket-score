@@ -96,9 +96,10 @@ export function formatMatchResult(m: MatchSummary): {
   loserDetail: string;
 } {
   if (m.status === 'live') {
+    const wk = m.wicketsPerSide ?? 10;
     const lim =
       m.oversPerSide != null
-        ? `${m.oversPerSide} overs per innings`
+        ? `${m.oversPerSide} overs · max ${wk} wkts per innings`
         : 'Overs limit not set';
     return {
       headline: 'Match in progress',

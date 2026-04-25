@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
 import { useUserStore } from '../store/useUserStore';
+import { OnboardingNativeAd } from '../components/OnboardingNativeAd';
 
 export function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -39,6 +40,8 @@ export function OnboardingScreen() {
           </View>
           <View style={styles.ball} />
         </View>
+
+        <OnboardingNativeAd />
 
         <Pressable
           style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}

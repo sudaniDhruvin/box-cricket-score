@@ -1,6 +1,6 @@
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import {
   Alert,
@@ -13,17 +13,49 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useInterstitialAd } from 'react-native-google-mobile-ads';
+import { HomeEmptyBannerAd } from '../components/HomeEmptyBannerAd';
+import { HomeListNativeAd } from '../components/HomeListNativeAd';
 import { MatchCard } from '../components/MatchCard';
 import type { MainStackParamList } from '../navigation/types';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import type { MatchSummary } from '../types/match';
+import type { MatchDaySection } from '../utils/groupMatchesByDay';
 import { groupMatchesByDay } from '../utils/groupMatchesByDay';
 import { fontSize, hp, wp } from '../utils';
+import { INTERSTITIAL_AD_UNIT_ID } from '../config/adUnitIds';
 
 /** Show FAB after user scrolls past the header CTA (~thumb-friendly). */
 const FAB_SHOW_Y = 140;
 const FAB_HIDE_Y = 72;
+
+type HomeListRow =
+  | { kind: 'match'; match: MatchSummary }
+  | { kind: 'ad'; id: string };
+
+function sectionsWithNativeAdsBetweenMatches(
+  sections: MatchDaySection[],
+): { title: string; sortKey: string; data: HomeListRow[] }[] {
+  return sections.map(section => {
+    const data: HomeListRow[] = [];
+    for (let i = 0; i < section.data.length; i += 1) {
+      const match = section.data[i];
+      data.push({ kind: 'match', match });
+      if (i < section.data.length - 1) {
+        data.push({
+          kind: 'ad',
+          id: `ad-${section.sortKey}-after-${match.id}`,
+        });
+      }
+    }
+    return { title: section.title, sortKey: section.sortKey, data };
+  });
+}
+
+function matchCountInSection(data: HomeListRow[]): number {
+  return data.filter(r => r.kind === 'match').length;
+}
 
 export function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -31,6 +63,10 @@ export function HomeScreen() {
     useNavigation<NativeStackNavigationProp<MainStackParamList, 'Home'>>();
   const [fabVisible, setFabVisible] = useState(false);
   const fabShownRef = useRef(false);
+  const pendingNavigateAfterInterstitialRef = useRef(false);
+  const { load, show, isLoaded, isClosed, error } = useInterstitialAd(
+    INTERSTITIAL_AD_UNIT_ID,
+  );
   const savedMatches = useMatchStore(s => s.matches);
   const removeMatch = useMatchStore(s => s.removeMatch);
 
@@ -54,9 +90,49 @@ export function HomeScreen() {
     [removeMatch],
   );
 
+  const proceedToNewMatch = useCallback(() => {
+    navigation.navigate('NewMatch', {});
+  }, [navigation]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    if (!isClosed || !pendingNavigateAfterInterstitialRef.current) {
+      return;
+    }
+    pendingNavigateAfterInterstitialRef.current = false;
+    proceedToNewMatch();
+    load();
+  }, [isClosed, proceedToNewMatch, load]);
+
+  useEffect(() => {
+    if (!error || !pendingNavigateAfterInterstitialRef.current) {
+      return;
+    }
+    pendingNavigateAfterInterstitialRef.current = false;
+    proceedToNewMatch();
+    load();
+  }, [error, proceedToNewMatch, load]);
+
+  const onPressStartNewInnings = useCallback(() => {
+    if (isLoaded) {
+      pendingNavigateAfterInterstitialRef.current = true;
+      show();
+    } else {
+      proceedToNewMatch();
+    }
+  }, [isLoaded, show, proceedToNewMatch]);
+
   const sections = useMemo(
     () => groupMatchesByDay(savedMatches),
     [savedMatches],
+  );
+
+  const listSections = useMemo(
+    () => sectionsWithNativeAdsBetweenMatches(sections),
+    [sections],
   );
 
   const totalMatches = useMemo(
@@ -64,15 +140,19 @@ export function HomeScreen() {
     [sections],
   );
 
-  const renderItem = ({ item }: ListRenderItemInfo<MatchSummary>) => (
-    <MatchCard
-      match={item}
-      onPress={() =>
-        navigation.navigate('MatchDetail', { matchId: item.id })
-      }
-      onLongPress={() => confirmDeleteMatch(item)}
-    />
-  );
+  const renderItem = ({ item }: ListRenderItemInfo<HomeListRow>) => {
+    if (item.kind === 'ad') {
+      return <HomeListNativeAd />;
+    }
+    const m = item.match;
+    return (
+      <MatchCard
+        match={m}
+        onPress={() => navigation.navigate('MatchDetail', { matchId: m.id })}
+        onLongPress={() => confirmDeleteMatch(m)}
+      />
+    );
+  };
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = e.nativeEvent.contentOffset.y;
@@ -88,26 +168,27 @@ export function HomeScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <SectionList
-        sections={sections}
-        keyExtractor={m => m.id}
+        sections={listSections}
+        keyExtractor={row => (row.kind === 'match' ? row.match.id : row.id)}
         renderItem={renderItem}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        renderSectionHeader={({ section }) => (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <Text style={styles.sectionCount}>
-              {section.data.length}{' '}
-              {section.data.length === 1 ? 'match' : 'matches'}
-            </Text>
-          </View>
-        )}
+        renderSectionHeader={({ section }) => {
+          const n = matchCountInSection(section.data);
+          return (
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <Text style={styles.sectionCount}>
+                {n} {n === 1 ? 'match' : 'matches'}
+              </Text>
+            </View>
+          );
+        }}
         stickySectionHeadersEnabled
         contentContainerStyle={[
           styles.listContent,
           {
-            paddingBottom:
-              Math.max(insets.bottom, hp(3)) + hp(10),
+            paddingBottom: Math.max(insets.bottom, hp(3)) + hp(10),
           },
         ]}
         showsVerticalScrollIndicator={false}
@@ -125,7 +206,8 @@ export function HomeScreen() {
                   borderless: true,
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="Open menu">
+                accessibilityLabel="Open menu"
+              >
                 <Text style={styles.menuIcon} pointerEvents="none">
                   {`\u2630`}
                 </Text>
@@ -134,11 +216,11 @@ export function HomeScreen() {
             <Text style={styles.kicker}>BOX CRICKET</Text>
             <Text style={styles.title}>Your matches</Text>
             <Text style={styles.subtitle}>
-              {totalMatches} saved {totalMatches === 1 ? 'match' : 'matches'}{' '}
-              — newest first under each day.
+              {totalMatches} saved {totalMatches === 1 ? 'match' : 'matches'} —
+              newest first under each day.
             </Text>
             <Pressable
-              onPress={() => navigation.navigate('NewMatch', {})}
+              onPress={onPressStartNewInnings}
               style={({ pressed }) => [
                 styles.startBtn,
                 pressed && styles.startBtnPressed,
@@ -148,7 +230,8 @@ export function HomeScreen() {
                 foreground: true,
               }}
               accessibilityRole="button"
-              accessibilityLabel="Start new innings. Create a match and begin scoring.">
+              accessibilityLabel="Start new innings. Create a match and begin scoring."
+            >
               <View style={styles.startBtnIconWrap}>
                 <Text style={styles.startBtnIcon}>+</Text>
               </View>
@@ -169,12 +252,15 @@ export function HomeScreen() {
               Create a match with Start new innings — it will show up here and
               stay saved on this device.
             </Text>
+            <View style={styles.emptyBannerWrap}>
+              <HomeEmptyBannerAd />
+            </View>
           </View>
         }
       />
       {fabVisible ? (
         <Pressable
-          onPress={() => navigation.navigate('NewMatch', {})}
+          onPress={onPressStartNewInnings}
           style={({ pressed }) => [
             styles.fab,
             {
@@ -187,7 +273,8 @@ export function HomeScreen() {
             borderless: true,
           }}
           accessibilityRole="button"
-          accessibilityLabel="Start new innings">
+          accessibilityLabel="Start new innings"
+        >
           <Text style={styles.fabPlus}>+</Text>
         </Pressable>
       ) : null}
@@ -378,5 +465,9 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     color: colors.background,
     marginTop: -hp(0.35),
+  },
+  emptyBannerWrap: {
+    marginTop: hp(4),
+    alignItems: 'center',
   },
 });

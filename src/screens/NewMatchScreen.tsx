@@ -29,6 +29,9 @@ type NewMatchRoute = RouteProp<MainStackParamList, 'NewMatch'>;
 const OVERS_OPTIONS = [6, 8, 10, 12] as const;
 const OVERS_MIN = 1;
 const OVERS_MAX = 50;
+const WICKET_PRESETS = [4, 6, 8, 10, 11] as const;
+const WICKETS_MIN = 1;
+const WICKETS_MAX = 20;
 /** Used when the user leaves a name field empty (inputs stay blank). */
 const DEFAULT_TEAM_A_NAME = 'Team A';
 const DEFAULT_TEAM_B_NAME = 'Team B';
@@ -45,6 +48,9 @@ export function NewMatchScreen() {
   const lastPresetRef = useRef(8);
   const [presetOvers, setPresetOvers] = useState<number | null>(8);
   const [customOvers, setCustomOvers] = useState('');
+  const lastWicketPresetRef = useRef(10);
+  const [presetWickets, setPresetWickets] = useState<number | null>(10);
+  const [customWickets, setCustomWickets] = useState('');
   const [batFirst, setBatFirst] = useState<0 | 1>(0);
   const [error, setError] = useState<string | null>(null);
   const [scoringMatchId, setScoringMatchId] = useState<string | null>(
@@ -52,7 +58,6 @@ export function NewMatchScreen() {
   );
 
   const startMatch = useCallback(() => {
-    console.log('startMatch');
     const a = teamA.trim() || DEFAULT_TEAM_A_NAME;
     const b = teamB.trim() || DEFAULT_TEAM_B_NAME;
     if (a.toLowerCase() === b.toLowerCase()) {
@@ -75,17 +80,46 @@ export function NewMatchScreen() {
       setError(`Overs must be between ${OVERS_MIN} and ${OVERS_MAX}.`);
       return;
     }
+
+    let wickets: number | null = presetWickets !== null ? presetWickets : null;
+    if (wickets === null) {
+      const wRaw = customWickets.trim();
+      if (wRaw !== '') {
+        const n = parseInt(wRaw, 10);
+        wickets = Number.isNaN(n) ? null : n;
+      }
+    }
+    if (wickets === null) {
+      setError('Pick a wickets preset or enter dismissals for all out.');
+      return;
+    }
+    if (wickets < WICKETS_MIN || wickets > WICKETS_MAX) {
+      setError(
+        `Wickets per innings must be between ${WICKETS_MIN} and ${WICKETS_MAX}.`,
+      );
+      return;
+    }
+
     setError(null);
     const match = createLiveMatch({
       teamAName: a,
       teamBName: b,
       oversPerSide: overs,
+      wicketsPerSide: wickets,
       batFirst,
     });
     addMatch(match);
-    console.log('match.id', match.id);
     setScoringMatchId(match.id);
-  }, [teamA, teamB, presetOvers, customOvers, batFirst, addMatch]);
+  }, [
+    teamA,
+    teamB,
+    presetOvers,
+    customOvers,
+    presetWickets,
+    customWickets,
+    batFirst,
+    addMatch,
+  ]);
 
   const teamALabel = teamA.trim() || DEFAULT_TEAM_A_NAME;
   const teamBLabel = teamB.trim() || DEFAULT_TEAM_B_NAME;
@@ -132,8 +166,9 @@ export function NewMatchScreen() {
           <View style={styles.accent} />
           <Text style={styles.title}>New match</Text>
           <Text style={styles.lead}>
-            Optionally name the teams (defaults to Team A / Team B), pick overs,
-            and who bats first. After you create the match, scoring opens on
+            Optionally name the teams (defaults to Team A / Team B), pick overs
+            and how many wickets count as all out (short games often use 4–6),
+            then who bats first. After you create the match, scoring opens on
             this screen; tap Home when you are done — the match stays on your
             list.
           </Text>
@@ -223,6 +258,64 @@ export function NewMatchScreen() {
             returnKeyType="done"
             onSubmitEditing={startMatch}
             accessibilityLabel="Custom overs per innings"
+          />
+
+          <Text style={styles.fieldLabel}>Wickets (all out)</Text>
+          <Text style={styles.fieldHintEx}>
+            Dismissals before the innings ends — e.g. 4 if only four can bat, or
+            10 for a full side.
+          </Text>
+          <View style={styles.oversRow}>
+            {WICKET_PRESETS.map(n => (
+              <Pressable
+                key={n}
+                onPress={() => {
+                  lastWicketPresetRef.current = n;
+                  setPresetWickets(n);
+                  setCustomWickets('');
+                  setError(null);
+                }}
+                style={({ pressed }) => [
+                  styles.oversChip,
+                  presetWickets === n && styles.oversChipActive,
+                  pressed && styles.oversChipPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: presetWickets === n }}
+                accessibilityLabel={`${n} wickets`}
+              >
+                <Text
+                  style={[
+                    styles.oversChipText,
+                    presetWickets === n && styles.oversChipTextActive,
+                  ]}
+                >
+                  {n}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.fieldHint}>Or enter another number</Text>
+          <TextInput
+            value={customWickets}
+            onChangeText={t => {
+              const digits = t.replace(/\D/g, '');
+              setCustomWickets(digits);
+              if (digits.length > 0) {
+                setPresetWickets(null);
+              } else {
+                setPresetWickets(lastWicketPresetRef.current);
+              }
+              setError(null);
+            }}
+            placeholder={`${WICKETS_MIN}–${WICKETS_MAX} (e.g. 5)`}
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+            keyboardType="number-pad"
+            maxLength={2}
+            returnKeyType="done"
+            onSubmitEditing={startMatch}
+            accessibilityLabel="Custom wickets for all out"
           />
 
           <Text style={styles.fieldLabel}>Who bats first?</Text>
@@ -362,6 +455,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textMuted,
     marginBottom: hp(0.6),
+  },
+  fieldHintEx: {
+    fontSize: fontSize(12),
+    lineHeight: fontSize(18),
+    fontWeight: '500',
+    color: colors.textMuted,
+    marginBottom: hp(0.8),
   },
   input: {
     borderWidth: 1,

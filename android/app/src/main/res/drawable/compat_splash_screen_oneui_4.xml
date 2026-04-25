@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Same drawable; library uses this on Samsung One UI 4. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android" android:opacity="opaque">
+  <item>
+    <bitmap
+      android:gravity="fill"
+      android:src="@drawable/splash_fullscreen_bg" />
+  </item>
+</layer-list>
