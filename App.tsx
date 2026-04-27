@@ -1,6 +1,6 @@
 import { useKeepAwake } from '@sayem314/react-native-keep-awake';
 import React, { useCallback, useEffect, useRef } from 'react';
-import { StyleSheet } from 'react-native';
+import { StatusBar, StyleSheet } from 'react-native';
 import BootSplash from 'react-native-bootsplash';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import mobileAds, { useAppOpenAd } from 'react-native-google-mobile-ads';
@@ -71,6 +71,7 @@ const App = () => {
   return (
     <GestureHandlerRootView style={styles.gestureRoot}>
       <SafeAreaProvider style={styles.container}>
+        <StatusBar barStyle="dark-content" />
         <RootNavigator />
       </SafeAreaProvider>
     </GestureHandlerRootView>

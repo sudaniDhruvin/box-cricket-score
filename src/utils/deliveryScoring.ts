@@ -9,8 +9,9 @@ export function countsAsLegalBall(d: Delivery): boolean {
 export function tallyDeliveryRuns(d: Delivery): number {
   switch (d.type) {
     case 'dot':
-    case 'wicket':
       return 0;
+    case 'wicket':
+      return d.wicketRuns ?? 0;
     case 'single':
       return 1;
     case 'two':

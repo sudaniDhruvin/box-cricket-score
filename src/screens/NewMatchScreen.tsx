@@ -6,6 +6,7 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useRef, useState } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -22,6 +23,7 @@ import { colors } from '../theme/colors';
 import { LiveScoringPanel } from '../components/LiveScoringPanel';
 import { createLiveMatch } from '../utils/createLiveMatch';
 import { fontSize, hp, wp } from '../utils';
+import { PNGs } from '../assets/images/pngs';
 
 type Nav = NativeStackNavigationProp<MainStackParamList, 'NewMatch'>;
 type NewMatchRoute = RouteProp<MainStackParamList, 'NewMatch'>;
@@ -145,7 +147,7 @@ export function NewMatchScreen() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Text style={styles.backChevron}>{'\u2039'}</Text>
+          <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
           <Text style={styles.backLabel}>Home</Text>
         </Pressable>
       </View>
@@ -399,24 +401,23 @@ const styles = StyleSheet.create({
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     paddingVertical: hp(1),
     paddingHorizontal: wp(2),
     borderRadius: wp(2),
+    gap: wp(1),
   },
   backBtnPressed: {
     backgroundColor: colors.primaryFaint,
   },
-  backChevron: {
-    fontSize: fontSize(28),
-    fontWeight: '300',
-    color: colors.primary,
-    marginRight: wp(0.5),
+  backArrow: {
+    width: wp(4),
+    height: wp(4),
   },
   backLabel: {
     fontSize: fontSize(16),
     fontWeight: '700',
     color: colors.primary,
+    includeFontPadding: false,
   },
   scroll: {
     paddingHorizontal: wp(5),

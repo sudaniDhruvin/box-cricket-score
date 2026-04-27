@@ -42,6 +42,8 @@ export interface Delivery {
   /** Runs scored off the no-ball in addition to the 1 penalty (0 = none). */
   noBallRuns?: number;
   wicketDismissal?: WicketDismissal;
+  /** Team runs completed on this ball before the wicket (e.g. run-out after one run). */
+  wicketRuns?: number;
 }
 
 export interface OverReplay {

@@ -128,13 +128,28 @@ function applyStats(inn: TeamInnings, d: Delivery): TeamInnings {
   return next;
 }
 
-export function wicketDelivery(dismissal: WicketDismissal): Delivery {
-  const label = dismissal === 'run-out' ? 'RO' : 'W';
-  return {
+export type WicketDeliveryOpts = {
+  /** Batting-team runs completed on this delivery before the run-out (default 0). */
+  runOutRuns?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+};
+
+export function wicketDelivery(
+  dismissal: WicketDismissal,
+  opts?: WicketDeliveryOpts,
+): Delivery {
+  const roRuns =
+    dismissal === 'run-out' ? (opts?.runOutRuns ?? 0) : 0;
+  const label =
+    dismissal === 'run-out' ? (roRuns > 0 ? `RO+${roRuns}` : 'RO') : 'W';
+  const d: Delivery = {
     type: 'wicket',
     label,
     wicketDismissal: dismissal,
   };
+  if (roRuns > 0) {
+    d.wicketRuns = roRuns;
+  }
+  return d;
 }
 
 export function runsDelivery(runs: 0 | 1 | 2 | 3 | 4 | 5 | 6): Delivery {

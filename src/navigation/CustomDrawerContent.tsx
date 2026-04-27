@@ -177,6 +177,12 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.brandBlock}>
+        <Pressable
+          style={styles.closeIconWrap}
+          onPress={() => navigation.closeDrawer()}
+        >
+          <Image source={PNGs.CROSS} style={styles.closeIcon} />
+        </Pressable>
         <View style={styles.logoWrap}>
           <Image
             source={PNGs.LOGO}
@@ -225,6 +231,15 @@ const styles = StyleSheet.create({
   },
   brandBlock: {
     marginBottom: hp(2),
+  },
+  closeIconWrap: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+  },
+  closeIcon: {
+    width: wp(4),
+    height: wp(4),
   },
   logoWrap: {
     width: '100%',

@@ -1,6 +1,12 @@
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import {
   Alert,
@@ -195,6 +201,7 @@ export function HomeScreen() {
         ListHeaderComponent={
           <View style={styles.header}>
             <View style={styles.headerRow}>
+              <Text style={styles.kicker}>BOX CRICKET</Text>
               <Pressable
                 onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
                 style={({ pressed }) => [
@@ -213,7 +220,6 @@ export function HomeScreen() {
                 </Text>
               </Pressable>
             </View>
-            <Text style={styles.kicker}>BOX CRICKET</Text>
             <Text style={styles.title}>Your matches</Text>
             <Text style={styles.subtitle}>
               {totalMatches} saved {totalMatches === 1 ? 'match' : 'matches'} —
@@ -314,8 +320,7 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: -wp(1.5),
-    marginBottom: hp(0.4),
+    justifyContent: 'space-between',
   },
   menuBtn: {
     padding: wp(2.5),
@@ -334,7 +339,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1.2,
     color: colors.primary,
-    marginBottom: hp(0.8),
+    includeFontPadding: false,
   },
   title: {
     fontSize: fontSize(28),

@@ -2,6 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
 import {
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { MainStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
+import { PNGs } from '../assets/images/pngs';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -28,7 +30,13 @@ const PRIVACY_PARAGRAPHS: string[] = [
   'If you have questions about how your data is handled, contact us using the details provided with the app or on our website (if applicable).',
 ];
 
-function LegalBody({ title, paragraphs }: { title: string; paragraphs: string[] }) {
+function LegalBody({
+  title,
+  paragraphs,
+}: {
+  title: string;
+  paragraphs: string[];
+}) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
 
@@ -44,7 +52,7 @@ function LegalBody({ title, paragraphs }: { title: string; paragraphs: string[] 
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Text style={styles.backChevron}>{'\u2039'}</Text>
+          <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
           <Text style={styles.backLabel}>Back</Text>
         </Pressable>
       </View>
@@ -69,9 +77,7 @@ function LegalBody({ title, paragraphs }: { title: string; paragraphs: string[] 
 }
 
 export function TermsScreen() {
-  return (
-    <LegalBody title="Terms & conditions" paragraphs={TERMS_PARAGRAPHS} />
-  );
+  return <LegalBody title="Terms & conditions" paragraphs={TERMS_PARAGRAPHS} />;
 }
 
 export function PrivacyScreen() {
@@ -96,20 +102,20 @@ const styles = StyleSheet.create({
     paddingVertical: hp(1),
     paddingHorizontal: wp(2),
     borderRadius: wp(2),
+    gap: wp(1),
   },
   backBtnPressed: {
     backgroundColor: colors.primaryFaint,
-  },
-  backChevron: {
-    fontSize: fontSize(28),
-    fontWeight: '300',
-    color: colors.primary,
-    marginRight: wp(0.5),
   },
   backLabel: {
     fontSize: fontSize(16),
     fontWeight: '700',
     color: colors.primary,
+    includeFontPadding: false,
+  },
+  backArrow: {
+    width: wp(4),
+    height: wp(4),
   },
   scroll: {
     paddingHorizontal: wp(5),

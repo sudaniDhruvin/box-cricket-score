@@ -3,6 +3,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
+  Image,
   LayoutAnimation,
   Platform,
   Pressable,
@@ -27,6 +28,7 @@ import {
 } from '../utils/cricketFormat';
 import { findSavedMatch } from '../utils/matchLookup';
 import { fontSize, hp, wp } from '../utils';
+import { PNGs } from '../assets/images/pngs';
 
 if (
   Platform.OS === 'android' &&
@@ -110,10 +112,8 @@ function TeamTabs({
   activeTab: 0 | 1;
   onChange: (tab: 0 | 1) => void;
 }) {
-  const win1 =
-    winnerTeamId != null && inn1.teamId === winnerTeamId;
-  const win2 =
-    winnerTeamId != null && inn2.teamId === winnerTeamId;
+  const win1 = winnerTeamId != null && inn1.teamId === winnerTeamId;
+  const win2 = winnerTeamId != null && inn2.teamId === winnerTeamId;
 
   return (
     <View style={styles.tabSection}>
@@ -131,22 +131,26 @@ function TeamTabs({
             pressed && styles.tabHitPressed,
           ]}
           accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === 0 }}>
+          accessibilityState={{ selected: activeTab === 0 }}
+        >
           <View
             style={[
               styles.tabSegment,
               activeTab === 0 && styles.tabSegmentActive,
-            ]}>
+            ]}
+          >
             <View
               style={[
                 styles.tabBadge,
                 activeTab === 0 ? styles.tabBadgeActive : styles.tabBadgeIdle,
-              ]}>
+              ]}
+            >
               <Text
                 style={[
                   styles.tabBadgeLetter,
                   activeTab === 0 && styles.tabBadgeLetterActive,
-                ]}>
+                ]}
+              >
                 A
               </Text>
             </View>
@@ -156,7 +160,8 @@ function TeamTabs({
                   style={[
                     styles.tabInningsTag,
                     activeTab === 0 && styles.tabInningsTagActive,
-                  ]}>
+                  ]}
+                >
                   1st
                 </Text>
                 {win1 ? (
@@ -170,7 +175,8 @@ function TeamTabs({
                   styles.tabTeamLabel,
                   activeTab === 0 && styles.tabTeamLabelActive,
                 ]}
-                numberOfLines={1}>
+                numberOfLines={1}
+              >
                 {inn1.teamName}
               </Text>
             </View>
@@ -189,22 +195,26 @@ function TeamTabs({
             pressed && styles.tabHitPressed,
           ]}
           accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === 1 }}>
+          accessibilityState={{ selected: activeTab === 1 }}
+        >
           <View
             style={[
               styles.tabSegment,
               activeTab === 1 && styles.tabSegmentActive,
-            ]}>
+            ]}
+          >
             <View
               style={[
                 styles.tabBadge,
                 activeTab === 1 ? styles.tabBadgeActive : styles.tabBadgeIdle,
-              ]}>
+              ]}
+            >
               <Text
                 style={[
                   styles.tabBadgeLetter,
                   activeTab === 1 && styles.tabBadgeLetterActive,
-                ]}>
+                ]}
+              >
                 B
               </Text>
             </View>
@@ -214,7 +224,8 @@ function TeamTabs({
                   style={[
                     styles.tabInningsTag,
                     activeTab === 1 && styles.tabInningsTagActive,
-                  ]}>
+                  ]}
+                >
                   2nd
                 </Text>
                 {win2 ? (
@@ -228,7 +239,8 @@ function TeamTabs({
                   styles.tabTeamLabel,
                   activeTab === 1 && styles.tabTeamLabelActive,
                 ]}
-                numberOfLines={1}>
+                numberOfLines={1}
+              >
                 {inn2.teamName}
               </Text>
             </View>
@@ -287,8 +299,9 @@ export function MatchDetailScreen() {
             pressed && styles.backBtnPressed,
           ]}
           accessibilityRole="button"
-          accessibilityLabel="Go back">
-          <Text style={styles.backChevron}>{'\u2039'}</Text>
+          accessibilityLabel="Go back"
+        >
+          <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
           <Text style={styles.backLabel}>Matches</Text>
         </Pressable>
       </View>
@@ -298,7 +311,8 @@ export function MatchDetailScreen() {
           styles.scroll,
           { paddingBottom: Math.max(insets.bottom, hp(4)) },
         ]}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.accentRule} />
 
         <Text style={styles.screenTitle}>Match summary</Text>
@@ -310,7 +324,8 @@ export function MatchDetailScreen() {
         <View style={styles.overviewCard}>
           <View style={styles.overviewBadgeRow}>
             <Text
-              style={live ? styles.overviewLiveBadge : styles.overviewFinished}>
+              style={live ? styles.overviewLiveBadge : styles.overviewFinished}
+            >
               {live ? 'Live' : 'Finished'}
             </Text>
           </View>
@@ -338,7 +353,8 @@ export function MatchDetailScreen() {
               style={[
                 styles.selectedScore,
                 !activeIsWinner && styles.overviewLoser,
-              ]}>
+              ]}
+            >
               {activeInnings.runs}/{activeInnings.wickets}
               <Text style={styles.overviewOvers}>
                 {' '}
@@ -396,7 +412,8 @@ export function MatchDetailScreen() {
                 pressed && styles.continueScoreCtaPressed,
               ]}
               accessibilityRole="button"
-              accessibilityLabel="Continue scoring this match">
+              accessibilityLabel="Continue scoring this match"
+            >
               <Text style={styles.continueScoreCtaText}>Continue scoring</Text>
               <Text style={styles.continueScoreCtaChev}>{'\u203A'}</Text>
             </Pressable>
@@ -407,7 +424,9 @@ export function MatchDetailScreen() {
         <InningsDetail
           label={inningsLabel}
           innings={activeInnings}
-          isWinner={matchComplete && activeInnings.teamId === match.winnerTeamId}
+          isWinner={
+            matchComplete && activeInnings.teamId === match.winnerTeamId
+          }
         />
       </ScrollView>
     </View>
@@ -432,21 +451,20 @@ const styles = StyleSheet.create({
     paddingVertical: hp(1),
     paddingHorizontal: wp(2),
     borderRadius: wp(2),
+    gap: wp(1),
   },
   backBtnPressed: {
     backgroundColor: colors.primaryFaint,
-  },
-  backChevron: {
-    fontSize: fontSize(28),
-    fontWeight: '300',
-    color: colors.primary,
-    marginRight: wp(0.5),
-    marginTop: -hp(0.2),
   },
   backLabel: {
     fontSize: fontSize(16),
     fontWeight: '700',
     color: colors.primary,
+    includeFontPadding: false,
+  },
+  backArrow: {
+    width: wp(4),
+    height: wp(4),
   },
   scroll: {
     paddingHorizontal: wp(5),
@@ -566,6 +584,7 @@ const styles = StyleSheet.create({
       },
       default: {},
     }),
+    borderRadius: wp(2),
   },
   tabBadge: {
     width: wp(10),

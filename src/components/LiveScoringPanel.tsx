@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  Image,
   LayoutAnimation,
   Modal,
   Platform,
@@ -41,6 +42,7 @@ import {
 import { countsAsLegalBall, tallyDeliveryRuns } from '../utils/deliveryScoring';
 import { fontSize, hp, wp } from '../utils';
 import { StickyBottomBannerAd } from './StickyBottomBannerAd';
+import { PNGs } from '../assets/images/pngs';
 
 function cloneMatch(m: MatchSummary): MatchSummary {
   return JSON.parse(JSON.stringify(m)) as MatchSummary;
@@ -130,6 +132,9 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
   const [recentExpanded, setRecentExpanded] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [wicketOpen, setWicketOpen] = useState(false);
+  const [wicketModalPhase, setWicketModalPhase] = useState<
+    'dismissal' | 'run-out-runs'
+  >('dismissal');
   const [overCompleteModal, setOverCompleteModal] = useState<OverReplay | null>(
     null,
   );
@@ -168,11 +173,7 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
     if (cap == null || cap <= 0) {
       return false;
     }
-    return isInningsComplete(
-      match.innings[0],
-      cap,
-      wicketsCapForMatch(match),
-    );
+    return isInningsComplete(match.innings[0], cap, wicketsCapForMatch(match));
   }, [match]);
 
   const firstInningsBreakTagline = useMemo(() => {
@@ -186,7 +187,9 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
     }
     const cap = match.oversPerSide;
     if (cap != null) {
-      return `All ${cap} ${cap === 1 ? 'over' : 'overs'} for this innings are bowled.`;
+      return `All ${cap} ${
+        cap === 1 ? 'over' : 'overs'
+      } for this innings are bowled.`;
     }
     return 'This innings is complete.';
   }, [match]);
@@ -225,9 +228,7 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
           const target = firstRuns + 1;
           const need = Math.max(0, target - activeInn.runs);
           const rrr =
-            need > 0 &&
-            legalBallsRemaining != null &&
-            legalBallsRemaining > 0
+            need > 0 && legalBallsRemaining != null && legalBallsRemaining > 0
               ? (need * 6) / legalBallsRemaining
               : null;
           return { target, need, rrr };
@@ -366,12 +367,9 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
     });
   }, [matchId, updateMatch]);
 
-
   const overCompleteStats = useMemo(
     () =>
-      overCompleteModal != null
-        ? overReplayOverview(overCompleteModal)
-        : null,
+      overCompleteModal != null ? overReplayOverview(overCompleteModal) : null,
     [overCompleteModal],
   );
 
@@ -408,7 +406,7 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
           accessibilityRole="button"
           accessibilityLabel="Back to home"
         >
-          <Text style={styles.backChev}>{'\u2039'}</Text>
+          <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
           <Text style={styles.backLbl}>Home</Text>
         </Pressable>
         <View style={styles.toolbarRight}>
@@ -444,273 +442,280 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-        <View style={styles.inningsBanner}>
-          <Text style={styles.inningsTag}>
-            {activeIdx === 0 ? '1st innings' : '2nd innings'}
-          </Text>
-          <Text style={styles.battingName} numberOfLines={1}>
-            {activeInn.teamName}
-          </Text>
-          <Text style={styles.limitHint}>
-            {showStartSecondCta
-              ? 'Innings complete'
-              : `${oversCap} overs · ${activeInn.wickets}/${wkCap} wkts`}
-          </Text>
-        </View>
-
-        <View style={styles.scoreCard}>
-          <View style={styles.scoreCardRow}>
-            <View>
-              <Text style={styles.scoreHuge}>
-                {activeInn.runs}/{activeInn.wickets}
-              </Text>
-              <Text style={styles.scoreSub}>runs / wickets</Text>
-            </View>
-            <View style={styles.scoreMetaCol}>
-              <Text style={styles.scoreMetaLbl}>Overs</Text>
-              <Text style={styles.scoreMetaVal}>
-                {formatOvers(activeInn.overs)}
-              </Text>
-              <Text style={styles.scoreMetaLbl}>Legal this over</Text>
-              <Text style={styles.scoreMetaVal}>{legalInCurrent}/6</Text>
-            </View>
-          </View>
-          <View style={styles.scoreCardStats}>
-            {chase != null ? (
-              <>
-                <View style={styles.scoreCardStatCell}>
-                  <Text style={styles.scoreCardStatLbl}>Target</Text>
-                  <Text style={styles.scoreCardStatVal}>{chase.target}</Text>
-                </View>
-                <View style={styles.scoreCardStatCell}>
-                  <Text style={styles.scoreCardStatLbl}>Need</Text>
-                  <Text style={styles.scoreCardStatVal}>
-                    {chase.need === 0 ? '0' : chase.need}
-                  </Text>
-                </View>
-                <View style={styles.scoreCardStatCell}>
-                  <Text style={styles.scoreCardStatLbl}>CRR</Text>
-                  <Text style={styles.scoreCardStatVal}>
-                    {formatRunRate(currentRR)}
-                  </Text>
-                </View>
-                <View style={styles.scoreCardStatCell}>
-                  <Text style={styles.scoreCardStatLbl}>RRR</Text>
-                  <Text style={styles.scoreCardStatVal}>
-                    {chase.need === 0 ? '—' : formatRunRate(chase.rrr)}
-                  </Text>
-                </View>
-              </>
-            ) : (
-              <>
-                <View style={styles.scoreCardStatCell}>
-                  <Text style={styles.scoreCardStatLbl}>Run rate</Text>
-                  <Text style={styles.scoreCardStatVal}>
-                    {formatRunRate(currentRR)}
-                  </Text>
-                </View>
-                {oversLeftDisplay != null ? (
-                  <View style={styles.scoreCardStatCell}>
-                    <Text style={styles.scoreCardStatLbl}>Overs left</Text>
-                    <Text style={styles.scoreCardStatVal}>
-                      {oversLeftDisplay}
-                    </Text>
-                  </View>
-                ) : null}
-              </>
-            )}
-          </View>
-        </View>
-
-        <Text style={styles.sectionKicker}>Current over</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.currentOverRow}
-        >
-          {currentBalls.length === 0 ? (
-            <Text style={styles.emptyCur}>No balls yet</Text>
-          ) : (
-            currentBalls.map((d, i) => <MiniBall key={`cb-${i}`} d={d} />)
-          )}
-        </ScrollView>
-
-        {recentOvers.length > 0 ? (
-          <View style={styles.recentBlock}>
-            <Pressable
-              onPress={toggleRecent}
-              style={({ pressed }) => [
-                styles.recentHeader,
-                pressed && styles.backPressed,
-              ]}
-            >
-              <Text style={styles.recentTitle}>Recent overs</Text>
-              <Text style={styles.recentCaret}>
-                {recentExpanded ? '\u25B2' : '\u25BC'}
-              </Text>
-            </Pressable>
-            {!recentExpanded ? (
-              <Text style={styles.recentCollapsed} numberOfLines={2}>
-                {recentOvers
-                  .map(o => {
-                    const r = o.deliveries.reduce(
-                      (s, x) => s + tallyDeliveryRuns(x),
-                      0,
-                    );
-                    return `O${o.overNumber}: ${r} runs`;
-                  })
-                  .join(' · ')}
-              </Text>
-            ) : (
-              <View style={styles.recentExpandedBox}>
-                {recentOvers.map(o => (
-                  <View key={o.overNumber} style={styles.recentOverLine}>
-                    <Text style={styles.recentOverLbl}>
-                      Over {o.overNumber}
-                    </Text>
-                    <View style={styles.recentChips}>
-                      {o.deliveries.map((d, i) => (
-                        <MiniBall key={`${o.overNumber}-${i}`} d={d} />
-                      ))}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        ) : null}
-
-        {showStartSecondCta ? (
-          <View style={styles.inningsCompleteHint}>
-            <Text style={styles.inningsCompleteHintText}>
-              First innings is complete. When you are ready, start the second
-              innings using the button below.
+          <View style={styles.inningsBanner}>
+            <Text style={styles.inningsTag}>
+              {activeIdx === 0 ? '1st innings' : '2nd innings'}
+            </Text>
+            <Text style={styles.battingName} numberOfLines={1}>
+              {activeInn.teamName}
+            </Text>
+            <Text style={styles.limitHint}>
+              {showStartSecondCta
+                ? 'Innings complete'
+                : `${oversCap} overs · ${activeInn.wickets}/${wkCap} wkts`}
             </Text>
           </View>
-        ) : (
-          <>
-            <View style={styles.runsSectionHeader}>
-              <Text
-                style={styles.runsSectionKicker}
-                {...(Platform.OS === 'android'
-                  ? { includeFontPadding: false }
-                  : {})}
+
+          <View style={styles.scoreCard}>
+            <View style={styles.scoreCardRow}>
+              <View>
+                <Text style={styles.scoreHuge}>
+                  {activeInn.runs}/{activeInn.wickets}
+                </Text>
+                <Text style={styles.scoreSub}>runs / wickets</Text>
+              </View>
+              <View style={styles.scoreMetaCol}>
+                <Text style={styles.scoreMetaLbl}>Overs</Text>
+                <Text style={styles.scoreMetaVal}>
+                  {formatOvers(activeInn.overs)}
+                </Text>
+                <Text style={styles.scoreMetaLbl}>Legal this over</Text>
+                <Text style={styles.scoreMetaVal}>{legalInCurrent}/6</Text>
+              </View>
+            </View>
+            <View style={styles.scoreCardStats}>
+              {chase != null ? (
+                <>
+                  <View style={styles.scoreCardStatCell}>
+                    <Text style={styles.scoreCardStatLbl}>Target</Text>
+                    <Text style={styles.scoreCardStatVal}>{chase.target}</Text>
+                  </View>
+                  <View style={styles.scoreCardStatCell}>
+                    <Text style={styles.scoreCardStatLbl}>Need</Text>
+                    <Text style={styles.scoreCardStatVal}>
+                      {chase.need === 0 ? '0' : chase.need}
+                    </Text>
+                  </View>
+                  <View style={styles.scoreCardStatCell}>
+                    <Text style={styles.scoreCardStatLbl}>CRR</Text>
+                    <Text style={styles.scoreCardStatVal}>
+                      {formatRunRate(currentRR)}
+                    </Text>
+                  </View>
+                  <View style={styles.scoreCardStatCell}>
+                    <Text style={styles.scoreCardStatLbl}>RRR</Text>
+                    <Text style={styles.scoreCardStatVal}>
+                      {chase.need === 0 ? '—' : formatRunRate(chase.rrr)}
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={styles.scoreCardStatCell}>
+                    <Text style={styles.scoreCardStatLbl}>Run rate</Text>
+                    <Text style={styles.scoreCardStatVal}>
+                      {formatRunRate(currentRR)}
+                    </Text>
+                  </View>
+                  {oversLeftDisplay != null ? (
+                    <View style={styles.scoreCardStatCell}>
+                      <Text style={styles.scoreCardStatLbl}>Overs left</Text>
+                      <Text style={styles.scoreCardStatVal}>
+                        {oversLeftDisplay}
+                      </Text>
+                    </View>
+                  ) : null}
+                </>
+              )}
+            </View>
+          </View>
+
+          <Text style={styles.sectionKicker}>Current over</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.currentOverRow}
+          >
+            {currentBalls.length === 0 ? (
+              <Text style={styles.emptyCur}>No balls yet</Text>
+            ) : (
+              currentBalls.map((d, i) => <MiniBall key={`cb-${i}`} d={d} />)
+            )}
+          </ScrollView>
+
+          {recentOvers.length > 0 ? (
+            <View style={styles.recentBlock}>
+              <Pressable
+                onPress={toggleRecent}
+                style={({ pressed }) => [
+                  styles.recentHeader,
+                  pressed && styles.backPressed,
+                ]}
               >
-                Runs off the bat 00
+                <Text style={styles.recentTitle}>Recent overs</Text>
+                <Text style={styles.recentCaret}>
+                  {recentExpanded ? '\u25B2' : '\u25BC'}
+                </Text>
+              </Pressable>
+              {!recentExpanded ? (
+                <Text style={styles.recentCollapsed} numberOfLines={2}>
+                  {recentOvers
+                    .map(o => {
+                      const r = o.deliveries.reduce(
+                        (s, x) => s + tallyDeliveryRuns(x),
+                        0,
+                      );
+                      return `O${o.overNumber}: ${r} runs`;
+                    })
+                    .join(' · ')}
+                </Text>
+              ) : (
+                <View style={styles.recentExpandedBox}>
+                  {recentOvers.map(o => (
+                    <View key={o.overNumber} style={styles.recentOverLine}>
+                      <Text style={styles.recentOverLbl}>
+                        Over {o.overNumber}
+                      </Text>
+                      <View style={styles.recentChips}>
+                        {o.deliveries.map((d, i) => (
+                          <MiniBall key={`${o.overNumber}-${i}`} d={d} />
+                        ))}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          ) : null}
+
+          {showStartSecondCta ? (
+            <View style={styles.inningsCompleteHint}>
+              <Text style={styles.inningsCompleteHintText}>
+                First innings is complete. When you are ready, start the second
+                innings using the button below.
               </Text>
             </View>
-            <View style={styles.runsGrid}>
-              {RUNS_ROW.map(r => (
-                <Pressable
-                  key={r}
-                  onPress={() => apply(runsDelivery(r))}
-                  style={({ pressed }) => [
-                    styles.runCell,
-                    pressed && styles.runCellPressed,
-                  ]}
+          ) : (
+            <>
+              <View style={styles.runsSectionHeader}>
+                <Text
+                  style={styles.runsSectionKicker}
+                  {...(Platform.OS === 'android'
+                    ? { includeFontPadding: false }
+                    : {})}
                 >
-                  <Text
-                    style={styles.runCellText}
-                    {...(Platform.OS === 'android'
-                      ? { includeFontPadding: false }
-                      : {})}
+                  Runs off the bat 00
+                </Text>
+              </View>
+              <View style={styles.runsGrid}>
+                {RUNS_ROW.map(r => (
+                  <Pressable
+                    key={r}
+                    onPress={() => apply(runsDelivery(r))}
+                    style={({ pressed }) => [
+                      styles.runCell,
+                      pressed && styles.runCellPressed,
+                    ]}
                   >
-                    {r}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+                    <Text
+                      style={styles.runCellText}
+                      {...(Platform.OS === 'android'
+                        ? { includeFontPadding: false }
+                        : {})}
+                    >
+                      {r}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
 
-            <Text style={styles.sectionKicker}>Extras</Text>
-            <View style={styles.extrasRow}>
-              <Pressable
-                onPress={() => apply({ type: 'wide', label: 'Wd', wideRuns: 0 })}
-                style={({ pressed }) => [
-                  styles.extraBtn,
-                  { borderColor: colors.ballWide },
-                  pressed && styles.runCellPressed,
-                ]}
-              >
-                <Text style={styles.extraBtnText}>Wd</Text>
-              </Pressable>
-              <Pressable
-                onPress={() =>
-                  apply({ type: 'no-ball', label: 'Nb', noBallRuns: 0 })
-                }
-                style={({ pressed }) => [
-                  styles.extraBtn,
-                  { borderColor: colors.ballNoBall },
-                  pressed && styles.runCellPressed,
-                ]}
-              >
-                <Text style={styles.extraBtnText}>Nb</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => apply({ type: 'bye', label: 'By' })}
-                style={({ pressed }) => [
-                  styles.extraBtn,
-                  { borderColor: colors.ballBye },
-                  pressed && styles.runCellPressed,
-                ]}
-              >
-                <Text style={styles.extraBtnText}>By</Text>
-              </Pressable>
-            </View>
-            <View style={styles.extrasSubRow}>
-              {[1, 2, 4].map(n => (
+              <Text style={styles.sectionKicker}>Extras</Text>
+              <View style={styles.extrasRow}>
                 <Pressable
-                  key={`wd${n}`}
                   onPress={() =>
-                    apply({
-                      type: 'wide',
-                      label: `Wd+${n}`,
-                      wideRuns: n,
-                    })
+                    apply({ type: 'wide', label: 'Wd', wideRuns: 0 })
                   }
                   style={({ pressed }) => [
-                    styles.extraSmall,
-                    { borderColor: colors.ballWideExtra },
+                    styles.extraBtn,
+                    { borderColor: colors.ballWide },
                     pressed && styles.runCellPressed,
                   ]}
                 >
-                  <Text style={styles.extraSmallText}>Wd+{n}</Text>
+                  <Text style={styles.extraBtnText}>Wd</Text>
                 </Pressable>
-              ))}
-              {[1, 4, 6].map(n => (
                 <Pressable
-                  key={`nb${n}`}
                   onPress={() =>
-                    apply({
-                      type: 'no-ball',
-                      label: `Nb+${n}`,
-                      noBallRuns: n,
-                    })
+                    apply({ type: 'no-ball', label: 'Nb', noBallRuns: 0 })
                   }
                   style={({ pressed }) => [
-                    styles.extraSmall,
-                    { borderColor: colors.ballNoBallRuns },
+                    styles.extraBtn,
+                    { borderColor: colors.ballNoBall },
                     pressed && styles.runCellPressed,
                   ]}
                 >
-                  <Text style={styles.extraSmallText}>Nb+{n}</Text>
+                  <Text style={styles.extraBtnText}>Nb</Text>
                 </Pressable>
-              ))}
-            </View>
+                <Pressable
+                  onPress={() => apply({ type: 'bye', label: 'By' })}
+                  style={({ pressed }) => [
+                    styles.extraBtn,
+                    { borderColor: colors.ballBye },
+                    pressed && styles.runCellPressed,
+                  ]}
+                >
+                  <Text style={styles.extraBtnText}>By</Text>
+                </Pressable>
+              </View>
+              <View style={styles.extrasSubRow}>
+                {[1, 2, 4].map(n => (
+                  <Pressable
+                    key={`wd${n}`}
+                    onPress={() =>
+                      apply({
+                        type: 'wide',
+                        label: `Wd+${n}`,
+                        wideRuns: n,
+                      })
+                    }
+                    style={({ pressed }) => [
+                      styles.extraSmall,
+                      { borderColor: colors.ballWideExtra },
+                      pressed && styles.runCellPressed,
+                    ]}
+                  >
+                    <Text style={styles.extraSmallText}>Wd+{n}</Text>
+                  </Pressable>
+                ))}
+                {[1, 4, 6].map(n => (
+                  <Pressable
+                    key={`nb${n}`}
+                    onPress={() =>
+                      apply({
+                        type: 'no-ball',
+                        label: `Nb+${n}`,
+                        noBallRuns: n,
+                      })
+                    }
+                    style={({ pressed }) => [
+                      styles.extraSmall,
+                      { borderColor: colors.ballNoBallRuns },
+                      pressed && styles.runCellPressed,
+                    ]}
+                  >
+                    <Text style={styles.extraSmallText}>Nb+{n}</Text>
+                  </Pressable>
+                ))}
+              </View>
 
-            <Text style={styles.sectionKicker}>Wicket</Text>
-            <Pressable
-              onPress={() => setWicketOpen(true)}
-              style={({ pressed }) => [
-                styles.wicketBtn,
-                pressed && styles.runCellPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Log wicket"
-            >
-              <Text style={styles.wicketBtnText}>Wicket — choose dismissal</Text>
-            </Pressable>
-          </>
-        )}
+              <Text style={styles.sectionKicker}>Wicket</Text>
+              <Pressable
+                onPress={() => {
+                  setWicketModalPhase('dismissal');
+                  setWicketOpen(true);
+                }}
+                style={({ pressed }) => [
+                  styles.wicketBtn,
+                  pressed && styles.runCellPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Log wicket"
+              >
+                <Text style={styles.wicketBtnText}>
+                  Wicket — choose dismissal
+                </Text>
+              </Pressable>
+            </>
+          )}
         </ScrollView>
         <View
           style={[
@@ -726,38 +731,89 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
         visible={wicketOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => setWicketOpen(false)}
+        onRequestClose={() => {
+          setWicketOpen(false);
+          setWicketModalPhase('dismissal');
+        }}
       >
         <Pressable
           style={styles.modalBackdrop}
-          onPress={() => setWicketOpen(false)}
+          onPress={() => {
+            setWicketOpen(false);
+            setWicketModalPhase('dismissal');
+          }}
         >
           <Pressable
             style={styles.modalSheet}
             onPress={e => e.stopPropagation()}
           >
-            <Text style={styles.modalTitle}>How was the batter out?</Text>
-            {WICKET_OPTIONS.map(opt => (
-              <Pressable
-                key={opt.id}
-                onPress={() => {
-                  setWicketOpen(false);
-                  apply(wicketDelivery(opt.id));
-                }}
-                style={({ pressed }) => [
-                  styles.modalRow,
-                  pressed && styles.modalRowPressed,
-                ]}
-              >
-                <Text style={styles.modalRowText}>{opt.label}</Text>
-              </Pressable>
-            ))}
-            <Pressable
-              onPress={() => setWicketOpen(false)}
-              style={styles.modalCancel}
-            >
-              <Text style={styles.modalCancelText}>Cancel</Text>
-            </Pressable>
+            {wicketModalPhase === 'run-out-runs' ? (
+              <>
+                <Text style={styles.modalTitle}>Runs before run out</Text>
+                <Text style={styles.modalSubtitle}>
+                  How many runs did the batting side complete on this ball? (0
+                  if none.)
+                </Text>
+                <View style={styles.wicketRunsGrid}>
+                  {RUNS_ROW.map(r => (
+                    <Pressable
+                      key={`ro-${r}`}
+                      onPress={() => {
+                        setWicketOpen(false);
+                        setWicketModalPhase('dismissal');
+                        apply(
+                          wicketDelivery('run-out', { runOutRuns: r }),
+                        );
+                      }}
+                      style={({ pressed }) => [
+                        styles.wicketRunCell,
+                        pressed && styles.runCellPressed,
+                      ]}
+                    >
+                      <Text style={styles.wicketRunCellText}>{r}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <Pressable
+                  onPress={() => setWicketModalPhase('dismissal')}
+                  style={styles.modalCancel}
+                >
+                  <Text style={styles.modalCancelText}>Back</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalTitle}>How was the batter out?</Text>
+                {WICKET_OPTIONS.map(opt => (
+                  <Pressable
+                    key={opt.id}
+                    onPress={() => {
+                      if (opt.id === 'run-out') {
+                        setWicketModalPhase('run-out-runs');
+                        return;
+                      }
+                      setWicketOpen(false);
+                      apply(wicketDelivery(opt.id));
+                    }}
+                    style={({ pressed }) => [
+                      styles.modalRow,
+                      pressed && styles.modalRowPressed,
+                    ]}
+                  >
+                    <Text style={styles.modalRowText}>{opt.label}</Text>
+                  </Pressable>
+                ))}
+                <Pressable
+                  onPress={() => {
+                    setWicketOpen(false);
+                    setWicketModalPhase('dismissal');
+                  }}
+                  style={styles.modalCancel}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </Pressable>
+              </>
+            )}
           </Pressable>
         </Pressable>
       </Modal>
@@ -925,7 +981,9 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
                 <Text style={styles.matchOverHeadline}>
                   {matchOverCopy.headline}
                 </Text>
-                <Text style={styles.matchOverSub}>{matchOverCopy.loserDetail}</Text>
+                <Text style={styles.matchOverSub}>
+                  {matchOverCopy.loserDetail}
+                </Text>
               </>
             ) : null}
             {matchOverModal != null ? (
@@ -1007,7 +1065,6 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   root: {
@@ -1103,6 +1160,7 @@ const styles = StyleSheet.create({
     paddingVertical: hp(1),
     paddingHorizontal: wp(2),
     borderRadius: wp(2),
+    gap: wp(1),
   },
   iconHit: {
     paddingVertical: hp(1),
@@ -1122,6 +1180,11 @@ const styles = StyleSheet.create({
     fontSize: fontSize(16),
     fontWeight: '700',
     color: colors.primary,
+    includeFontPadding: false,
+  },
+  backArrow: {
+    width: wp(4),
+    height: wp(4),
   },
   iconLbl: {
     fontSize: fontSize(14),
@@ -1433,6 +1496,35 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: colors.text,
     marginBottom: hp(1),
+  },
+  modalSubtitle: {
+    fontSize: fontSize(13),
+    fontWeight: '600',
+    color: colors.textMuted,
+    marginBottom: hp(1.2),
+    lineHeight: fontSize(18),
+  },
+  wicketRunsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: wp(2),
+    marginBottom: hp(0.5),
+  },
+  wicketRunCell: {
+    width: (wp(100) - wp(8) - wp(2) * 3) / 4,
+    maxWidth: wp(22),
+    height: hp(5.2),
+    borderRadius: wp(2.5),
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+  },
+  wicketRunCellText: {
+    fontSize: fontSize(18),
+    fontWeight: '900',
+    color: colors.text,
   },
   modalRow: {
     paddingVertical: hp(1.2),
