@@ -1,4 +1,4 @@
-package com.boxcricketscore
+package com.zestarc.boxcricketscore
 
 import android.app.Application
 import com.facebook.react.PackageList

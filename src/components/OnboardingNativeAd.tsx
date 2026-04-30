@@ -82,7 +82,7 @@ export function OnboardingNativeAd() {
     return (
       <View style={styles.skeleton} accessibilityLabel="Loading advertisement">
         <View style={styles.adsTag} pointerEvents="none">
-          <Text style={styles.adsTagText}>Ads</Text>
+          <Text style={styles.adsTagText}>Ad</Text>
         </View>
         <View style={styles.skeletonInner}>
           <View style={styles.skeletonLineShort} />
@@ -109,7 +109,7 @@ export function OnboardingNativeAd() {
           pointerEvents="none"
           accessibilityLabel="Advertisement"
         >
-          <Text style={styles.adsTagText}>Ads</Text>
+          <Text style={styles.adsTagText}>Ad</Text>
         </View>
         <View style={styles.headerStrip}>
           <View style={styles.headerAccent} />

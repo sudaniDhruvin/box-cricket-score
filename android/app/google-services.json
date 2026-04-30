@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "525681440101",
+    "project_id": "box-cricket-score-55744",
+    "storage_bucket": "box-cricket-score-55744.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:525681440101:android:283536b75ff4f73e43dd8c",
+        "android_client_info": {
+          "package_name": "com.zestarc.boxcricketscore"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGo3GvQk9IRXag8j2BoZ-QePLL7ZDc42E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

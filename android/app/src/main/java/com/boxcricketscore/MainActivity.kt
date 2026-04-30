@@ -1,4 +1,4 @@
-package com.boxcricketscore
+package com.zestarc.boxcricketscore
 
 import android.os.Bundle
 import com.swmansion.rnscreens.fragment.restoration.RNScreensFragmentFactory
