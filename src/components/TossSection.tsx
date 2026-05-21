@@ -53,13 +53,7 @@ function CoinFace({
   large?: boolean;
 }) {
   return (
-    <View
-      style={[
-        styles.face,
-        large && styles.faceLarge,
-        accent && styles.faceAccent,
-      ]}
-    >
+    <View style={styles.face}>
       <Text
         style={[
           styles.faceLetter,
@@ -153,8 +147,14 @@ export function TossSection({
     const finalRot = tossSpinTargetDegrees(startRot, landed, FULL_ROTATIONS);
 
     coinLift.value = withSequence(
-      withTiming(1, { duration: SPIN_MS * 0.15, easing: Easing.out(Easing.quad) }),
-      withTiming(0, { duration: SPIN_MS * 0.85, easing: Easing.inOut(Easing.quad) }),
+      withTiming(1, {
+        duration: SPIN_MS * 0.15,
+        easing: Easing.out(Easing.quad),
+      }),
+      withTiming(0, {
+        duration: SPIN_MS * 0.85,
+        easing: Easing.inOut(Easing.quad),
+      }),
     );
 
     rotateY.value = withTiming(
@@ -197,8 +197,7 @@ export function TossSection({
   }));
 
   const callerName = callingTeam === 0 ? teamAName : teamBName;
-  const winnerName =
-    winner === 0 ? teamAName : winner === 1 ? teamBName : null;
+  const winnerName = winner === 0 ? teamAName : winner === 1 ? teamBName : null;
 
   return (
     <View style={styles.card}>
@@ -278,7 +277,7 @@ export function TossSection({
       </View>
 
       <View style={styles.coinStage}>
-        <View style={styles.coinShadow} />
+        {/* <View style={styles.coinShadow} /> */}
         {phase === 'done' && result != null ? (
           <View style={styles.resultCoinWrap}>
             <CoinFace
@@ -318,8 +317,8 @@ export function TossSection({
           {call == null
             ? 'Choose heads or tails, then flip'
             : phase === 'spinning'
-              ? 'Flipping…'
-              : `${callerName} called ${call === 'heads' ? 'heads' : 'tails'}`}
+            ? 'Flipping…'
+            : `${callerName} called ${call === 'heads' ? 'heads' : 'tails'}`}
         </Text>
       )}
 
@@ -336,7 +335,11 @@ export function TossSection({
         accessibilityLabel="Flip coin for toss"
       >
         <Text style={styles.flipBtnText}>
-          {phase === 'spinning' ? 'Flipping…' : phase === 'done' ? 'Flip again' : 'Flip coin'}
+          {phase === 'spinning'
+            ? 'Flipping…'
+            : phase === 'done'
+            ? 'Flip again'
+            : 'Flip coin'}
         </Text>
       </PressableScale>
     </View>
@@ -458,25 +461,10 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: COIN_SIZE / 2,
     borderWidth: 3,
-    borderColor: '#C9A227',
-    backgroundColor: '#F5E6B8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#8B6914',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  faceLarge: {
-    borderWidth: 4,
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  faceAccent: {
     backgroundColor: colors.primaryFaint,
     borderColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   faceLetter: {
     fontSize: fontSize(32),

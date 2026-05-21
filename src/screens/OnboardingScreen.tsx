@@ -27,7 +27,7 @@ export function OnboardingScreen() {
           <Text style={styles.title}>Score every ball.</Text>
           <Text style={styles.titleAccent}>Own the box.</Text>
           <Text style={styles.subtitle}>
-            Track runs, wickets, and overs in real time—built for tight indoor
+            Track runs, wickets, and overs in real time - built for tight indoor
             pitches and fast games.
           </Text>
         </View>
