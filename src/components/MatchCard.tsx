@@ -12,7 +12,9 @@ import {
 import type { MatchSummary } from '../types/match';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
+import { MatchLiveStatusPanel } from './MatchLiveStatusPanel';
 import {
+  computeChaseInfo,
   formatMatchResult,
   formatOvers,
   formatPlayedTime,
@@ -78,6 +80,8 @@ export function MatchCard({ match: m, onPress, onLongPress }: MatchCardProps) {
     !live && !tied && first.teamId === m.winnerTeamId;
   const winnerSecond =
     !live && !tied && second.teamId === m.winnerTeamId;
+  const chaseInfo = live ? computeChaseInfo(m) : null;
+  const showLiveStats = !live || chaseInfo == null;
 
   return (
     <Animated.View style={[styles.cardOuter, { transform: [{ scale }] }]}>
@@ -136,8 +140,9 @@ export function MatchCard({ match: m, onPress, onLongPress }: MatchCardProps) {
                   !winnerFirst && styles.scoreLineLoser,
                 ]}>
                 {first.runs}/{first.wickets}{' '}
-                <Text style={styles.oversInline}>({formatOvers(first.overs)})</Text>
+                <Text style={styles.oversInline}>({formatOvers(first.overs)} ov)</Text>
               </Text>
+              <Text style={styles.scoreCaption}>runs / wkts</Text>
             </View>
 
             <View style={styles.vsPill}>
@@ -174,45 +179,62 @@ export function MatchCard({ match: m, onPress, onLongPress }: MatchCardProps) {
                 ]}>
                 {second.runs}/{second.wickets}{' '}
                 <Text style={styles.oversInline}>
-                  ({formatOvers(second.overs)})
+                  ({formatOvers(second.overs)} ov)
                 </Text>
+              </Text>
+              <Text style={[styles.scoreCaption, styles.scoreCaptionRight]}>
+                runs / wkts
               </Text>
             </View>
           </View>
 
-          <View style={styles.resultPanel}>
-            <Text style={styles.resultLabel}>Result</Text>
-            <Text style={styles.resultHeadline}>{headline}</Text>
-            <Text style={styles.loserLine}>{loserDetail}</Text>
-          </View>
+          {live ? (
+            <MatchLiveStatusPanel match={m} variant="card" />
+          ) : (
+            <View style={styles.resultPanel}>
+              <Text style={styles.resultLabel}>Result</Text>
+              <Text style={styles.resultHeadline}>{headline}</Text>
+              <Text style={styles.loserLine}>{loserDetail}</Text>
+            </View>
+          )}
 
-          <View style={styles.statsRow}>
-            <View style={styles.statPill}>
-              <Text style={styles.statLabel}>Runs</Text>
-              <Text style={styles.statValue}>{matchAggregateRuns(m)}</Text>
+          {showLiveStats ? (
+            <View style={styles.statsRow}>
+              <View style={styles.statPill}>
+                <Text style={styles.statLabel}>Runs</Text>
+                <Text style={styles.statValue}>{matchAggregateRuns(m)}</Text>
+              </View>
+              <View style={styles.statPill}>
+                <Text style={styles.statLabel}>4s</Text>
+                <Text style={styles.statValue}>{matchAggregateFours(m)}</Text>
+              </View>
+              <View style={styles.statPill}>
+                <Text style={styles.statLabel}>6s</Text>
+                <Text style={styles.statValue}>{matchAggregateSixes(m)}</Text>
+              </View>
+              <View style={styles.statPill}>
+                <Text style={styles.statLabel}>Overs</Text>
+                <Text style={styles.statValue}>{matchTotalOversDisplay(m)}</Text>
+              </View>
             </View>
-            <View style={styles.statPill}>
-              <Text style={styles.statLabel}>4s</Text>
-              <Text style={styles.statValue}>{matchAggregateFours(m)}</Text>
-            </View>
-            <View style={styles.statPill}>
-              <Text style={styles.statLabel}>6s</Text>
-              <Text style={styles.statValue}>{matchAggregateSixes(m)}</Text>
-            </View>
-            <View style={styles.statPill}>
-              <Text style={styles.statLabel}>Ov</Text>
-              <Text style={styles.statValue}>{matchTotalOversDisplay(m)}</Text>
-            </View>
-          </View>
+          ) : null}
 
           {onPress ? (
-            <View style={styles.ctaRow}>
-              <Text style={styles.ctaText}>View match</Text>
-              <Text style={styles.ctaChevron}>›</Text>
-            </View>
+            live ? (
+              <View style={styles.liveCta}>
+                <Text style={styles.liveCtaText}>Continue scoring</Text>
+                <Text style={styles.liveCtaChevron}>{'\u203A'}</Text>
+              </View>
+            ) : (
+              <View style={styles.ctaRow}>
+                <Text style={styles.ctaText}>View match</Text>
+                <Text style={styles.ctaChevron}>›</Text>
+              </View>
+            )
           ) : null}
         </Pressable>
 
+        {!live ? (
         <Pressable
           onPress={toggleExtras}
           onPressIn={pump}
@@ -261,6 +283,7 @@ export function MatchCard({ match: m, onPress, onLongPress }: MatchCardProps) {
             </Text>
           )}
         </Pressable>
+        ) : null}
       </View>
     </Animated.View>
   );
@@ -420,6 +443,36 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: colors.primary,
     letterSpacing: 0.5,
+  },
+  scoreCaption: {
+    fontSize: fontSize(10),
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginTop: hp(0.15),
+  },
+  scoreCaptionRight: {
+    textAlign: 'right',
+  },
+  liveCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: hp(1.1),
+    paddingVertical: hp(1.1),
+    paddingHorizontal: wp(3),
+    borderRadius: wp(2.5),
+    backgroundColor: colors.primary,
+    gap: wp(0.5),
+  },
+  liveCtaText: {
+    fontSize: fontSize(15),
+    fontWeight: '800',
+    color: colors.background,
+  },
+  liveCtaChevron: {
+    fontSize: fontSize(20),
+    fontWeight: '300',
+    color: colors.background,
   },
   resultPanel: {
     marginTop: hp(1.2),

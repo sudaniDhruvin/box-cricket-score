@@ -21,6 +21,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useInterstitialAd } from 'react-native-google-mobile-ads';
 import { HomeEmptyBannerAd } from '../components/HomeEmptyBannerAd';
+import {
+  HomeMatchFilter,
+  type HomeMatchFilterValue,
+} from '../components/HomeMatchFilter';
 import { HomeListNativeAd } from '../components/HomeListNativeAd';
 import { MatchCard } from '../components/MatchCard';
 import type { MainStackParamList } from '../navigation/types';
@@ -29,6 +33,7 @@ import { colors } from '../theme/colors';
 import type { MatchSummary } from '../types/match';
 import type { MatchDaySection } from '../utils/groupMatchesByDay';
 import { groupMatchesByDay } from '../utils/groupMatchesByDay';
+import { isMatchLive } from '../utils/cricketFormat';
 import { fontSize, hp, wp } from '../utils';
 import { INTERSTITIAL_AD_UNIT_ID } from '../config/adUnitIds';
 
@@ -68,6 +73,7 @@ export function HomeScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<MainStackParamList, 'Home'>>();
   const [fabVisible, setFabVisible] = useState(false);
+  const [listFilter, setListFilter] = useState<HomeMatchFilterValue>('all');
   const fabShownRef = useRef(false);
   const pendingNavigateAfterInterstitialRef = useRef(false);
   const { load, show, isLoaded, isClosed, error } = useInterstitialAd(
@@ -131,9 +137,28 @@ export function HomeScreen() {
     }
   }, [isLoaded, show, proceedToNewMatch]);
 
-  const sections = useMemo(
-    () => groupMatchesByDay(savedMatches),
+  const filterCounts = useMemo(
+    () => ({
+      all: savedMatches.length,
+      live: savedMatches.filter(m => isMatchLive(m)).length,
+      finished: savedMatches.filter(m => !isMatchLive(m)).length,
+    }),
     [savedMatches],
+  );
+
+  const filteredMatches = useMemo(() => {
+    if (listFilter === 'live') {
+      return savedMatches.filter(m => isMatchLive(m));
+    }
+    if (listFilter === 'finished') {
+      return savedMatches.filter(m => !isMatchLive(m));
+    }
+    return savedMatches;
+  }, [savedMatches, listFilter]);
+
+  const sections = useMemo(
+    () => groupMatchesByDay(filteredMatches),
+    [filteredMatches],
   );
 
   const listSections = useMemo(
@@ -222,9 +247,13 @@ export function HomeScreen() {
             </View>
             <Text style={styles.title}>Your matches</Text>
             <Text style={styles.subtitle}>
-              {totalMatches} saved {totalMatches === 1 ? 'match' : 'matches'} —
-              newest first under each day.
+              {totalMatches} saved {totalMatches === 1 ? 'match' : 'matches'}
             </Text>
+            <HomeMatchFilter
+              value={listFilter}
+              onChange={setListFilter}
+              counts={filterCounts}
+            />
             <Pressable
               onPress={onPressStartNewInnings}
               style={({ pressed }) => [
@@ -253,10 +282,19 @@ export function HomeScreen() {
         }
         ListEmptyComponent={
           <View style={styles.listEmpty}>
-            <Text style={styles.listEmptyTitle}>No matches yet</Text>
+            <Text style={styles.listEmptyTitle}>
+              {listFilter === 'all'
+                ? 'No matches yet'
+                : listFilter === 'live'
+                  ? 'No live matches'
+                  : 'No finished matches'}
+            </Text>
             <Text style={styles.listEmptySub}>
-              Create a match with Start new innings — it will show up here and
-              stay saved on this device.
+              {listFilter === 'all'
+                ? 'Tap Start new innings to create a match. Scores stay saved on this device. Hold a match card to delete it.'
+                : listFilter === 'live'
+                  ? 'Start a new match or switch to All to see every saved game.'
+                  : 'Finished matches appear here after both innings are complete.'}
             </Text>
             <View style={styles.emptyBannerWrap}>
               <HomeEmptyBannerAd />
@@ -315,7 +353,6 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: hp(1.5),
-    paddingHorizontal: wp(2),
   },
   headerRow: {
     flexDirection: 'row',
@@ -423,11 +460,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: colors.background,
     paddingTop: hp(1.6),
-    paddingBottom: hp(0.8),
+    paddingBottom: hp(1.6),
     paddingHorizontal: wp(2),
+    borderTopWidth: 1,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    marginBottom: hp(0.4),
+    borderTopColor: colors.border,
+    marginBottom: hp(1),
+    overflow: 'hidden'
   },
   sectionTitle: {
     fontSize: fontSize(16),

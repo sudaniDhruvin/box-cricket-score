@@ -7,6 +7,7 @@ export const colors = {
   surfaceMuted: 'rgba(1, 180, 137, 0.06)',
   primarySoft: 'rgba(1, 180, 137, 0.14)',
   primaryFaint: 'rgba(1, 180, 137, 0.08)',
+  primaryRipple: 'rgba(1, 180, 137, 0.22)',
   loserMuted: 'rgba(7, 7, 7, 0.45)',
   /** Ball-by-ball chips */
   ballDot: '#ECEFF1',

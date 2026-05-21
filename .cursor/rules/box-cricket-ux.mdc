@@ -1,0 +1,23 @@
+---
+description: Box Cricket Score UX, product context, and scoring UI priorities
+alwaysApply: true
+---
+
+# Box Cricket — UX & product context
+
+**Full guide:** read `AGENTS.md` at repo root before changing screens, copy, or live scoring layout.
+
+## Non-negotiables
+
+- **Chase (2nd innings):** Target, runs to win, and required rate must be **glanceable** — not buried in equal stat cells. See `AGENTS.md` §6.3.3.
+- **Plain language:** "Runs to win", "Required rate" — not Need/RRR alone.
+- **Do not break** scoring math in `src/utils/applyScoringDelivery.ts` for UI-only tasks.
+- **Primary files:** `LiveScoringPanel.tsx`, `MatchCard.tsx`, `NewMatchScreen.tsx`, `HomeScreen.tsx`.
+
+## Fix first (P0)
+
+UX-001, UX-002, UX-003, UX-020 (chase visibility live + home), UX-004 (`Runs off the bat 00` typo).
+
+## Theme
+
+Use `src/theme/colors.ts` — primary `#01B489`.

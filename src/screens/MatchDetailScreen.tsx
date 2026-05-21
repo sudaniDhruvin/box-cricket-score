@@ -1,7 +1,7 @@
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import {
   Image,
   LayoutAnimation,
@@ -19,6 +19,7 @@ import type { MainStackParamList } from '../navigation/types';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import type { TeamInnings } from '../types/match';
+import { MatchLiveStatusPanel } from '../components/MatchLiveStatusPanel';
 import {
   formatMatchResult,
   formatOvers,
@@ -268,6 +269,14 @@ export function MatchDetailScreen() {
     [params.matchId, savedMatches],
   );
 
+  const live = match != null && isMatchLive(match);
+
+  useEffect(() => {
+    if (match != null && live) {
+      setActiveTab(match.scoringActiveInnings ?? 0);
+    }
+  }, [match, live]);
+
   useLayoutEffect(() => {
     if (!match) {
       navigation.goBack();
@@ -280,7 +289,6 @@ export function MatchDetailScreen() {
 
   const [inn1, inn2] = match.innings;
   const { headline, loserDetail } = formatMatchResult(match);
-  const live = isMatchLive(match);
   const activeInnings = activeTab === 0 ? inn1 : inn2;
   const matchComplete = !live;
   const tied = matchComplete && match.margin.kind === 'tie';
@@ -396,11 +404,15 @@ export function MatchDetailScreen() {
             </Text>
           </View>
 
-          <View style={styles.overviewResultBox}>
-            <Text style={styles.overviewResultLabel}>Result</Text>
-            <Text style={styles.overviewHeadline}>{headline}</Text>
-            <Text style={styles.overviewLoserLine}>{loserDetail}</Text>
-          </View>
+          {live ? (
+            <MatchLiveStatusPanel match={match} variant="detail" />
+          ) : (
+            <View style={styles.overviewResultBox}>
+              <Text style={styles.overviewResultLabel}>Result</Text>
+              <Text style={styles.overviewHeadline}>{headline}</Text>
+              <Text style={styles.overviewLoserLine}>{loserDetail}</Text>
+            </View>
+          )}
 
           {live && savedMatches.some(m => m.id === match.id) ? (
             <Pressable

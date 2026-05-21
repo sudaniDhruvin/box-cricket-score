@@ -66,6 +66,10 @@ yarn-error.log
 # testing
 /coverage
 
+# Local git hook artifacts (ollama commit-msg generator)
+changes.txt
+commit_message.txt
+
 # Yarn
 .yarn/*
 !.yarn/patches
