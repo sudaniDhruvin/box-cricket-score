@@ -18,6 +18,28 @@ export function formatPlayedDateLong(iso: string): string {
   });
 }
 
+/** Compact card date, e.g. "12 AUG 2023". */
+export function formatPlayedDateCompact(iso: string): string {
+  const d = new Date(iso);
+  const day = d.getDate();
+  const month = d
+    .toLocaleDateString(undefined, { month: 'short' })
+    .toUpperCase();
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+}
+
+export function seasonAggregateRuns(matches: MatchSummary[]): number {
+  return matches.reduce((sum, m) => sum + matchAggregateRuns(m), 0);
+}
+
+export function seasonAggregateWickets(matches: MatchSummary[]): number {
+  return matches.reduce(
+    (sum, m) => sum + m.innings[0].wickets + m.innings[1].wickets,
+    0,
+  );
+}
+
 export function formatOvers(o: OversBowled): string {
   return `${o.fullOvers}.${o.balls}`;
 }

@@ -1,3 +1,2457 @@
+++ b/.yarnrc.yml
+nodeLinker: node-modules
+++ b/App.tsx
+import { initializeAdRemoteConfig } from './src/config/fetchAdRemoteConfig';
+import { getAdFlags } from './src/store/useAdConfigStore';
+        await initializeAdRemoteConfig();
+        if (getAdFlags().isAds) {
+          await mobileAds().initialize();
+        }
+        console.error('App startup init failed', e);
+      if (cancelled) {
+        return;
+      }
+      if (getAdFlags().isAds && getAdFlags().isOpenApp) {
+      } else {
+        hideSplashScreen();
+  }, [loadAppOpenAd, hideSplashScreen]);
+++ b/android/app/src/main/AndroidManifest.xml
+
+    <meta-data
+      android:name="com.google.android.gms.ads.APPLICATION_ID"
+      android:value="ca-app-pub-7085320120847108~5292647329"/>
+
+++ b/android/gradle.properties
+edgeToEdgeEnabled=true
+++ /dev/null
+++ b/package.json
+    "@react-native-firebase/remote-config": "23.7.0",
+++ b/src/assets/images/pngs/index.tsx
+  PLAY_ICON: require('./play-button.png'),
+  BatBallIcon: require('./batBallIcon.png'),
+  GraphIcon: require('./graphIcon.png'),
+  DotCircleIcon: require('./dotCircleIcon.png'),
+  TrophyIcon: require('./trophyIcon.png'),
+  BatBallOutlineIcon: require('./batBallOutlineIcon.png'),
+  RightArrowIcon: require('./rightArrowIcon.png'),
+  SettingIcon: require('./settingIcon.png'),
+  StumpedOutIcon: require('./stumpedOutIcon.png'),
+  CaughtOutIcon: require('./caughtOutIcon.png'),
+  RunOutIcon: require('./runOutIcon.png'),
+  LBWOutIcon: require('./LBWOutIcon.png'),
+  WarningIcon: require('./warningIcon.png'),
+++ b/src/components/HomeEmptyBannerAd.tsx
+import React, { useCallback, useMemo, useState } from 'react';
+import { HOME_EMPTY_BANNER_AD_UNIT_IDS } from '../config/adUnitIds';
+import { useAdFlags } from '../hooks/useAdFlags';
+ * Tries H1 (high) → H2 (medium) → H3 (normal) until one loads.
+  const { isHomeBanner, isAds } = useAdFlags();
+  const [adIndex, setAdIndex] = useState(0);
+  if (!isAds) {
+    return null;
+  }
+
+  if (!isHomeBanner) {
+    return null;
+  }
+
+  const unitId = useMemo(
+    () => HOME_EMPTY_BANNER_AD_UNIT_IDS[adIndex],
+    [adIndex],
+  );
+
+  const handleAdFailedToLoad = useCallback(() => {
+    setAdIndex(current => {
+      const next = current + 1;
+      if (next < HOME_EMPTY_BANNER_AD_UNIT_IDS.length) {
+        return next;
+      }
+      setVisible(false);
+      return current;
+    });
+  }, []);
+
+  if (!visible || !unitId) {
+        key={unitId}
+        unitId={unitId}
+        onAdFailedToLoad={handleAdFailedToLoad}
+++ b/src/components/HomeListNativeAd.tsx
+import { useAdFlags } from '../hooks/useAdFlags';
+  const { isNative, isAds } = useAdFlags();
+    if (!isAds) {
+      return;
+    }
+
+    if (!isNative) {
+      return;
+    }
+  }, [isNative]);
+  if (!isNative || failed) {
+++ b/src/components/LiveScoringPanel.tsx
+  ImageSourcePropType,
+const EDIT_OVERS_MIN = 1;
+const EDIT_OVERS_MAX = 50;
+const EDIT_WICKETS_MIN = 1;
+const EDIT_WICKETS_MAX = 20;
+
+function minOversAllowed(m: MatchSummary): number {
+  const maxLegal = Math.max(
+    legalBallsBowled(m.innings[0].overs),
+    legalBallsBowled(m.innings[1].overs),
+  );
+  return Math.max(EDIT_OVERS_MIN, Math.ceil(maxLegal / 6));
+}
+
+function minWicketsAllowed(m: MatchSummary): number {
+  return Math.max(EDIT_WICKETS_MIN, m.innings[0].wickets, m.innings[1].wickets);
+}
+
+type EditStepperRowProps = {
+  title: string;
+  subtitle: string;
+  value: number;
+  onDecrement: () => void;
+  onIncrement: () => void;
+  decrementLabel: string;
+  incrementLabel: string;
+};
+
+function EditStepperRow({
+  title,
+  subtitle,
+  value,
+  onDecrement,
+  onIncrement,
+  decrementLabel,
+  incrementLabel,
+}: EditStepperRowProps) {
+  return (
+    <View style={styles.editParamRow}>
+      <View style={styles.editParamLabels}>
+        <Text style={styles.editParamTitle}>{title}</Text>
+        <Text style={styles.editParamSub}>{subtitle}</Text>
+      </View>
+      <View style={styles.editStepper}>
+        <Pressable
+          onPress={onDecrement}
+          style={({ pressed }) => [
+            styles.editStepperBtn,
+            pressed && styles.editStepperBtnPressed,
+          ]}
+          android_ripple={{ color: colors.primarySoft, borderless: true }}
+          accessibilityRole="button"
+          accessibilityLabel={decrementLabel}
+        >
+          <Text style={styles.editStepperBtnText}>{'\u2212'}</Text>
+        </Pressable>
+        <Text style={styles.editStepperValue}>{value}</Text>
+        <Pressable
+          onPress={onIncrement}
+          style={({ pressed }) => [
+            styles.editStepperBtn,
+            pressed && styles.editStepperBtnPressed,
+          ]}
+          android_ripple={{ color: colors.primarySoft, borderless: true }}
+          accessibilityRole="button"
+          accessibilityLabel={incrementLabel}
+        >
+          <Text style={styles.editStepperBtnText}>+</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const WICKET_OPTIONS: {
+  id: WicketDismissal;
+  label: string;
+  icon: ImageSourcePropType;
+}[] = [
+  { id: 'bowled', label: 'Bowled', icon: PNGs.StumpedOutIcon },
+  { id: 'caught', label: 'Caught', icon: PNGs.CaughtOutIcon },
+  { id: 'run-out', label: 'Run Out', icon: PNGs.RunOutIcon },
+  { id: 'stumped', label: 'Stumped', icon: PNGs.StumpedOutIcon },
+  { id: 'lbw', label: 'LBW', icon: PNGs.LBWOutIcon },
+  { id: 'hit-wicket', label: 'Hit Wicket', icon: PNGs.WarningIcon },
+type WicketTypeTileProps = {
+  label: string;
+  icon: ImageSourcePropType;
+  selected: boolean;
+  onPress: () => void;
+};
+
+function WicketTypeTile({
+  label,
+  icon,
+  selected,
+  onPress,
+}: WicketTypeTileProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.wicketTile,
+        selected && styles.wicketTileSelected,
+        pressed && styles.wicketTilePressed,
+      ]}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      accessibilityLabel={label}
+    >
+      {selected ? (
+        <View style={styles.wicketTileCheck}>
+          <Text style={styles.wicketTileCheckText}>{'\u2713'}</Text>
+        </View>
+      ) : null}
+
+      {icon && (
+        <Image
+          source={icon}
+          style={{
+            width: wp(8),
+            height: wp(8),
+            tintColor: selected ? colors.primary : undefined,
+          }}
+        />
+      )}
+      <Text
+        style={[
+          styles.wicketTileLabel,
+          selected && styles.wicketTileLabelSelected,
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+const RUNS_GRID: (0 | 1 | 2 | 3 | 4 | 6)[] = [0, 1, 2, 3, 4, 6];
+
+function ThisOverRow({
+  deliveries,
+  legalInOver,
+}: {
+  deliveries: Delivery[];
+  legalInOver: number;
+}) {
+  const emptySlots = Math.max(0, 6 - legalInOver);
+  return (
+    <View style={styles.thisOverRow}>
+      {deliveries.map((d, i) => (
+        <MiniBall key={`cb-${i}`} d={d} />
+      ))}
+      {Array.from({ length: emptySlots }).map((_, i) => (
+        <View key={`empty-${i}`} style={styles.emptyBallSlot} />
+      ))}
+    </View>
+  );
+}
+  const [extrasExpanded, setExtrasExpanded] = useState(false);
+  const [selectedDismissal, setSelectedDismissal] =
+    useState<WicketDismissal | null>(null);
+  const [selectedRunOutRuns, setSelectedRunOutRuns] = useState<
+    0 | 1 | 2 | 3 | 4 | 5 | 6 | null
+  >(null);
+  const [editOvers, setEditOvers] = useState(10);
+  const [editPlayers, setEditPlayers] = useState(10);
+    setEditOvers(match.oversPerSide ?? 10);
+    setEditPlayers(match.wicketsPerSide ?? 10);
+    if (editOvers < EDIT_OVERS_MIN || editOvers > EDIT_OVERS_MAX) {
+      Alert.alert(
+        'Overs',
+        `Overs must be between ${EDIT_OVERS_MIN} and ${EDIT_OVERS_MAX}.`,
+      );
+      return;
+    }
+    if (editPlayers < EDIT_WICKETS_MIN || editPlayers > EDIT_WICKETS_MAX) {
+      Alert.alert(
+        'Players',
+        `Players per team must be between ${EDIT_WICKETS_MIN} and ${EDIT_WICKETS_MAX}.`,
+      );
+      return;
+    }
+
+    const minOvers = minOversAllowed(match);
+    if (editOvers < minOvers) {
+      Alert.alert(
+        'Overs',
+        `Cannot set fewer than ${minOvers} overs — that much has already been bowled.`,
+      );
+      return;
+    }
+
+    const minWkts = minWicketsAllowed(match);
+    if (editPlayers < minWkts) {
+      Alert.alert(
+        'Players',
+        `Cannot set fewer than ${minWkts} players — ${minWkts} wicket${
+          minWkts === 1 ? '' : 's'
+        } already recorded.`,
+      );
+      return;
+    }
+
+      oversPerSide: editOvers,
+      wicketsPerSide: editPlayers,
+  }, [match, editA, editB, editOvers, editPlayers, updateMatch]);
+  const closeWicketModal = useCallback(() => {
+    setWicketOpen(false);
+    setWicketModalPhase('dismissal');
+    setSelectedDismissal(null);
+    setSelectedRunOutRuns(null);
+  }, []);
+
+  const openWicketModal = useCallback(() => {
+    setSelectedDismissal(null);
+    setSelectedRunOutRuns(null);
+    setWicketModalPhase('dismissal');
+    setWicketOpen(true);
+  }, []);
+
+  const confirmWicket = useCallback(() => {
+    if (wicketModalPhase === 'run-out-runs') {
+      if (selectedRunOutRuns == null) {
+        Alert.alert('Select runs', 'Pick how many runs were completed.');
+        return;
+      }
+      closeWicketModal();
+      apply(wicketDelivery('run-out', { runOutRuns: selectedRunOutRuns }));
+      return;
+    }
+
+    if (selectedDismissal == null) {
+      Alert.alert('Select dismissal', 'Pick how the batter was out.');
+      return;
+    }
+    if (selectedDismissal === 'run-out') {
+      setSelectedRunOutRuns(0);
+      setWicketModalPhase('run-out-runs');
+      return;
+    }
+    closeWicketModal();
+    apply(wicketDelivery(selectedDismissal));
+  }, [
+    wicketModalPhase,
+    selectedDismissal,
+    selectedRunOutRuns,
+    closeWicketModal,
+    apply,
+  ]);
+
+            accessibilityLabel="Edit match settings"
+          contentContainerStyle={[
+            styles.scroll,
+            { paddingBottom: Math.max(insets.bottom, hp(2)) + hp(1) },
+          ]}
+          <View style={styles.scoreboardCard}>
+            <View style={styles.scoreboardTop}>
+              {chase != null ? (
+                <Text style={styles.targetLabel}>Target {chase.target}</Text>
+              ) : (
+                <Text style={styles.inningsTagInline}>
+                  {activeIdx === 0 ? '1st innings' : '2nd innings'}
+                </Text>
+              )}
+              <View style={styles.liveBadge}>
+                <Text style={styles.liveBadgeText}>LIVE</Text>
+              </View>
+            </View>
+
+            <Text style={styles.scoreMain}>
+              {activeInn.runs}/{activeInn.wickets}
+            <Text style={styles.oversLine}>
+              Overs: {formatOvers(activeInn.overs)}
+              {oversCap > 0 ? ` / ${oversCap}` : ''}
+            <View style={styles.rateRow}>
+              <View style={styles.rateCell}>
+                <Text style={styles.rateLabel}>CRR</Text>
+                <Text style={styles.rateValue}>{formatRunRate(currentRR)}</Text>
+              <View style={styles.rateDivider} />
+              <View style={styles.rateCell}>
+                <Text style={styles.rateLabel}>
+                  {chase != null ? 'RRR' : 'WKTS'}
+                </Text>
+                <Text style={styles.rateValue}>
+                  {chase != null
+                    ? chase.need === 0
+                      ? '0.00'
+                      : formatRunRate(chase.rrr)
+                    : `${activeInn.wickets}/${wkCap}`}
+
+            <View style={styles.thisOverBlock}>
+              <Text style={styles.thisOverLabel}>THIS OVER</Text>
+              {currentBalls.length === 0 && legalInCurrent === 0 ? (
+                <View style={styles.thisOverRow}>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <View key={`empty-${i}`} style={styles.emptyBallSlot} />
+                  ))}
+                </View>
+                <ThisOverRow
+                  deliveries={currentBalls}
+                  legalInOver={legalInCurrent}
+                />
+            <View style={styles.scoringPad}>
+              <View style={styles.runsGrid3x2}>
+                {RUNS_GRID.map(r => (
+                      styles.runBtn,
+                      (r === 4 || r === 6) && styles.runBtnBoundary,
+                      r === 4 && styles.runBtnFour,
+                      r === 6 && styles.runBtnSix,
+                      style={[
+                        styles.runBtnText,
+                        (r === 4 || r === 6) && styles.runBtnTextBoundary,
+                      ]}
+              <View style={styles.extrasGrid4}>
+                    styles.extraPadBtn,
+                  <Text style={styles.extraPadBtnText}>Wide</Text>
+                    styles.extraPadBtn,
+                  <Text style={styles.extraPadBtnText}>NB</Text>
+                    styles.extraPadBtn,
+                    pressed && styles.runCellPressed,
+                  ]}
+                >
+                  <Text style={styles.extraPadBtnText}>Bye</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => apply({ type: 'bye', label: 'Lb' })}
+                  style={({ pressed }) => [
+                    styles.extraPadBtn,
+                  <Text style={styles.extraPadBtnText}>LB</Text>
+
+              <Pressable
+                onPress={() => setExtrasExpanded(e => !e)}
+                style={({ pressed }) => [
+                  styles.moreExtrasToggle,
+                  pressed && styles.backPressed,
+                ]}
+              >
+                <Text style={styles.moreExtrasToggleText}>
+                  {extrasExpanded ? 'Hide' : 'More'} extras & 5 runs
+                </Text>
+                <Text style={styles.recentCaret}>
+                  {extrasExpanded ? '\u25B2' : '\u25BC'}
+                </Text>
+              </Pressable>
+
+              {extrasExpanded ? (
+                <View style={styles.extrasMoreRow}>
+                    onPress={() => apply(runsDelivery(5))}
+                      styles.extrasMoreBtn,
+                      { borderColor: colors.border },
+                    accessibilityRole="button"
+                    accessibilityLabel="5 runs"
+                    <Text style={styles.extrasMoreBtnText}>5</Text>
+                  {[1, 2, 4].map(n => (
+                    <Pressable
+                      key={`wd${n}`}
+                      onPress={() =>
+                        apply({
+                          type: 'wide',
+                          label: `Wd+${n}`,
+                          wideRuns: n,
+                        })
+                      }
+                      style={({ pressed }) => [
+                        styles.extrasMoreBtn,
+                        { borderColor: colors.ballWideExtra },
+                        pressed && styles.runCellPressed,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Wide plus ${n}`}
+                    >
+                      <Text style={styles.extrasMoreBtnText}>WD+{n}</Text>
+                    </Pressable>
+                  ))}
+                  <View
+                    style={{
+                      height: '90%',
+                      width: 2,
+                      backgroundColor: colors.textMuted,
+                      borderRadius: 100,
+                      alignSelf: 'center',
+                    }}
+                  />
+                  {[1, 4, 6].map(n => (
+                    <Pressable
+                      key={`nb${n}`}
+                      onPress={() =>
+                        apply({
+                          type: 'no-ball',
+                          label: `Nb+${n}`,
+                          noBallRuns: n,
+                        })
+                      }
+                      style={({ pressed }) => [
+                        styles.extrasMoreBtn,
+                        { borderColor: colors.ballNoBallRuns },
+                        pressed && styles.runCellPressed,
+                      ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`No ball plus ${n}`}
+                    >
+                      <Text style={styles.extrasMoreBtnText}>NB+{n}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
+                  openWicketModal();
+                  styles.wicketBtnFull,
+                <Text style={styles.wicketBtnFullText}>WICKET</Text>
+            </View>
+        <View style={styles.bottomAdStrip}>
+        onRequestClose={closeWicketModal}
+          style={styles.bottomSheetBackdrop}
+          onPress={closeWicketModal}
+            style={[
+              styles.wicketBottomSheet,
+              { paddingBottom: Math.max(insets.bottom, hp(2)) },
+            ]}
+            <View style={styles.sheetHandle} />
+
+                <Text style={styles.wicketSheetTitle}>Runs before run out</Text>
+                <Text style={styles.wicketSheetSub}>
+                  How many runs did the batting side complete on this ball?
+                      onPress={() => setSelectedRunOutRuns(r)}
+                        selectedRunOutRuns === r &&
+                          styles.wicketRunCellSelected,
+                      accessibilityRole="button"
+                      accessibilityState={{
+                        selected: selectedRunOutRuns === r,
+                      }}
+                      <Text
+                        style={[
+                          styles.wicketRunCellText,
+                          selectedRunOutRuns === r &&
+                            styles.wicketRunCellTextSelected,
+                        ]}
+                      >
+                        {r}
+                      </Text>
+                <View style={styles.wicketSheetFooter}>
+                  <Pressable
+                    onPress={() => {
+                      setWicketModalPhase('dismissal');
+                      setSelectedRunOutRuns(null);
+                    }}
+                    style={({ pressed }) => [
+                      styles.wicketCancelBtn,
+                      pressed && styles.wicketCancelBtnPressed,
+                    ]}
+                  >
+                    <Text style={styles.wicketCancelBtnText}>Back</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={confirmWicket}
+                    style={({ pressed }) => [
+                      styles.wicketConfirmBtn,
+                      selectedRunOutRuns == null &&
+                        styles.wicketConfirmBtnDisabled,
+                      pressed && styles.wicketConfirmBtnPressed,
+                    ]}
+                  >
+                    <Text style={styles.wicketConfirmBtnText}>
+                      Confirm Wicket
+                    </Text>
+                  </Pressable>
+                </View>
+                <Text style={styles.wicketSheetTitle}>
+                  Wicket — select dismissal type
+                </Text>
+                <View style={styles.wicketGrid}>
+                  {WICKET_OPTIONS.map(opt => (
+                    <WicketTypeTile
+                      key={opt.id}
+                      label={opt.label}
+                      icon={opt.icon}
+                      selected={selectedDismissal === opt.id}
+                      onPress={() => setSelectedDismissal(opt.id)}
+                    />
+                  ))}
+                </View>
+                <View style={styles.wicketSheetFooter}>
+                    onPress={closeWicketModal}
+                      styles.wicketCancelBtn,
+                      pressed && styles.wicketCancelBtnPressed,
+                    <Text style={styles.wicketCancelBtnText}>Cancel</Text>
+                  <Pressable
+                    onPress={confirmWicket}
+                    style={({ pressed }) => [
+                      styles.wicketConfirmBtn,
+                      selectedDismissal == null &&
+                        styles.wicketConfirmBtnDisabled,
+                      pressed && styles.wicketConfirmBtnPressed,
+                    ]}
+                  >
+                    <Text style={styles.wicketConfirmBtnText}>
+                      Confirm Wicket
+                    </Text>
+                  </Pressable>
+                </View>
+            style={styles.editModalSheet}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Text style={styles.modalTitle}>Edit match</Text>
+              <Text style={styles.editSectionHeading}>Teams</Text>
+              <Text style={styles.editFieldLbl}>1st innings</Text>
+              <TextInput
+                value={editA}
+                onChangeText={setEditA}
+                style={styles.editInput}
+                placeholder="Team name"
+                placeholderTextColor={colors.textMuted}
+                autoCorrect={false}
+                autoCapitalize="words"
+              />
+              <Text style={styles.editFieldLbl}>2nd innings</Text>
+              <TextInput
+                value={editB}
+                onChangeText={setEditB}
+                style={styles.editInput}
+                placeholder="Team name"
+                placeholderTextColor={colors.textMuted}
+                autoCorrect={false}
+                autoCapitalize="words"
+              />
+
+              <Text style={styles.editSectionHeading}>Match parameters</Text>
+              <EditStepperRow
+                title="Overs"
+                subtitle="Per innings"
+                value={editOvers}
+                onDecrement={() =>
+                  setEditOvers(v => Math.max(EDIT_OVERS_MIN, v - 1))
+                }
+                onIncrement={() =>
+                  setEditOvers(v => Math.min(EDIT_OVERS_MAX, v + 1))
+                }
+                decrementLabel="Decrease overs"
+                incrementLabel="Increase overs"
+              />
+              <View style={styles.editParamSpacer} />
+              <EditStepperRow
+                title="Players"
+                subtitle="Per team"
+                value={editPlayers}
+                onDecrement={() =>
+                  setEditPlayers(v => Math.max(EDIT_WICKETS_MIN, v - 1))
+                }
+                onIncrement={() =>
+                  setEditPlayers(v => Math.min(EDIT_WICKETS_MAX, v + 1))
+                }
+                decrementLabel="Decrease players"
+                incrementLabel="Increase players"
+              />
+              {match ? (
+                <Text style={styles.editHint}>
+                  Minimum {minOversAllowed(match)} overs and{' '}
+                  {minWicketsAllowed(match)} players based on balls already
+                  scored.
+                </Text>
+              ) : null}
+
+              <View style={styles.editActions}>
+                <Pressable
+                  onPress={() => setEditOpen(false)}
+                  style={styles.editGhost}
+                >
+                  <Text style={styles.editGhostText}>Cancel</Text>
+                </Pressable>
+                <Pressable onPress={saveEdit} style={styles.editSave}>
+                  <Text style={styles.editSaveText}>Save</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+    flexGrow: 1,
+  inningsTagInline: {
+    fontSize: fontSize(12),
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  scoreboardCard: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: wp(4),
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(2),
+    marginBottom: hp(1.5),
+    backgroundColor: colors.surfaceMuted,
+  },
+  scoreboardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: hp(1),
+  },
+  targetLabel: {
+    fontSize: fontSize(13),
+    fontWeight: '700',
+    color: colors.textMuted,
+  },
+  liveBadge: {
+    paddingHorizontal: wp(2.5),
+    paddingVertical: hp(0.35),
+    borderRadius: wp(1.5),
+    borderWidth: 1.5,
+    borderColor: colors.ballFour,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+  },
+  liveBadgeText: {
+    fontSize: fontSize(10),
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    color: colors.ballFour,
+  },
+  scoreMain: {
+    fontSize: fontSize(42),
+    fontWeight: '900',
+    color: colors.text,
+    textAlign: 'center',
+    letterSpacing: -1,
+    marginBottom: hp(0.4),
+  },
+  oversLine: {
+    fontSize: fontSize(16),
+    fontWeight: '800',
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: hp(1.4),
+  },
+  rateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: hp(1.6),
+    paddingVertical: hp(1),
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
+  },
+  rateCell: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  rateDivider: {
+    width: 1,
+    height: hp(3),
+    backgroundColor: colors.border,
+  },
+  rateLabel: {
+    fontSize: fontSize(11),
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+    marginBottom: hp(0.2),
+  },
+  rateValue: {
+    fontSize: fontSize(18),
+    fontWeight: '900',
+    color: colors.text,
+  },
+  thisOverBlock: {
+    marginTop: hp(0.2),
+  },
+  thisOverLabel: {
+    fontSize: fontSize(10),
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 0.8,
+    marginBottom: hp(0.8),
+  },
+  thisOverRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: wp(2),
+    minHeight: hp(5),
+  },
+  emptyBallSlot: {
+    width: wp(9),
+    height: wp(9),
+    borderRadius: wp(4.5),
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  scoringPad: {
+    marginTop: hp(0.5),
+    paddingTop: hp(1),
+  },
+  runsGrid3x2: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: wp(2.5),
+    marginBottom: hp(1.2),
+  },
+  runBtn: {
+    width: (wp(100) - wp(8) - wp(2.5) * 3) / 3,
+    height: hp(6.2),
+    borderRadius: wp(3),
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  runBtnBoundary: {
+    borderWidth: 0,
+  },
+  runBtnFour: {
+    backgroundColor: colors.ballFour,
+  },
+  runBtnSix: {
+    backgroundColor: colors.ballSix,
+  },
+  runBtnText: {
+    fontSize: fontSize(22),
+    fontWeight: '900',
+    color: colors.text,
+  },
+  runBtnTextBoundary: {
+    color: colors.background,
+  },
+  extrasGrid4: {
+    flexDirection: 'row',
+    gap: wp(2),
+    marginBottom: hp(0.8),
+  },
+  extraPadBtn: {
+    flex: 1,
+    paddingVertical: hp(1.2),
+    borderRadius: wp(2.5),
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+  },
+  extraPadBtnText: {
+    fontSize: fontSize(13),
+    fontWeight: '800',
+    color: colors.text,
+  },
+  moreExtrasToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: wp(1),
+    paddingVertical: hp(0.6),
+    marginBottom: hp(0.4),
+  },
+  moreExtrasToggleText: {
+    fontSize: fontSize(12),
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  wicketBtnFull: {
+    paddingVertical: hp(1.6),
+    borderRadius: wp(3),
+    backgroundColor: colors.ballWicket,
+    alignItems: 'center',
+    marginTop: hp(0.4),
+    marginBottom: hp(0.5),
+  },
+  wicketBtnFullText: {
+    fontSize: fontSize(16),
+    fontWeight: '900',
+    letterSpacing: 1,
+    color: colors.background,
+  },
+  extrasMoreRow: {
+    alignItems: 'stretch',
+    gap: wp(1.2),
+    marginTop: hp(0.6),
+  extrasMoreBtn: {
+    flex: 1,
+    minWidth: 0,
+    height: hp(5),
+    borderRadius: wp(2.5),
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: wp(0.5),
+  extrasMoreBtnText: {
+    fontSize: fontSize(10),
+    textAlign: 'center',
+  bottomSheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(7,7,7,0.45)',
+    justifyContent: 'flex-end',
+  },
+  wicketBottomSheet: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: wp(5),
+    borderTopRightRadius: wp(5),
+    paddingHorizontal: wp(5),
+    paddingTop: hp(1),
+    maxHeight: '88%',
+  },
+  sheetHandle: {
+    width: wp(12),
+    height: hp(0.55),
+    borderRadius: wp(1),
+    backgroundColor: colors.border,
+    alignSelf: 'center',
+    marginBottom: hp(1.8),
+  },
+  wicketSheetTitle: {
+    fontSize: fontSize(18),
+    fontWeight: '900',
+    color: colors.text,
+    marginBottom: hp(1.2),
+  },
+  wicketSheetSub: {
+    fontSize: fontSize(14),
+    fontWeight: '600',
+    color: colors.textMuted,
+    lineHeight: fontSize(20),
+    marginBottom: hp(1.4),
+  },
+  wicketGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: wp(2),
+    marginBottom: hp(0.5),
+  },
+  wicketTile: {
+    width: (wp(100) - wp(10) - wp(2) * 3) / 3,
+    minHeight: hp(11),
+    borderRadius: wp(3),
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(1.2),
+    paddingHorizontal: wp(1),
+    position: 'relative',
+  },
+  wicketTileSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryFaint,
+  },
+  wicketTilePressed: {
+    opacity: 0.92,
+  },
+  wicketTileCheck: {
+    position: 'absolute',
+    top: hp(0.6),
+    right: wp(1.5),
+    width: wp(5),
+    height: wp(5),
+    borderRadius: wp(2.5),
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wicketTileCheckText: {
+    fontSize: fontSize(11),
+    fontWeight: '900',
+    color: colors.background,
+  },
+  wicketTileIcon: {
+    fontSize: fontSize(26),
+    color: colors.textMuted,
+    marginBottom: hp(0.6),
+  },
+  wicketTileIconSelected: {
+    color: colors.primary,
+  },
+  wicketTileLabel: {
+    fontSize: fontSize(12),
+    fontWeight: '800',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  wicketTileLabelSelected: {
+    color: colors.primary,
+  },
+  wicketSheetFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(2),
+    marginTop: hp(2),
+    paddingTop: hp(1.5),
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  wicketCancelBtn: {
+    flex: 1,
+    paddingVertical: hp(1.5),
+    borderRadius: wp(3),
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+  },
+  wicketCancelBtnPressed: {
+    backgroundColor: colors.primaryFaint,
+  },
+  wicketCancelBtnText: {
+    fontSize: fontSize(15),
+    fontWeight: '800',
+    color: colors.text,
+  },
+  wicketConfirmBtn: {
+    flex: 2,
+    paddingVertical: hp(1.5),
+    borderRadius: wp(3),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.ballWicket,
+  },
+  wicketConfirmBtnDisabled: {
+    opacity: 0.45,
+  },
+  wicketConfirmBtnPressed: {
+    opacity: 0.92,
+  },
+  wicketConfirmBtnText: {
+    fontSize: fontSize(15),
+    fontWeight: '900',
+    color: colors.background,
+  },
+    width: (wp(100) - wp(10) - wp(2) * 3) / 4,
+    backgroundColor: colors.surfaceMuted,
+  },
+  wicketRunCellSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryFaint,
+  wicketRunCellTextSelected: {
+    color: colors.primary,
+  },
+  editSectionHeading: {
+    fontSize: fontSize(12),
+    fontWeight: '800',
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginTop: hp(1.2),
+    marginBottom: hp(0.4),
+  },
+  editModalSheet: {
+    backgroundColor: colors.background,
+    borderRadius: wp(3),
+    padding: wp(4),
+    maxHeight: '85%',
+  },
+  editParamRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: wp(2.5),
+    paddingHorizontal: wp(3),
+    paddingVertical: hp(1.2),
+  },
+  editParamLabels: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: wp(2),
+  },
+  editParamTitle: {
+    fontSize: fontSize(15),
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: hp(0.15),
+  },
+  editParamSub: {
+    fontSize: fontSize(12),
+    fontWeight: '500',
+    color: colors.textMuted,
+  },
+  editParamSpacer: {
+    height: hp(1),
+  },
+  editStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(2.5),
+  },
+  editStepperBtn: {
+    width: wp(9),
+    height: wp(9),
+    borderRadius: wp(4.5),
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+  },
+  editStepperBtnPressed: {
+    backgroundColor: colors.primaryFaint,
+  },
+  editStepperBtnText: {
+    fontSize: fontSize(18),
+    fontWeight: '400',
+    color: colors.text,
+    lineHeight: fontSize(20),
+  },
+  editStepperValue: {
+    minWidth: wp(7),
+    textAlign: 'center',
+    fontSize: fontSize(18),
+    fontWeight: '900',
+    color: colors.text,
+  },
+  editHint: {
+    fontSize: fontSize(12),
+    lineHeight: fontSize(17),
+    fontWeight: '500',
+    color: colors.textMuted,
+    marginTop: hp(1),
+  },
+++ b/src/components/OnboardingNativeAd.tsx
+import mobileAds, {
+import { useAdFlags } from '../hooks/useAdFlags';
+  const { isNative, isAds } = useAdFlags();
+    if (!isAds) {
+      return;
+    }
+    if (!isNative) {
+      return;
+    }
+      .catch(error => {
+        console.error('error', error);
+
+  }, [isNative, isAds]);
+    if (!isAds) {
+      return;
+    }
+
+  if (!isNative || failed) {
+++ b/src/components/StickyBottomBannerAd.tsx
+import React, { useCallback, useMemo, useState } from 'react';
+import { BANNER_AD_UNIT_IDS } from '../config/adUnitIds';
+import { useAdFlags } from '../hooks/useAdFlags';
+ * Tries H1 (high) → H2 (medium) → H3 (normal) until one loads.
+  const { isBanner, isAds } = useAdFlags();
+  const [adIndex, setAdIndex] = useState(0);
+  if (!isAds) {
+    return null;
+  }
+
+  if (!isBanner) {
+    return null;
+  }
+
+  const unitId = useMemo(() => BANNER_AD_UNIT_IDS[adIndex], [adIndex]);
+
+  const handleAdFailedToLoad = useCallback(() => {
+    setAdIndex(current => {
+      const next = current + 1;
+      if (next < BANNER_AD_UNIT_IDS.length) {
+        return next;
+      }
+      setVisible(false);
+      return current;
+    });
+  }, []);
+
+  if (!visible || !unitId) {
+        key={unitId}
+        unitId={unitId}
+        onAdFailedToLoad={handleAdFailedToLoad}
+++ b/src/config/adRemoteConfig.ts
+/** Firebase Remote Config key — value is a JSON string of {@link AdRemoteConfig}. */
+export const AD_REMOTE_CONFIG_KEY = 'ads';
+
+export type AdRemoteConfig = {
+  isAds: boolean;
+  isHomeBanner: boolean;
+  isBanner: boolean;
+  isOpenApp: boolean;
+  isInter: boolean;
+  isNative: boolean;
+};
+
+function isAdRemoteConfig(value: unknown): value is AdRemoteConfig {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const flags = value as Record<string, unknown>;
+  return (
+    typeof flags.isAds === 'boolean' &&
+    typeof flags.isHomeBanner === 'boolean' &&
+    typeof flags.isBanner === 'boolean' &&
+    typeof flags.isOpenApp === 'boolean' &&
+    typeof flags.isInter === 'boolean' &&
+    typeof flags.isNative === 'boolean'
+  );
+}
+
+export function parseAdRemoteConfig(raw: string): AdRemoteConfig | null {
+  if (!raw.trim()) {
+    return null;
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return isAdRemoteConfig(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+++ b/src/config/adUnitIds.ts
+
+export const HOME_BANNER_AD_UNIT_IDs = {
+  H1: 'ca-app-pub-7085320120847108/2308829093',
+  H2: 'ca-app-pub-7085320120847108/8682665755',
+  H3: 'ca-app-pub-7085320120847108/3317668756',
+};
+
+/** Home empty-state banner: H1 (high) → H2 (medium) → H3 (normal). */
+export const HOME_EMPTY_BANNER_AD_UNIT_IDS = __DEV__
+  ? [TestIds.BANNER]
+  : [
+      HOME_BANNER_AD_UNIT_IDs.H1,
+      HOME_BANNER_AD_UNIT_IDs.H2,
+      HOME_BANNER_AD_UNIT_IDs.H3,
+    ];
+
+// H1: ca-app-pub-7085320120847108/6252473767, H2: ca-app-pub-7085320120847108/2313228757
+
+export const BANNER_AD_UNIT_IDs = {
+  H1: 'ca-app-pub-7085320120847108/6252473767',
+  H2: 'ca-app-pub-7085320120847108/2313228757',
+  H3: 'ca-app-pub-7085320120847108/3570078520',
+};
+
+/** Sticky bottom banner: H1 (high) → H2 (medium) → H3 (normal). */
+export const BANNER_AD_UNIT_IDS = __DEV__
+  ? [TestIds.BANNER]
+  : [
+      BANNER_AD_UNIT_IDs.H1,
+      BANNER_AD_UNIT_IDs.H2,
+      BANNER_AD_UNIT_IDs.H3,
+    ];
+// H1: ca-app-pub-7085320120847108/3856880335
+
+++ b/src/config/fetchAdRemoteConfig.ts
+import remoteConfig from '@react-native-firebase/remote-config';
+import {
+  AD_REMOTE_CONFIG_KEY,
+  parseAdRemoteConfig,
+  type AdRemoteConfig,
+} from './adRemoteConfig';
+import { useAdConfigStore } from '../store/useAdConfigStore';
+
+export async function initializeAdRemoteConfig(): Promise<AdRemoteConfig | null> {
+  const { setConfig, setReady } = useAdConfigStore.getState();
+
+  try {
+    await remoteConfig().setConfigSettings({
+      minimumFetchIntervalMillis: __DEV__ ? 0 : 3_600_000,
+    });
+    await remoteConfig().fetchAndActivate();
+    const raw = remoteConfig().getValue(AD_REMOTE_CONFIG_KEY).asString();
+
+    const config = parseAdRemoteConfig(raw);
+
+    if (!config) {
+      console.warn(
+        `Remote Config "${AD_REMOTE_CONFIG_KEY}" is missing or invalid`,
+      );
+    }
+
+    setConfig(config);
+    setReady(true);
+    return config;
+  } catch (error) {
+    console.error('Firebase Remote Config fetch failed', error);
+    setConfig(null);
+    setReady(true);
+    return null;
+  }
+}
+++ b/src/hooks/useAdFlags.ts
+import { useMemo } from 'react';
+import { adFlagsFromConfig } from '../store/useAdConfigStore';
+import { useAdConfigStore } from '../store/useAdConfigStore';
+
+export function useAdFlags() {
+  const config = useAdConfigStore(s => s.config);
+
+  return useMemo(() => adFlagsFromConfig(config), [config]);
+}
+++ b/src/screens/HomeScreen.tsx
+  Image,
+import { PNGs } from '../assets/images/pngs';
+import { useAdFlags } from '../hooks/useAdFlags';
+import {
+  formatMatchResult,
+  formatOvers,
+  formatPlayedDateCompact,
+  isMatchLive,
+  seasonAggregateRuns,
+  seasonAggregateWickets,
+} from '../utils/cricketFormat';
+const FAB_SHOW_Y = 280;
+const FAB_HIDE_Y = 180;
+type LastMatchPreviewProps = {
+  match: MatchSummary;
+  onPress: () => void;
+  onLongPress: () => void;
+};
+
+function LastMatchPreview({
+  match: m,
+  onPress,
+  onLongPress,
+}: LastMatchPreviewProps) {
+  const [first, second] = m.innings;
+  const live = isMatchLive(m);
+  const { headline } = formatMatchResult(m);
+  const tied = !live && m.margin.kind === 'tie';
+  const winnerFirst = !live && !tied && first.teamId === m.winnerTeamId;
+  const winnerSecond = !live && !tied && second.teamId === m.winnerTeamId;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={420}
+      style={({ pressed }) => [
+        styles.lastMatchCard,
+        pressed && styles.lastMatchCardPressed,
+      ]}
+      android_ripple={{ color: colors.primarySoft, foreground: true }}
+      accessibilityRole="button"
+      accessibilityLabel="Open last match details"
+      accessibilityHint="Long press to delete this match"
+    >
+      <View style={styles.lastMatchTop}>
+        <View style={styles.lastMatchStatusRow}>
+          <View
+            style={[
+              styles.lastMatchDot,
+              live ? styles.lastMatchDotLive : styles.lastMatchDotFinal,
+            ]}
+          />
+          <Text style={styles.lastMatchStatus}>{live ? 'LIVE' : 'FINAL'}</Text>
+        </View>
+        <Text style={styles.lastMatchDate}>
+          {formatPlayedDateCompact(m.playedAt)}
+        </Text>
+      </View>
+
+      <View style={styles.lastMatchTeams}>
+        <View style={styles.lastMatchTeamCol}>
+          <Text style={styles.lastMatchTeamName} numberOfLines={1}>
+            {first.teamName}
+          </Text>
+          <Text style={styles.lastMatchScoreRow}>
+            <Text
+              style={[
+                styles.lastMatchScoreMain,
+                winnerFirst && styles.lastMatchScoreWinner,
+              ]}
+            >
+              {first.runs}
+            </Text>
+            <Text style={styles.lastMatchScoreWkts}>/{first.wickets}</Text>
+          </Text>
+          <Text style={styles.lastMatchOvers}>
+            {formatOvers(first.overs)} Overs
+          </Text>
+        </View>
+
+        <View style={styles.lastMatchVs}>
+          <Text style={styles.lastMatchVsText}>VS</Text>
+        </View>
+
+        <View style={[styles.lastMatchTeamCol, styles.lastMatchTeamColRight]}>
+          <Text
+            style={[styles.lastMatchTeamName, styles.lastMatchTeamNameRight]}
+            numberOfLines={1}
+          >
+            {second.teamName}
+          </Text>
+          <Text
+            style={[styles.lastMatchScoreRow, styles.lastMatchScoreRowRight]}
+          >
+            <Text
+              style={[
+                styles.lastMatchScoreMain,
+                winnerSecond && styles.lastMatchScoreWinner,
+                !winnerSecond && !live && styles.lastMatchScoreMuted,
+              ]}
+            >
+              {second.runs}
+            </Text>
+            <Text style={styles.lastMatchScoreWkts}>/{second.wickets}</Text>
+          </Text>
+          <Text style={[styles.lastMatchOvers, styles.lastMatchOversRight]}>
+            {formatOvers(second.overs)} Overs
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.lastMatchResultRow}>
+        <View style={styles.lastMatchTrophy}>
+          <Image
+            source={PNGs.TrophyIcon}
+            style={{ width: wp(4), height: wp(4), tintColor: colors.primary }}
+          />
+        </View>
+        <Text style={styles.lastMatchResult} numberOfLines={2}>
+          {headline}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+type SeasonOverviewProps = {
+  matchCount: number;
+  totalRuns: number;
+  totalWickets: number;
+};
+
+function SeasonOverview({
+  matchCount,
+  totalRuns,
+  totalWickets,
+}: SeasonOverviewProps) {
+  return (
+    <View style={styles.seasonGrid}>
+      <View style={[styles.seasonCard, styles.seasonMatchesCard]}>
+        <View style={styles.seasonIconWrap}>
+          {/* <Text style={styles.seasonIconText}>{'\u26BE'}</Text> */}
+          <Image
+            source={PNGs.BatBallIcon}
+            style={{ width: wp(4), height: wp(4), tintColor: colors.primary }}
+          />
+        </View>
+        <Text style={styles.seasonBigValue}>{matchCount}</Text>
+        <Text style={styles.seasonLabel}>MATCHES</Text>
+      </View>
+
+      <View style={styles.seasonRightCol}>
+        <View style={[styles.seasonCard, styles.seasonStatCard]}>
+          <View style={styles.seasonStatTop}>
+            <Text style={styles.seasonStatLabel}>TOTAL RUNS</Text>
+            <Image
+              source={PNGs.GraphIcon}
+              style={{ width: wp(4), height: wp(4), tintColor: colors.primary }}
+            />
+          </View>
+          <Text style={[styles.seasonStatValue, styles.seasonRunsValue]}>
+            {totalRuns.toLocaleString()}
+          </Text>
+        </View>
+
+        <View style={[styles.seasonCard, styles.seasonStatCard]}>
+          <View style={styles.seasonStatTop}>
+            <Text style={styles.seasonStatLabel}>WICKETS</Text>
+            <Image
+              source={PNGs.DotCircleIcon}
+              style={{
+                width: wp(5),
+                height: wp(5),
+                tintColor: colors.ballWicket,
+              }}
+            />
+          </View>
+          <Text style={[styles.seasonStatValue, styles.seasonWicketsValue]}>
+            {totalWickets.toLocaleString()}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+  const { isInter, isNative, isAds } = useAdFlags();
+  const openDrawer = useCallback(() => {
+    navigation.dispatch(DrawerActions.openDrawer());
+  }, [navigation]);
+
+    if (isInter && isAds) {
+      load();
+    }
+  }, [load, isInter, isAds]);
+    if (isInter && isAds && isLoaded) {
+  }, [isInter, isAds, isLoaded, show, proceedToNewMatch]);
+  const listSections = useMemo(() => {
+    if (isNative && isAds) {
+      return sectionsWithNativeAdsBetweenMatches(sections);
+    }
+    return sections.map(section => ({
+      title: section.title,
+      sortKey: section.sortKey,
+      data: section.data.map(match => ({ kind: 'match' as const, match })),
+    }));
+  }, [sections, isNative, isAds]);
+
+  const totalMatches = savedMatches.length;
+  const lastMatch = useMemo(() => {
+    if (savedMatches.length === 0) {
+      return null;
+    }
+    return [...savedMatches].sort(
+      (a, b) => new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime(),
+    )[0];
+  }, [savedMatches]);
+
+  const seasonStats = useMemo(
+    () => ({
+      runs: seasonAggregateRuns(savedMatches),
+      wickets: seasonAggregateWickets(savedMatches),
+    }),
+    [savedMatches],
+  const openLastMatch = useCallback(() => {
+    if (!lastMatch) {
+      return;
+    }
+    navigation.navigate('MatchDetail', { matchId: lastMatch.id });
+  }, [lastMatch, navigation]);
+
+          if (totalMatches === 0) {
+            return null;
+          }
+            <View style={styles.headerBar}>
+              <View style={styles.avatarWrap}>
+                <Image
+                  source={PNGs.LOGO}
+                  style={styles.avatar}
+                  resizeMode="contain"
+                  accessibilityLabel="Box Cricket logo"
+                />
+              </View>
+              <Text style={styles.appTitle}>Box Cricket</Text>
+                onPress={openDrawer}
+                  styles.settingsBtn,
+                  pressed && styles.settingsBtnPressed,
+                  color: colors.primarySoft,
+                accessibilityLabel="Open settings menu"
+                <Image
+                  source={PNGs.SettingIcon}
+                  style={[styles.avatar, { tintColor: colors.primary }]}
+                  resizeMode="contain"
+                  accessibilityLabel="Box Cricket logo"
+                />
+                {/* <Text style={styles.settingsIcon}>{'\u2699'}</Text> */}
+
+            <View style={styles.ctaCard}>
+              <Text style={styles.ctaTitle}>Ready for Action?</Text>
+              <Text style={styles.ctaSub}>
+                Set up teams and start scoring instantly.
+              </Text>
+              <Pressable
+                onPress={onPressStartNewInnings}
+                style={({ pressed }) => [
+                  styles.quickStartBtn,
+                  pressed && styles.quickStartBtnPressed,
+                ]}
+                android_ripple={{
+                  color: 'rgba(255, 255, 255, 0.22)',
+                  foreground: true,
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Quick start. Create a match and begin scoring."
+              >
+                <Image
+                  source={PNGs.PLAY_ICON}
+                  style={{
+                    width: wp(4),
+                    height: wp(4),
+                    tintColor: colors.background,
+                  }}
+                />
+                <Text style={styles.quickStartText}>Quick Start</Text>
+              </Pressable>
+            </View>
+
+            {lastMatch ? (
+              <View style={styles.dashboardSection}>
+                <Text style={styles.dashboardHeading}>Last Match</Text>
+                <LastMatchPreview
+                  match={lastMatch}
+                  onPress={openLastMatch}
+                  onLongPress={() => confirmDeleteMatch(lastMatch)}
+                />
+              </View>
+            ) : null}
+
+            {totalMatches > 0 ? (
+              <View style={styles.dashboardSection}>
+                <Text style={styles.dashboardHeading}>Season Overview</Text>
+                <SeasonOverview
+                  matchCount={totalMatches}
+                  totalRuns={seasonStats.runs}
+                  totalWickets={seasonStats.wickets}
+                />
+            ) : null}
+
+            {totalMatches > 0 ? (
+              <View style={styles.allMatchesHeader}>
+                <Text style={styles.dashboardHeading}>All Matches</Text>
+                <Text style={styles.allMatchesSub}>
+                  Newest first under each day
+            ) : null}
+              Tap Quick Start to create a match — it will show up here and stay
+              saved on this device.
+          // android_ripple={{
+          //   color: 'rgba(255, 255, 255, 0.25)',
+          //   borderless: true,
+          // }}
+          accessibilityLabel="Start new match"
+          <Image
+            source={PNGs.BatBallIcon}
+            style={{
+              width: wp(5),
+              height: wp(5),
+              tintColor: colors.background,
+            }}
+          />
+          <Text style={styles.fabPlus}>New Match</Text>
+const cardShadow = Platform.select({
+  ios: {
+    shadowColor: '#070707',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+  },
+  android: {
+    elevation: 3,
+  },
+  default: {},
+});
+
+    marginBottom: hp(0.5),
+    paddingHorizontal: wp(1),
+  headerBar: {
+    marginBottom: hp(2),
+  avatarWrap: {
+    width: wp(11),
+    height: wp(11),
+    borderRadius: wp(5.5),
+    backgroundColor: colors.primaryFaint,
+    borderWidth: 1.5,
+    borderColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  avatar: {
+    width: wp(8),
+    height: wp(8),
+    borderRadius: 100,
+  appTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: -0.3,
+  settingsBtn: {
+    width: wp(11),
+    height: wp(11),
+    borderRadius: wp(5.5),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsBtnPressed: {
+    opacity: 0.7,
+  },
+  settingsIcon: {
+    fontSize: fontSize(22),
+    lineHeight: fontSize(24),
+  ctaCard: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: wp(4),
+    borderWidth: 1,
+    borderColor: colors.primarySoft,
+    paddingHorizontal: wp(4.5),
+    paddingVertical: hp(2.2),
+    marginBottom: hp(2),
+    justifyContent: 'center',
+    alignItems: 'center',
+    // ...cardShadow,
+  },
+  ctaTitle: {
+    fontSize: fontSize(22),
+    marginBottom: hp(0.5),
+  ctaSub: {
+    marginBottom: hp(1.6),
+  quickStartBtn: {
+    justifyContent: 'center',
+    borderRadius: 100,
+    paddingVertical: hp(1.5),
+    gap: wp(2),
+    width: '100%',
+  quickStartBtnPressed: {
+  quickStartIcon: {
+    fontSize: fontSize(14),
+    fontWeight: '800',
+    color: colors.background,
+    marginTop: -hp(0.1),
+  quickStartText: {
+    fontSize: fontSize(16),
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  dashboardSection: {
+    marginBottom: hp(2),
+  },
+  dashboardHeading: {
+    fontSize: fontSize(18),
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: hp(1),
+  },
+  lastMatchCard: {
+    backgroundColor: colors.background,
+    borderRadius: wp(4),
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(1.8),
+    ...cardShadow,
+  },
+  lastMatchCardPressed: {
+    backgroundColor: colors.primaryFaint,
+  },
+  lastMatchTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: hp(1.4),
+  },
+  lastMatchStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(1.5),
+  },
+  lastMatchDot: {
+    width: wp(2),
+    height: wp(2),
+    borderRadius: wp(1),
+  },
+  lastMatchDotFinal: {
+    backgroundColor: colors.ballWicket,
+  lastMatchDotLive: {
+    backgroundColor: colors.primary,
+  },
+  lastMatchStatus: {
+    fontSize: fontSize(11),
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: colors.text,
+  },
+  lastMatchDate: {
+    fontSize: fontSize(12),
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  lastMatchTeams: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  lastMatchTeamCol: {
+  lastMatchTeamColRight: {
+    alignItems: 'flex-end',
+  },
+  lastMatchTeamName: {
+    fontSize: fontSize(15),
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: hp(0.4),
+  },
+  lastMatchTeamNameRight: {
+    textAlign: 'right',
+  },
+  lastMatchScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  lastMatchScoreRowRight: {
+    justifyContent: 'flex-end',
+  },
+  lastMatchScoreMain: {
+    fontSize: fontSize(28),
+    fontWeight: '900',
+    color: colors.text,
+    letterSpacing: -0.5,
+  },
+  lastMatchScoreWinner: {
+    color: colors.primary,
+  },
+  lastMatchScoreMuted: {
+    color: colors.loserMuted,
+  },
+  lastMatchScoreWkts: {
+    fontSize: fontSize(18),
+    fontWeight: '700',
+    color: colors.textMuted,
+  lastMatchOvers: {
+    marginTop: hp(0.3),
+    color: colors.textMuted,
+  lastMatchOversRight: {
+    textAlign: 'right',
+  },
+  lastMatchVs: {
+    width: wp(9),
+    height: wp(9),
+    borderRadius: wp(4.5),
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: wp(2),
+    marginTop: hp(1.2),
+  },
+  lastMatchVsText: {
+    fontSize: fontSize(10),
+    fontWeight: '900',
+    color: colors.textMuted,
+    letterSpacing: 0.3,
+  },
+  lastMatchResultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: hp(1.6),
+    paddingTop: hp(1.4),
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: wp(2),
+    justifyContent: 'center',
+  },
+  lastMatchTrophy: {
+    width: wp(7),
+    height: wp(7),
+    borderRadius: wp(3.5),
+    backgroundColor: colors.primaryFaint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lastMatchTrophyIcon: {
+    fontSize: fontSize(14),
+    fontWeight: '800',
+    color: colors.primary,
+  },
+  lastMatchResult: {
+    fontSize: fontSize(14),
+    fontWeight: '700',
+    color: colors.primary,
+    lineHeight: fontSize(19),
+  },
+  seasonGrid: {
+    flexDirection: 'row',
+    gap: wp(3),
+    minHeight: hp(18),
+  },
+  seasonRightCol: {
+    flex: 1,
+    gap: wp(3),
+  },
+  seasonCard: {
+    backgroundColor: colors.background,
+    borderRadius: wp(3.5),
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...cardShadow,
+  },
+  seasonMatchesCard: {
+    flex: 1,
+    paddingHorizontal: wp(3.5),
+    paddingVertical: hp(2),
+    justifyContent: 'space-between',
+  },
+  seasonIconWrap: {
+    width: wp(10),
+    height: wp(10),
+    borderRadius: wp(2.5),
+    backgroundColor: colors.primaryFaint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  seasonIconText: {
+    fontSize: fontSize(20),
+    color: colors.primary,
+  },
+  seasonBigValue: {
+    fontSize: fontSize(36),
+    fontWeight: '900',
+    color: colors.text,
+    // marginTop: hp(1),
+  },
+  seasonLabel: {
+    fontSize: fontSize(11),
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: colors.textMuted,
+  },
+  seasonStatCard: {
+    flex: 1,
+    paddingHorizontal: wp(3.5),
+    paddingVertical: hp(1.6),
+    justifyContent: 'center',
+  },
+  seasonStatTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: hp(0.6),
+  },
+  seasonStatLabel: {
+    fontSize: fontSize(10),
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    color: colors.textMuted,
+  },
+  seasonStatTrend: {
+    fontSize: fontSize(14),
+    fontWeight: '800',
+    color: colors.primary,
+  },
+  seasonWicketIcon: {
+    width: wp(5.5),
+    height: wp(5.5),
+    borderRadius: wp(2.75),
+    borderWidth: 1.5,
+    borderColor: colors.ballWicket,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  seasonWicketIconText: {
+    fontSize: fontSize(10),
+    fontWeight: '900',
+    color: colors.ballWicket,
+  },
+  seasonStatValue: {
+    fontSize: fontSize(24),
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  seasonRunsValue: {
+    color: colors.primary,
+  },
+  seasonWicketsValue: {
+    color: colors.ballWicket,
+  },
+  allMatchesHeader: {
+    marginBottom: hp(0.5),
+    paddingTop: hp(0.5),
+  },
+  allMatchesSub: {
+    fontSize: fontSize(13),
+    color: colors.textMuted,
+    marginTop: -hp(0.4),
+    marginBottom: hp(0.8),
+    flexDirection: 'row',
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(2.2),
+    gap: wp(2),
+    borderRadius: wp(4),
+    fontSize: fontSize(14),
+    fontWeight: '500',
+++ b/src/screens/NewMatchScreen.tsx
+import React, { useCallback, useState } from 'react';
+type SetupStep = 'configure' | 'toss';
+type StepperRowProps = {
+  title: string;
+  subtitle: string;
+  value: number;
+  onDecrement: () => void;
+  onIncrement: () => void;
+  decrementLabel: string;
+  incrementLabel: string;
+};
+
+function StepperRow({
+  title,
+  subtitle,
+  value,
+  onDecrement,
+  onIncrement,
+  decrementLabel,
+  incrementLabel,
+}: StepperRowProps) {
+  return (
+    <View style={styles.paramRow}>
+      <View style={styles.paramLabels}>
+        <Text style={styles.paramTitle}>{title}</Text>
+        <Text style={styles.paramSub}>{subtitle}</Text>
+      </View>
+      <View style={styles.stepper}>
+        <Pressable
+          onPress={onDecrement}
+          style={({ pressed }) => [
+            styles.stepperBtn,
+            pressed && styles.stepperBtnPressed,
+          ]}
+          android_ripple={{ color: colors.primarySoft, borderless: true }}
+          accessibilityRole="button"
+          accessibilityLabel={decrementLabel}
+        >
+          <Text style={styles.stepperBtnText}>{'\u2212'}</Text>
+        </Pressable>
+        <Text style={styles.stepperValue}>{value}</Text>
+        <Pressable
+          onPress={onIncrement}
+          style={({ pressed }) => [
+            styles.stepperBtn,
+            pressed && styles.stepperBtnPressed,
+          ]}
+          android_ripple={{ color: colors.primarySoft, borderless: true }}
+          accessibilityRole="button"
+          accessibilityLabel={incrementLabel}
+        >
+          <Text style={styles.stepperBtnText}>+</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+  const [step, setStep] = useState<SetupStep>('configure');
+  const [overs, setOvers] = useState(10);
+  const [players, setPlayers] = useState(11);
+  const teamALabel = teamA.trim() || DEFAULT_TEAM_A_NAME;
+  const teamBLabel = teamB.trim() || DEFAULT_TEAM_B_NAME;
+
+  const validateTeams = useCallback(() => {
+      return false;
+    setError(null);
+    return true;
+  }, [teamA, teamB]);
+
+  const onPressStartToss = useCallback(() => {
+    if (!validateTeams()) {
+      return;
+    setStep('toss');
+  }, [validateTeams]);
+
+  const startMatch = useCallback(() => {
+    const a = teamA.trim() || DEFAULT_TEAM_A_NAME;
+    const b = teamB.trim() || DEFAULT_TEAM_B_NAME;
+    if (a.toLowerCase() === b.toLowerCase()) {
+      setError('Team names must be different (change one side or both).');
+    if (players < WICKETS_MIN || players > WICKETS_MAX) {
+        `Players per team must be between ${WICKETS_MIN} and ${WICKETS_MAX}.`,
+      wicketsPerSide: players,
+  }, [teamA, teamB, overs, players, batFirst, addMatch]);
+          onPress={() => {
+            if (step === 'toss') {
+              setStep('configure');
+              setError(null);
+              return;
+            }
+            navigation.goBack();
+          }}
+          accessibilityLabel={
+            step === 'toss' ? 'Back to match setup' : 'Go back'
+          }
+          <Text style={styles.backLabel}>
+            {step === 'toss' ? 'Setup' : 'Home'}
+          </Text>
+        {step === 'configure' ? (
+          <>
+            <ScrollView
+              contentContainerStyle={[
+                styles.scroll,
+                { paddingBottom: hp(12) + Math.max(insets.bottom, hp(2)) },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.title}>Match Setup</Text>
+              <Text style={styles.lead}>
+                Configure the teams and match parameters.
+              </Text>
+              <View style={styles.card}>
+                <Text style={styles.teamFieldLabel}>Team A</Text>
+                <View style={styles.inputWrap}>
+                  <Image
+                    source={PNGs.BatBallOutlineIcon}
+                    style={{
+                      width: wp(5),
+                      height: wp(5),
+                    }}
+                  />
+                  <TextInput
+                    value={teamA}
+                    onChangeText={t => {
+                      setTeamA(t);
+                      setError(null);
+                    }}
+                    placeholder="Enter team name"
+                    placeholderTextColor={colors.textMuted}
+                    style={styles.input}
+                    autoCorrect={false}
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                    accessibilityLabel="Team A name"
+                  />
+                </View>
+                <View style={styles.vsDivider}>
+                  <View style={styles.vsLine} />
+                  <Text style={styles.vsText}>vs</Text>
+                  <View style={styles.vsLine} />
+                </View>
+
+                <Text style={styles.teamFieldLabel}>Team B</Text>
+                <View style={styles.inputWrap}>
+                  <Image
+                    source={PNGs.BatBallOutlineIcon}
+                    style={{
+                      width: wp(5),
+                      height: wp(5),
+                    }}
+                  />
+                  <TextInput
+                    value={teamB}
+                    onChangeText={t => {
+                      setTeamB(t);
+                      setError(null);
+                    }}
+                    placeholder="Enter team name"
+                    placeholderTextColor={colors.textMuted}
+                    style={styles.input}
+                    autoCorrect={false}
+                    autoCapitalize="words"
+                    returnKeyType="done"
+                    accessibilityLabel="Team B name"
+                  />
+                </View>
+              </View>
+              <View style={styles.card}>
+                <StepperRow
+                  title="Overs"
+                  subtitle="Per innings"
+                  value={overs}
+                  onDecrement={() => {
+                    setOvers(v => Math.max(OVERS_MIN, v - 1));
+                    setError(null);
+                  }}
+                  onIncrement={() => {
+                    setOvers(v => Math.min(OVERS_MAX, v + 1));
+                    setError(null);
+                  }}
+                  decrementLabel="Decrease overs"
+                  incrementLabel="Increase overs"
+                />
+                <View style={styles.paramDivider} />
+                <StepperRow
+                  title="Players"
+                  subtitle="Per team"
+                  value={players}
+                  onDecrement={() => {
+                    setPlayers(v => Math.max(WICKETS_MIN, v - 1));
+                    setError(null);
+                  }}
+                  onIncrement={() => {
+                    setPlayers(v => Math.min(WICKETS_MAX, v + 1));
+                    setError(null);
+                  }}
+                  decrementLabel="Decrease players"
+                  incrementLabel="Increase players"
+                />
+              </View>
+
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+            </ScrollView>
+
+            <View
+              style={[
+                styles.footer,
+                { paddingBottom: Math.max(insets.bottom, hp(2)) },
+              ]}
+            >
+                onPress={onPressStartToss}
+                  styles.cta,
+                  pressed && styles.ctaPressed,
+                android_ripple={{ color: 'rgba(255,255,255,0.22)' }}
+                accessibilityLabel="Start Match"
+              >
+                <Text style={styles.ctaText}>Start Toss</Text>
+                <Image source={PNGs.RightArrowIcon} style={{width: wp(4), height: wp(4), tintColor: colors.background}}/>
+              </Pressable>
+            </View>
+          </>
+        ) : (
+          <ScrollView
+            contentContainerStyle={[
+              styles.scroll,
+              { paddingBottom: Math.max(insets.bottom, hp(4)) },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={styles.title}>Toss</Text>
+            <Text style={styles.lead}>
+              Who bats first? Pick the team that won the toss.
+            </Text>
+
+            <View style={styles.card}>
+              <Pressable
+                onPress={() => setBatFirst(0)}
+                style={({ pressed }) => [
+                  styles.tossOption,
+                  batFirst === 0 && styles.tossOptionActive,
+                  pressed && styles.tossOptionPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: batFirst === 0 }}
+                    styles.tossOptionTitle,
+                    batFirst === 0 && styles.tossOptionTitleActive,
+                  numberOfLines={1}
+                  {teamALabel}
+                <Text style={styles.tossOptionSub}>Bats first</Text>
+              <View style={styles.paramDivider} />
+
+                onPress={() => setBatFirst(1)}
+                  styles.tossOption,
+                  batFirst === 1 && styles.tossOptionActive,
+                  pressed && styles.tossOptionPressed,
+                accessibilityState={{ selected: batFirst === 1 }}
+                    styles.tossOptionTitle,
+                    batFirst === 1 && styles.tossOptionTitleActive,
+                  numberOfLines={1}
+                  {teamBLabel}
+                <Text style={styles.tossOptionSub}>Bats first</Text>
+            </View>
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+              onPress={startMatch}
+                styles.cta,
+                pressed && styles.ctaPressed,
+              android_ripple={{ color: 'rgba(255,255,255,0.22)' }}
+              accessibilityLabel="Create match and start scoring"
+              <Text style={styles.ctaText}>Start match</Text>
+              <Text style={styles.ctaArrow}>{'\u2192'}</Text>
+          </ScrollView>
+        )}
+const cardShadow = Platform.select({
+  ios: {
+    shadowColor: '#070707',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+  },
+  android: {
+    elevation: 3,
+  },
+  default: {},
+});
+
+    alignSelf: 'flex-start',
+    paddingTop: hp(1),
+    fontSize: fontSize(28),
+    marginBottom: hp(0.6),
+    marginBottom: hp(2.2),
+  card: {
+    backgroundColor: colors.background,
+    borderRadius: wp(4),
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(2),
+    marginBottom: hp(2),
+    ...cardShadow,
+  teamFieldLabel: {
+    fontSize: fontSize(14),
+    fontWeight: '700',
+    color: colors.text,
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: wp(3),
+    paddingHorizontal: wp(3),
+    backgroundColor: colors.background,
+    gap: wp(2.5)
+  },
+  inputIcon: {
+    fontSize: fontSize(18),
+    color: colors.primary,
+    marginRight: wp(2.5),
+  },
+  input: {
+    flex: 1,
+    paddingVertical: hp(1.5),
+  vsDivider: {
+    alignItems: 'center',
+    marginVertical: hp(2),
+    gap: wp(3),
+  vsLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+  vsText: {
+    fontSize: fontSize(13),
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: 0.5,
+  },
+  paramRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: wp(3),
+    paddingHorizontal: wp(3.5),
+    paddingVertical: hp(1.6),
+  paramLabels: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: wp(3),
+  paramTitle: {
+    color: colors.text,
+    marginBottom: hp(0.2),
+  },
+  paramSub: {
+    fontSize: fontSize(13),
+    fontWeight: '500',
+  paramDivider: {
+    height: hp(1.2),
+  stepper: {
+    alignItems: 'center',
+    gap: wp(3),
+  stepperBtn: {
+    width: wp(10),
+    height: wp(10),
+    borderRadius: wp(5),
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+  },
+  stepperBtnPressed: {
+    backgroundColor: colors.primaryFaint,
+  },
+  stepperBtnText: {
+    fontSize: fontSize(20),
+    fontWeight: '400',
+    color: colors.text,
+    lineHeight: fontSize(22),
+    marginTop: Platform.OS === 'ios' ? -hp(0.15) : 0,
+  },
+  stepperValue: {
+    minWidth: wp(8),
+    textAlign: 'center',
+    fontSize: fontSize(20),
+    fontWeight: '900',
+    color: colors.text,
+  },
+  tossOption: {
+    borderRadius: wp(3),
+    paddingVertical: hp(1.6),
+    paddingHorizontal: wp(3.5),
+  tossOptionActive: {
+  tossOptionPressed: {
+  tossOptionTitle: {
+    fontSize: fontSize(16),
+  tossOptionTitleActive: {
+  tossOptionSub: {
+    fontSize: fontSize(12),
+    fontWeight: '600',
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: wp(5),
+    paddingTop: hp(1.5),
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+    borderRadius: wp(6),
+    paddingVertical: hp(1.9),
+    gap: wp(2),
+  ctaArrow: {
+    fontSize: fontSize(20),
+    fontWeight: '600',
+++ b/src/store/useAdConfigStore.ts
+import { create } from 'zustand';
+import type { AdRemoteConfig } from '../config/adRemoteConfig';
+
+export type AdFlags = {
+  isAds: boolean;
+  isHomeBanner: boolean;
+  isBanner: boolean;
+  isOpenApp: boolean;
+  isInter: boolean;
+  isNative: boolean;
+};
+
+const NO_AD_FLAGS: AdFlags = {
+  isAds: false,
+  isHomeBanner: false,
+  isBanner: false,
+  isOpenApp: false,
+  isInter: false,
+  isNative: false,
+};
+
+function toAdFlags(config: AdRemoteConfig | null): AdFlags {
+  if (!config) {
+    return NO_AD_FLAGS;
+  }
+  const { isAds } = config;
+  return {
+    isAds,
+    isHomeBanner: isAds && config.isHomeBanner,
+    isBanner: isAds && config.isBanner,
+    isOpenApp: isAds && config.isOpenApp,
+    isInter: isAds && config.isInter,
+    isNative: isAds && config.isNative,
+  };
+}
+
+type AdConfigState = {
+  ready: boolean;
+  config: AdRemoteConfig | null;
+  setConfig: (config: AdRemoteConfig | null) => void;
+  setReady: (ready: boolean) => void;
+};
+
+export const useAdConfigStore = create<AdConfigState>(set => ({
+  ready: false,
+  config: null,
+  setConfig: config => set({ config }),
+  setReady: ready => set({ ready }),
+}));
+
+export function getAdFlags(): AdFlags {
+  const { config } = useAdConfigStore.getState();
+  return toAdFlags(config);
+}
+
+export function adFlagsFromConfig(config: AdRemoteConfig | null): AdFlags {
+  return toAdFlags(config);
+}
+++ b/src/theme/colors.ts
+  gray100: '#F5F5F5'
+++ b/src/utils/cricketFormat.ts
+/** Compact card date, e.g. "12 AUG 2023". */
+export function formatPlayedDateCompact(iso: string): string {
+  const d = new Date(iso);
+  const day = d.getDate();
+  const month = d
+    .toLocaleDateString(undefined, { month: 'short' })
+    .toUpperCase();
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+}
+
+export function seasonAggregateRuns(matches: MatchSummary[]): number {
+  return matches.reduce((sum, m) => sum + matchAggregateRuns(m), 0);
+}
+
+export function seasonAggregateWickets(matches: MatchSummary[]): number {
+  return matches.reduce(
+    (sum, m) => sum + m.innings[0].wickets + m.innings[1].wickets,
+    0,
+  );
+}
+
+++ b/yarn.lock
 # This file is generated by running "yarn install" inside your project.
 # Manual changes might be lost - proceed with caution!
 

@@ -5,7 +5,9 @@ import BootSplash from 'react-native-bootsplash';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import mobileAds, { useAppOpenAd } from 'react-native-google-mobile-ads';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { initializeAdRemoteConfig } from './src/config/fetchAdRemoteConfig';
 import { APP_OPEN_AD_UNIT_ID } from './src/config/adUnitIds';
+import { getAdFlags } from './src/store/useAdConfigStore';
 import RootNavigator from './src/navigation';
 
 const App = () => {
@@ -34,18 +36,26 @@ const App = () => {
     let cancelled = false;
     (async () => {
       try {
-        await mobileAds().initialize();
+        await initializeAdRemoteConfig();
+        if (getAdFlags().isAds) {
+          await mobileAds().initialize();
+        }
       } catch (e: any) {
-        console.error('Google Mobile Ads init failed', e);
+        console.error('App startup init failed', e);
       }
-      if (!cancelled) {
+      if (cancelled) {
+        return;
+      }
+      if (getAdFlags().isAds && getAdFlags().isOpenApp) {
         loadAppOpenAd();
+      } else {
+        hideSplashScreen();
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [loadAppOpenAd]);
+  }, [loadAppOpenAd, hideSplashScreen]);
 
   useEffect(() => {
     if (!appOpenLoaded) {

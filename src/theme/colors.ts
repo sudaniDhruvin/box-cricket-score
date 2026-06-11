@@ -21,4 +21,5 @@ export const colors = {
   ballNoBallRuns: '#7B1FA2',
   ballWicket: '#E53935',
   ballBye: '#78909C',
+  gray100: '#F5F5F5'
 } as const;

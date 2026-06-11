@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import {
+import mobileAds, {
   NativeAd,
   NativeAdView,
   NativeAsset,
@@ -16,16 +16,24 @@ import {
   NativeMediaView,
 } from 'react-native-google-mobile-ads';
 import { NATIVE_AD_UNIT_ID } from '../config/adUnitIds';
+import { useAdFlags } from '../hooks/useAdFlags';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
 
 export function OnboardingNativeAd() {
+  const { isNative, isAds } = useAdFlags();
   const [nativeAd, setNativeAd] = useState<NativeAd | null>(null);
   const [failed, setFailed] = useState(false);
   const cardFade = useRef(new Animated.Value(0)).current;
   const cardLift = useRef(new Animated.Value(6)).current;
 
   useEffect(() => {
+    if (!isAds) {
+      return;
+    }
+    if (!isNative) {
+      return;
+    }
     let cancelled = false;
     NativeAd.createForAdRequest(NATIVE_AD_UNIT_ID)
       .then(ad => {
@@ -33,7 +41,9 @@ export function OnboardingNativeAd() {
           setNativeAd(ad);
         }
       })
-      .catch(() => {
+      .catch(error => {
+        console.error('error', error);
+
         if (!cancelled) {
           setFailed(true);
         }
@@ -41,9 +51,13 @@ export function OnboardingNativeAd() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isNative, isAds]);
 
   useEffect(() => {
+    if (!isAds) {
+      return;
+    }
+
     if (!nativeAd) {
       return;
     }
@@ -74,7 +88,7 @@ export function OnboardingNativeAd() {
     ]).start();
   }, [nativeAd, cardFade, cardLift]);
 
-  if (failed) {
+  if (!isNative || failed) {
     return null;
   }
 

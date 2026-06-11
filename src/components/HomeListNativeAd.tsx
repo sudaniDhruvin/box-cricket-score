@@ -15,6 +15,7 @@ import {
   NativeMediaView,
 } from 'react-native-google-mobile-ads';
 import { NATIVE_AD_UNIT_ID } from '../config/adUnitIds';
+import { useAdFlags } from '../hooks/useAdFlags';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
 
@@ -22,10 +23,18 @@ import { fontSize, hp, wp } from '../utils';
  * One native ad row for the Home match list (inserted between match cards per day).
  */
 export function HomeListNativeAd() {
+  const { isNative, isAds } = useAdFlags();
   const [nativeAd, setNativeAd] = useState<NativeAd | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    if (!isAds) {
+      return;
+    }
+
+    if (!isNative) {
+      return;
+    }
     let cancelled = false;
     NativeAd.createForAdRequest(NATIVE_AD_UNIT_ID)
       .then(ad => {
@@ -41,7 +50,7 @@ export function HomeListNativeAd() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isNative]);
 
   useEffect(() => {
     if (!nativeAd) {
@@ -52,7 +61,7 @@ export function HomeListNativeAd() {
     };
   }, [nativeAd]);
 
-  if (failed) {
+  if (!isNative || failed) {
     return null;
   }
 

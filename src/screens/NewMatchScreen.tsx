@@ -4,7 +4,7 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -27,16 +27,70 @@ import { PNGs } from '../assets/images/pngs';
 
 type Nav = NativeStackNavigationProp<MainStackParamList, 'NewMatch'>;
 type NewMatchRoute = RouteProp<MainStackParamList, 'NewMatch'>;
+type SetupStep = 'configure' | 'toss';
 
-const OVERS_OPTIONS = [6, 8, 10, 12] as const;
 const OVERS_MIN = 1;
 const OVERS_MAX = 50;
-const WICKET_PRESETS = [4, 6, 8, 10, 11] as const;
 const WICKETS_MIN = 1;
 const WICKETS_MAX = 20;
-/** Used when the user leaves a name field empty (inputs stay blank). */
 const DEFAULT_TEAM_A_NAME = 'Team A';
 const DEFAULT_TEAM_B_NAME = 'Team B';
+
+type StepperRowProps = {
+  title: string;
+  subtitle: string;
+  value: number;
+  onDecrement: () => void;
+  onIncrement: () => void;
+  decrementLabel: string;
+  incrementLabel: string;
+};
+
+function StepperRow({
+  title,
+  subtitle,
+  value,
+  onDecrement,
+  onIncrement,
+  decrementLabel,
+  incrementLabel,
+}: StepperRowProps) {
+  return (
+    <View style={styles.paramRow}>
+      <View style={styles.paramLabels}>
+        <Text style={styles.paramTitle}>{title}</Text>
+        <Text style={styles.paramSub}>{subtitle}</Text>
+      </View>
+      <View style={styles.stepper}>
+        <Pressable
+          onPress={onDecrement}
+          style={({ pressed }) => [
+            styles.stepperBtn,
+            pressed && styles.stepperBtnPressed,
+          ]}
+          android_ripple={{ color: colors.primarySoft, borderless: true }}
+          accessibilityRole="button"
+          accessibilityLabel={decrementLabel}
+        >
+          <Text style={styles.stepperBtnText}>{'\u2212'}</Text>
+        </Pressable>
+        <Text style={styles.stepperValue}>{value}</Text>
+        <Pressable
+          onPress={onIncrement}
+          style={({ pressed }) => [
+            styles.stepperBtn,
+            pressed && styles.stepperBtnPressed,
+          ]}
+          android_ripple={{ color: colors.primarySoft, borderless: true }}
+          accessibilityRole="button"
+          accessibilityLabel={incrementLabel}
+        >
+          <Text style={styles.stepperBtnText}>+</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
 
 export function NewMatchScreen() {
   const insets = useSafeAreaInsets();
@@ -44,20 +98,37 @@ export function NewMatchScreen() {
   const { params } = useRoute<NewMatchRoute>();
   const addMatch = useMatchStore(s => s.addMatch);
 
+  const [step, setStep] = useState<SetupStep>('configure');
   const [teamA, setTeamA] = useState('');
   const [teamB, setTeamB] = useState('');
-  /** When non-null, overs come from a preset chip. When null, use `customOvers` text. */
-  const lastPresetRef = useRef(8);
-  const [presetOvers, setPresetOvers] = useState<number | null>(8);
-  const [customOvers, setCustomOvers] = useState('');
-  const lastWicketPresetRef = useRef(10);
-  const [presetWickets, setPresetWickets] = useState<number | null>(10);
-  const [customWickets, setCustomWickets] = useState('');
+  const [overs, setOvers] = useState(10);
+  const [players, setPlayers] = useState(11);
   const [batFirst, setBatFirst] = useState<0 | 1>(0);
   const [error, setError] = useState<string | null>(null);
   const [scoringMatchId, setScoringMatchId] = useState<string | null>(
     () => params.resumeMatchId ?? null,
   );
+
+  const teamALabel = teamA.trim() || DEFAULT_TEAM_A_NAME;
+  const teamBLabel = teamB.trim() || DEFAULT_TEAM_B_NAME;
+
+  const validateTeams = useCallback(() => {
+    const a = teamA.trim() || DEFAULT_TEAM_A_NAME;
+    const b = teamB.trim() || DEFAULT_TEAM_B_NAME;
+    if (a.toLowerCase() === b.toLowerCase()) {
+      setError('Team names must be different (change one side or both).');
+      return false;
+    }
+    setError(null);
+    return true;
+  }, [teamA, teamB]);
+
+  const onPressStartToss = useCallback(() => {
+    if (!validateTeams()) {
+      return;
+    }
+    setStep('toss');
+  }, [validateTeams]);
 
   const startMatch = useCallback(() => {
     const a = teamA.trim() || DEFAULT_TEAM_A_NAME;
@@ -66,38 +137,13 @@ export function NewMatchScreen() {
       setError('Team names must be different (change one side or both).');
       return;
     }
-    let overs: number | null = presetOvers !== null ? presetOvers : null;
-    if (overs === null) {
-      const raw = customOvers.trim();
-      if (raw !== '') {
-        const n = parseInt(raw, 10);
-        overs = Number.isNaN(n) ? null : n;
-      }
-    }
-    if (overs === null) {
-      setError('Pick a preset or enter overs manually.');
-      return;
-    }
     if (overs < OVERS_MIN || overs > OVERS_MAX) {
       setError(`Overs must be between ${OVERS_MIN} and ${OVERS_MAX}.`);
       return;
     }
-
-    let wickets: number | null = presetWickets !== null ? presetWickets : null;
-    if (wickets === null) {
-      const wRaw = customWickets.trim();
-      if (wRaw !== '') {
-        const n = parseInt(wRaw, 10);
-        wickets = Number.isNaN(n) ? null : n;
-      }
-    }
-    if (wickets === null) {
-      setError('Pick a wickets preset or enter dismissals for all out.');
-      return;
-    }
-    if (wickets < WICKETS_MIN || wickets > WICKETS_MAX) {
+    if (players < WICKETS_MIN || players > WICKETS_MAX) {
       setError(
-        `Wickets per innings must be between ${WICKETS_MIN} and ${WICKETS_MAX}.`,
+        `Players per team must be between ${WICKETS_MIN} and ${WICKETS_MAX}.`,
       );
       return;
     }
@@ -107,24 +153,12 @@ export function NewMatchScreen() {
       teamAName: a,
       teamBName: b,
       oversPerSide: overs,
-      wicketsPerSide: wickets,
+      wicketsPerSide: players,
       batFirst,
     });
     addMatch(match);
     setScoringMatchId(match.id);
-  }, [
-    teamA,
-    teamB,
-    presetOvers,
-    customOvers,
-    presetWickets,
-    customWickets,
-    batFirst,
-    addMatch,
-  ]);
-
-  const teamALabel = teamA.trim() || DEFAULT_TEAM_A_NAME;
-  const teamBLabel = teamB.trim() || DEFAULT_TEAM_B_NAME;
+  }, [teamA, teamB, overs, players, batFirst, addMatch]);
 
   if (scoringMatchId) {
     return (
@@ -139,16 +173,27 @@ export function NewMatchScreen() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.toolbar}>
         <Pressable
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            if (step === 'toss') {
+              setStep('configure');
+              setError(null);
+              return;
+            }
+            navigation.goBack();
+          }}
           style={({ pressed }) => [
             styles.backBtn,
             pressed && styles.backBtnPressed,
           ]}
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={
+            step === 'toss' ? 'Back to match setup' : 'Go back'
+          }
         >
           <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
-          <Text style={styles.backLabel}>Home</Text>
+          <Text style={styles.backLabel}>
+            {step === 'toss' ? 'Setup' : 'Home'}
+          </Text>
         </Pressable>
       </View>
 
@@ -157,232 +202,233 @@ export function NewMatchScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={insets.top + hp(2)}
       >
-        <ScrollView
-          contentContainerStyle={[
-            styles.scroll,
-            { paddingBottom: Math.max(insets.bottom, hp(4)) },
-          ]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.accent} />
-          <Text style={styles.title}>New match</Text>
-          <Text style={styles.lead}>
-            Optionally name the teams (defaults to Team A / Team B), pick overs
-            and how many wickets count as all out (short games often use 4–6),
-            then who bats first. After you create the match, scoring opens on
-            this screen; tap Home when you are done — the match stays on your
-            list.
-          </Text>
-
-          <Text style={styles.fieldLabel}>Team A</Text>
-          <TextInput
-            value={teamA}
-            onChangeText={t => {
-              setTeamA(t);
-              setError(null);
-            }}
-            placeholder="Optional — e.g. Thunder"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            autoCorrect={false}
-            autoCapitalize="words"
-            returnKeyType="next"
-            accessibilityLabel="Team A name"
-          />
-
-          <Text style={styles.fieldLabel}>Team B</Text>
-          <TextInput
-            value={teamB}
-            onChangeText={t => {
-              setTeamB(t);
-              setError(null);
-            }}
-            placeholder="Optional — e.g. Strikers"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            autoCorrect={false}
-            autoCapitalize="words"
-            returnKeyType="done"
-            onSubmitEditing={startMatch}
-            accessibilityLabel="Team B name"
-          />
-
-          <Text style={styles.fieldLabel}>Overs per innings</Text>
-          <View style={styles.oversRow}>
-            {OVERS_OPTIONS.map(n => (
-              <Pressable
-                key={n}
-                onPress={() => {
-                  lastPresetRef.current = n;
-                  setPresetOvers(n);
-                  setCustomOvers('');
-                  setError(null);
-                }}
-                style={({ pressed }) => [
-                  styles.oversChip,
-                  presetOvers === n && styles.oversChipActive,
-                  pressed && styles.oversChipPressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: presetOvers === n }}
-                accessibilityLabel={`${n} overs`}
-              >
-                <Text
-                  style={[
-                    styles.oversChipText,
-                    presetOvers === n && styles.oversChipTextActive,
-                  ]}
-                >
-                  {n}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          <Text style={styles.fieldHint}>Or enter another number</Text>
-          <TextInput
-            value={customOvers}
-            onChangeText={t => {
-              const digits = t.replace(/\D/g, '');
-              setCustomOvers(digits);
-              if (digits.length > 0) {
-                setPresetOvers(null);
-              } else {
-                setPresetOvers(lastPresetRef.current);
-              }
-              setError(null);
-            }}
-            placeholder={`${OVERS_MIN}–${OVERS_MAX} (e.g. 15)`}
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            keyboardType="number-pad"
-            maxLength={2}
-            returnKeyType="done"
-            onSubmitEditing={startMatch}
-            accessibilityLabel="Custom overs per innings"
-          />
-
-          <Text style={styles.fieldLabel}>Wickets (all out)</Text>
-          <Text style={styles.fieldHintEx}>
-            Dismissals before the innings ends — e.g. 4 if only four can bat, or
-            10 for a full side.
-          </Text>
-          <View style={styles.oversRow}>
-            {WICKET_PRESETS.map(n => (
-              <Pressable
-                key={n}
-                onPress={() => {
-                  lastWicketPresetRef.current = n;
-                  setPresetWickets(n);
-                  setCustomWickets('');
-                  setError(null);
-                }}
-                style={({ pressed }) => [
-                  styles.oversChip,
-                  presetWickets === n && styles.oversChipActive,
-                  pressed && styles.oversChipPressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: presetWickets === n }}
-                accessibilityLabel={`${n} wickets`}
-              >
-                <Text
-                  style={[
-                    styles.oversChipText,
-                    presetWickets === n && styles.oversChipTextActive,
-                  ]}
-                >
-                  {n}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          <Text style={styles.fieldHint}>Or enter another number</Text>
-          <TextInput
-            value={customWickets}
-            onChangeText={t => {
-              const digits = t.replace(/\D/g, '');
-              setCustomWickets(digits);
-              if (digits.length > 0) {
-                setPresetWickets(null);
-              } else {
-                setPresetWickets(lastWicketPresetRef.current);
-              }
-              setError(null);
-            }}
-            placeholder={`${WICKETS_MIN}–${WICKETS_MAX} (e.g. 5)`}
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-            keyboardType="number-pad"
-            maxLength={2}
-            returnKeyType="done"
-            onSubmitEditing={startMatch}
-            accessibilityLabel="Custom wickets for all out"
-          />
-
-          <Text style={styles.fieldLabel}>Who bats first?</Text>
-          <View style={styles.batRow}>
-            <Pressable
-              onPress={() => setBatFirst(0)}
-              style={({ pressed }) => [
-                styles.batOption,
-                batFirst === 0 && styles.batOptionActive,
-                pressed && styles.batOptionPressed,
+        {step === 'configure' ? (
+          <>
+            <ScrollView
+              contentContainerStyle={[
+                styles.scroll,
+                { paddingBottom: hp(12) + Math.max(insets.bottom, hp(2)) },
               ]}
-              accessibilityRole="button"
-              accessibilityState={{ selected: batFirst === 0 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
-              <Text
-                style={[
-                  styles.batOptionTitle,
-                  batFirst === 0 && styles.batOptionTitleActive,
-                ]}
-                numberOfLines={1}
-              >
-                {teamALabel}
+              <Text style={styles.title}>Match Setup</Text>
+              <Text style={styles.lead}>
+                Configure the teams and match parameters.
               </Text>
-              <Text style={styles.batOptionSub}>1st innings</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setBatFirst(1)}
-              style={({ pressed }) => [
-                styles.batOption,
-                batFirst === 1 && styles.batOptionActive,
-                pressed && styles.batOptionPressed,
+
+              <View style={styles.card}>
+                <Text style={styles.teamFieldLabel}>Team A</Text>
+                <View style={styles.inputWrap}>
+                  <Image
+                    source={PNGs.BatBallOutlineIcon}
+                    style={{
+                      width: wp(5),
+                      height: wp(5),
+                    }}
+                  />
+                  <TextInput
+                    value={teamA}
+                    onChangeText={t => {
+                      setTeamA(t);
+                      setError(null);
+                    }}
+                    placeholder="Enter team name"
+                    placeholderTextColor={colors.textMuted}
+                    style={styles.input}
+                    autoCorrect={false}
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                    accessibilityLabel="Team A name"
+                  />
+                </View>
+
+                <View style={styles.vsDivider}>
+                  <View style={styles.vsLine} />
+                  <Text style={styles.vsText}>vs</Text>
+                  <View style={styles.vsLine} />
+                </View>
+
+                <Text style={styles.teamFieldLabel}>Team B</Text>
+                <View style={styles.inputWrap}>
+                  <Image
+                    source={PNGs.BatBallOutlineIcon}
+                    style={{
+                      width: wp(5),
+                      height: wp(5),
+                    }}
+                  />
+                  <TextInput
+                    value={teamB}
+                    onChangeText={t => {
+                      setTeamB(t);
+                      setError(null);
+                    }}
+                    placeholder="Enter team name"
+                    placeholderTextColor={colors.textMuted}
+                    style={styles.input}
+                    autoCorrect={false}
+                    autoCapitalize="words"
+                    returnKeyType="done"
+                    accessibilityLabel="Team B name"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.card}>
+                <StepperRow
+                  title="Overs"
+                  subtitle="Per innings"
+                  value={overs}
+                  onDecrement={() => {
+                    setOvers(v => Math.max(OVERS_MIN, v - 1));
+                    setError(null);
+                  }}
+                  onIncrement={() => {
+                    setOvers(v => Math.min(OVERS_MAX, v + 1));
+                    setError(null);
+                  }}
+                  decrementLabel="Decrease overs"
+                  incrementLabel="Increase overs"
+                />
+                <View style={styles.paramDivider} />
+                <StepperRow
+                  title="Players"
+                  subtitle="Per team"
+                  value={players}
+                  onDecrement={() => {
+                    setPlayers(v => Math.max(WICKETS_MIN, v - 1));
+                    setError(null);
+                  }}
+                  onIncrement={() => {
+                    setPlayers(v => Math.min(WICKETS_MAX, v + 1));
+                    setError(null);
+                  }}
+                  decrementLabel="Decrease players"
+                  incrementLabel="Increase players"
+                />
+              </View>
+
+              {error ? <Text style={styles.error}>{error}</Text> : null}
+            </ScrollView>
+
+            <View
+              style={[
+                styles.footer,
+                { paddingBottom: Math.max(insets.bottom, hp(2)) },
               ]}
-              accessibilityRole="button"
-              accessibilityState={{ selected: batFirst === 1 }}
             >
-              <Text
-                style={[
-                  styles.batOptionTitle,
-                  batFirst === 1 && styles.batOptionTitleActive,
+              <Pressable
+                onPress={onPressStartToss}
+                style={({ pressed }) => [
+                  styles.cta,
+                  pressed && styles.ctaPressed,
                 ]}
-                numberOfLines={1}
+                android_ripple={{ color: 'rgba(255,255,255,0.22)' }}
+                accessibilityRole="button"
+                accessibilityLabel="Start Match"
               >
-                {teamBLabel}
-              </Text>
-              <Text style={styles.batOptionSub}>1st innings</Text>
-            </Pressable>
-          </View>
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <Pressable
-            onPress={startMatch}
-            style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
-            android_ripple={{ color: 'rgba(255,255,255,0.22)' }}
-            accessibilityRole="button"
-            accessibilityLabel="Create match and start scoring"
+                <Text style={styles.ctaText}>Start Toss</Text>
+                <Image source={PNGs.RightArrowIcon} style={{width: wp(4), height: wp(4), tintColor: colors.background}}/>
+              </Pressable>
+            </View>
+          </>
+        ) : (
+          <ScrollView
+            contentContainerStyle={[
+              styles.scroll,
+              { paddingBottom: Math.max(insets.bottom, hp(4)) },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.ctaText}>Create match & score</Text>
-            <Text style={styles.ctaChevron}>{'\u203A'}</Text>
-          </Pressable>
-        </ScrollView>
+            <Text style={styles.title}>Toss</Text>
+            <Text style={styles.lead}>
+              Who bats first? Pick the team that won the toss.
+            </Text>
+
+            <View style={styles.card}>
+              <Pressable
+                onPress={() => setBatFirst(0)}
+                style={({ pressed }) => [
+                  styles.tossOption,
+                  batFirst === 0 && styles.tossOptionActive,
+                  pressed && styles.tossOptionPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: batFirst === 0 }}
+              >
+                <Text
+                  style={[
+                    styles.tossOptionTitle,
+                    batFirst === 0 && styles.tossOptionTitleActive,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {teamALabel}
+                </Text>
+                <Text style={styles.tossOptionSub}>Bats first</Text>
+              </Pressable>
+
+              <View style={styles.paramDivider} />
+
+              <Pressable
+                onPress={() => setBatFirst(1)}
+                style={({ pressed }) => [
+                  styles.tossOption,
+                  batFirst === 1 && styles.tossOptionActive,
+                  pressed && styles.tossOptionPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: batFirst === 1 }}
+              >
+                <Text
+                  style={[
+                    styles.tossOptionTitle,
+                    batFirst === 1 && styles.tossOptionTitleActive,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {teamBLabel}
+                </Text>
+                <Text style={styles.tossOptionSub}>Bats first</Text>
+              </Pressable>
+            </View>
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <Pressable
+              onPress={startMatch}
+              style={({ pressed }) => [
+                styles.cta,
+                pressed && styles.ctaPressed,
+              ]}
+              android_ripple={{ color: 'rgba(255,255,255,0.22)' }}
+              accessibilityRole="button"
+              accessibilityLabel="Create match and start scoring"
+            >
+              <Text style={styles.ctaText}>Start match</Text>
+              <Text style={styles.ctaArrow}>{'\u2192'}</Text>
+            </Pressable>
+          </ScrollView>
+        )}
       </KeyboardAvoidingView>
     </View>
   );
 }
+
+const cardShadow = Platform.select({
+  ios: {
+    shadowColor: '#070707',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+  },
+  android: {
+    elevation: 3,
+  },
+  default: {},
+});
 
 const styles = StyleSheet.create({
   root: {
@@ -395,8 +441,6 @@ const styles = StyleSheet.create({
   toolbar: {
     paddingHorizontal: wp(2),
     paddingVertical: hp(0.5),
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   backBtn: {
     flexDirection: 'row',
@@ -405,6 +449,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: wp(2),
     borderRadius: wp(2),
     gap: wp(1),
+    alignSelf: 'flex-start',
   },
   backBtnPressed: {
     backgroundColor: colors.primaryFaint,
@@ -421,123 +466,163 @@ const styles = StyleSheet.create({
   },
   scroll: {
     paddingHorizontal: wp(5),
-    paddingTop: hp(2),
-  },
-  accent: {
-    width: wp(14),
-    height: hp(0.45),
-    backgroundColor: colors.primary,
-    borderRadius: wp(1),
-    marginBottom: hp(2),
+    paddingTop: hp(1),
   },
   title: {
-    fontSize: fontSize(26),
+    fontSize: fontSize(28),
     fontWeight: '900',
     color: colors.text,
     letterSpacing: -0.4,
-    marginBottom: hp(0.8),
+    marginBottom: hp(0.6),
   },
   lead: {
     fontSize: fontSize(15),
     lineHeight: fontSize(22),
     color: colors.textMuted,
-    marginBottom: hp(2),
+    marginBottom: hp(2.2),
   },
-  fieldLabel: {
-    fontSize: fontSize(11),
-    fontWeight: '800',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.7,
-    marginBottom: hp(0.5),
-  },
-  fieldHint: {
-    fontSize: fontSize(12),
-    fontWeight: '600',
-    color: colors.textMuted,
-    marginBottom: hp(0.6),
-  },
-  fieldHintEx: {
-    fontSize: fontSize(12),
-    lineHeight: fontSize(18),
-    fontWeight: '500',
-    color: colors.textMuted,
-    marginBottom: hp(0.8),
-  },
-  input: {
+  card: {
+    backgroundColor: colors.background,
+    borderRadius: wp(4),
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: wp(2.5),
-    paddingHorizontal: wp(3.5),
-    paddingVertical: hp(1.4),
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(2),
+    marginBottom: hp(2),
+    ...cardShadow,
+  },
+  teamFieldLabel: {
+    fontSize: fontSize(14),
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: hp(0.8),
+  },
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: wp(3),
+    paddingHorizontal: wp(3),
+    backgroundColor: colors.background,
+    gap: wp(2.5)
+  },
+  inputIcon: {
+    fontSize: fontSize(18),
+    color: colors.primary,
+    marginRight: wp(2.5),
+  },
+  input: {
+    flex: 1,
+    paddingVertical: hp(1.5),
     fontSize: fontSize(16),
     fontWeight: '600',
     color: colors.text,
-    backgroundColor: colors.background,
-    marginBottom: hp(1.5),
   },
-  oversRow: {
+  vsDivider: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: wp(2),
-    marginBottom: hp(1.8),
+    alignItems: 'center',
+    marginVertical: hp(2),
+    gap: wp(3),
   },
-  oversChip: {
-    paddingVertical: hp(1),
-    paddingHorizontal: wp(4),
-    borderRadius: wp(2.5),
+  vsLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+  },
+  vsText: {
+    fontSize: fontSize(13),
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: 0.5,
+  },
+  paramRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: wp(3),
+    paddingHorizontal: wp(3.5),
+    paddingVertical: hp(1.6),
+  },
+  paramLabels: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: wp(3),
+  },
+  paramTitle: {
+    fontSize: fontSize(16),
+    fontWeight: '800',
+    color: colors.text,
+    marginBottom: hp(0.2),
+  },
+  paramSub: {
+    fontSize: fontSize(13),
+    fontWeight: '500',
+    color: colors.textMuted,
+  },
+  paramDivider: {
+    height: hp(1.2),
+  },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(3),
+  },
+  stepperBtn: {
+    width: wp(10),
+    height: wp(10),
+    borderRadius: wp(5),
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+  },
+  stepperBtnPressed: {
+    backgroundColor: colors.primaryFaint,
+  },
+  stepperBtnText: {
+    fontSize: fontSize(20),
+    fontWeight: '400',
+    color: colors.text,
+    lineHeight: fontSize(22),
+    marginTop: Platform.OS === 'ios' ? -hp(0.15) : 0,
+  },
+  stepperValue: {
+    minWidth: wp(8),
+    textAlign: 'center',
+    fontSize: fontSize(20),
+    fontWeight: '900',
+    color: colors.text,
+  },
+  tossOption: {
     borderWidth: 1.5,
     borderColor: colors.border,
+    borderRadius: wp(3),
+    paddingVertical: hp(1.6),
+    paddingHorizontal: wp(3.5),
     backgroundColor: colors.background,
   },
-  oversChipActive: {
+  tossOptionActive: {
     borderColor: colors.primary,
     backgroundColor: colors.primaryFaint,
   },
-  oversChipPressed: {
-    opacity: 0.9,
+  tossOptionPressed: {
+    opacity: 0.92,
   },
-  oversChipText: {
+  tossOptionTitle: {
     fontSize: fontSize(16),
     fontWeight: '800',
     color: colors.textMuted,
   },
-  oversChipTextActive: {
-    color: colors.primary,
-  },
-  batRow: {
-    flexDirection: 'row',
-    gap: wp(2),
-    marginBottom: hp(1.5),
-  },
-  batOption: {
-    flex: 1,
-    minWidth: 0,
-    paddingVertical: hp(1.2),
-    paddingHorizontal: wp(2),
-    borderRadius: wp(2.5),
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  batOptionActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryFaint,
-  },
-  batOptionPressed: {
-    opacity: 0.92,
-  },
-  batOptionTitle: {
-    fontSize: fontSize(14),
-    fontWeight: '800',
-    color: colors.textMuted,
-  },
-  batOptionTitleActive: {
+  tossOptionTitleActive: {
     color: colors.text,
   },
-  batOptionSub: {
-    fontSize: fontSize(11),
-    fontWeight: '700',
+  tossOptionSub: {
+    fontSize: fontSize(12),
+    fontWeight: '600',
     color: colors.textMuted,
     marginTop: hp(0.25),
   },
@@ -547,16 +632,26 @@ const styles = StyleSheet.create({
     color: colors.ballWicket,
     marginBottom: hp(1),
   },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: wp(5),
+    paddingTop: hp(1.5),
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   cta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    borderRadius: wp(3),
-    paddingVertical: hp(1.7),
+    borderRadius: wp(6),
+    paddingVertical: hp(1.9),
     paddingHorizontal: wp(4),
-    marginTop: hp(0.5),
-    gap: wp(1),
+    gap: wp(2),
     ...Platform.select({
       ios: {
         shadowColor: '#070707',
@@ -579,9 +674,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.background,
   },
-  ctaChevron: {
-    fontSize: fontSize(22),
-    fontWeight: '300',
+  ctaArrow: {
+    fontSize: fontSize(20),
+    fontWeight: '600',
     color: colors.background,
   },
 });
