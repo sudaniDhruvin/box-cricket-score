@@ -5,6 +5,7 @@ import BootSplash from 'react-native-bootsplash';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import mobileAds, { useAppOpenAd } from 'react-native-google-mobile-ads';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { checkInAppUpdate } from './src/config/checkInAppUpdate';
 import { initializeAdRemoteConfig } from './src/config/fetchAdRemoteConfig';
 import { APP_OPEN_AD_UNIT_ID } from './src/config/adUnitIds';
 import { getAdFlags } from './src/store/useAdConfigStore';
@@ -46,6 +47,8 @@ const App = () => {
       if (cancelled) {
         return;
       }
+      checkInAppUpdate();
+
       if (getAdFlags().isAds && getAdFlags().isOpenApp) {
         loadAppOpenAd();
       } else {

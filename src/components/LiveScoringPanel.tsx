@@ -15,6 +15,10 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  maybeRequestInAppReview,
+  recordCompletedMatchForReview,
+} from '../config/requestInAppReview';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import type {
@@ -40,6 +44,7 @@ import {
   legalBallsBowled,
   runRateFromLegalBalls,
 } from '../utils/cricketFormat';
+import { createRepeatMatch } from '../utils/createLiveMatch';
 import { countsAsLegalBall, tallyDeliveryRuns } from '../utils/deliveryScoring';
 import { fontSize, hp, wp } from '../utils';
 import { StickyBottomBannerAd } from './StickyBottomBannerAd';
@@ -272,10 +277,16 @@ function miniPalette(d: Delivery): { bg: string; fg: string } {
 export interface LiveScoringPanelProps {
   matchId: string;
   onClose: () => void;
+  onRepeatMatch?: (newMatchId: string) => void;
 }
 
-export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
+export function LiveScoringPanel({
+  matchId,
+  onClose,
+  onRepeatMatch,
+}: LiveScoringPanelProps) {
   const insets = useSafeAreaInsets();
+  const addMatch = useMatchStore(s => s.addMatch);
   const updateMatch = useMatchStore(s => s.updateMatch);
   const match = useMatchStore(s => s.matches.find(m => m.id === matchId));
 
@@ -490,6 +501,7 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
       if (finalized.status === 'completed') {
         setOverCompleteModal(null);
         setMatchOverModal(finalized);
+        recordCompletedMatchForReview();
       } else if (result.overJustCompleted) {
         const inn0 = finalized.innings[0];
         const cap = finalized.oversPerSide;
@@ -616,7 +628,20 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
   const dismissMatchOver = useCallback(() => {
     setMatchOverModal(null);
     onClose();
+    maybeRequestInAppReview();
   }, [onClose]);
+
+  const repeatSameMatch = useCallback(() => {
+    const completed = matchOverModal;
+    if (completed == null) {
+      return;
+    }
+    const newMatch = createRepeatMatch(completed);
+    addMatch(newMatch);
+    setMatchOverModal(null);
+    undoRef.current = [];
+    onRepeatMatch?.(newMatch.id);
+  }, [matchOverModal, addMatch, onRepeatMatch]);
 
   if (!match || !activeInn) {
     return (
@@ -840,15 +865,6 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
                   ]}
                 >
                   <Text style={styles.extraPadBtnText}>NB</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => apply({ type: 'bye', label: 'By' })}
-                  style={({ pressed }) => [
-                    styles.extraPadBtn,
-                    pressed && styles.runCellPressed,
-                  ]}
-                >
-                  <Text style={styles.extraPadBtnText}>Bye</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => apply({ type: 'bye', label: 'Lb' })}
@@ -1276,17 +1292,36 @@ export function LiveScoringPanel({ matchId, onClose }: LiveScoringPanelProps) {
                 </Text>
               </View>
             ) : null}
-            <Pressable
-              onPress={dismissMatchOver}
-              style={({ pressed }) => [
-                styles.matchOverCta,
-                pressed && styles.matchOverCtaPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Close and return home"
-            >
-              <Text style={styles.matchOverCtaText}>Done</Text>
-            </Pressable>
+            {matchOverModal != null ? (
+              <Text style={styles.matchOverRepeatHint}>
+                {matchOverModal.oversPerSide ?? 10} overs ·{' '}
+                {wicketsCapForMatch(matchOverModal)} players per team
+              </Text>
+            ) : null}
+            <View style={styles.matchOverCtaRow}>
+              <Pressable
+                onPress={repeatSameMatch}
+                style={({ pressed }) => [
+                  styles.matchOverCta,
+                  pressed && styles.matchOverCtaPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Repeat match with same overs and players"
+              >
+                <Text style={styles.matchOverCtaText}>Repeat match</Text>
+              </Pressable>
+              <Pressable
+                onPress={dismissMatchOver}
+                style={({ pressed }) => [
+                  styles.matchOverCtaSecondary,
+                  pressed && styles.matchOverCtaPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Close and return home"
+              >
+                <Text style={styles.matchOverCtaSecondaryText}>Done</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -2335,11 +2370,29 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
+  matchOverRepeatHint: {
+    fontSize: fontSize(12),
+    fontWeight: '600',
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginBottom: hp(1),
+  },
+  matchOverCtaRow: {
+    gap: hp(0.8),
+  },
   matchOverCta: {
     backgroundColor: colors.primary,
     borderRadius: wp(2.5),
     paddingVertical: hp(1.4),
     alignItems: 'center',
+  },
+  matchOverCtaSecondary: {
+    borderRadius: wp(2.5),
+    paddingVertical: hp(1.4),
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
   },
   matchOverCtaPressed: {
     opacity: 0.92,
@@ -2348,6 +2401,11 @@ const styles = StyleSheet.create({
     fontSize: fontSize(16),
     fontWeight: '800',
     color: colors.background,
+  },
+  matchOverCtaSecondaryText: {
+    fontSize: fontSize(16),
+    fontWeight: '800',
+    color: colors.text,
   },
   editFieldLbl: {
     fontSize: fontSize(11),

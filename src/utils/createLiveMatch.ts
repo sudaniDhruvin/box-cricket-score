@@ -1,4 +1,5 @@
 import type { MatchSummary, TeamInnings } from '../types/match';
+import { DEFAULT_WICKETS_PER_SIDE } from './applyScoringDelivery';
 
 function emptyInnings(teamId: string, teamName: string): TeamInnings {
   return {
@@ -46,4 +47,16 @@ export function createLiveMatch(input: NewMatchInput): MatchSummary {
     wicketsPerSide: input.wicketsPerSide,
     scoringActiveInnings: 0,
   };
+}
+
+/** Fresh live match with the same teams, overs, wickets, and batting order. */
+export function createRepeatMatch(source: MatchSummary): MatchSummary {
+  const [first, second] = source.innings;
+  return createLiveMatch({
+    teamAName: first.teamName,
+    teamBName: second.teamName,
+    oversPerSide: source.oversPerSide ?? 10,
+    wicketsPerSide: source.wicketsPerSide ?? DEFAULT_WICKETS_PER_SIDE,
+    batFirst: 0,
+  });
 }

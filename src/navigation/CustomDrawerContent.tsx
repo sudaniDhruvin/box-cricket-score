@@ -12,6 +12,8 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { checkInAppUpdate } from '../config/checkInAppUpdate';
+import { maybeRequestInAppReview } from '../config/requestInAppReview';
 import { PNGs } from '../assets/images/pngs';
 import { useMatchStore } from '../store/useMatchStore';
 import { useUserStore } from '../store/useUserStore';
@@ -133,6 +135,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { navigation } = props;
   const clearAllMatches = useMatchStore(s => s.clearAllMatches);
   const updateUser = useUserStore(s => s.updateUser);
+  const resetReviewPromptState = useUserStore(s => s.resetReviewPromptState);
 
   const goTerms = useCallback(() => {
     navigation.closeDrawer();
@@ -142,6 +145,16 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const goPrivacy = useCallback(() => {
     navigation.closeDrawer();
     navigation.navigate('Main', { screen: 'Privacy' });
+  }, [navigation]);
+
+  const onCheckForUpdates = useCallback(() => {
+    navigation.closeDrawer();
+    checkInAppUpdate({ notifyWhenUpToDate: true });
+  }, [navigation]);
+
+  const onRateApp = useCallback(() => {
+    navigation.closeDrawer();
+    maybeRequestInAppReview({ manual: true });
   }, [navigation]);
 
   const onClearAllData = useCallback(() => {
@@ -156,13 +169,14 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
           onPress: () => {
             clearAllMatches();
             updateUser(null);
+            resetReviewPromptState();
             navigation.closeDrawer();
             navigation.navigate('Main', { screen: 'Home' });
           },
         },
       ],
     );
-  }, [clearAllMatches, navigation, updateUser]);
+  }, [clearAllMatches, navigation, resetReviewPromptState, updateUser]);
 
   return (
     <DrawerContentScrollView
@@ -214,6 +228,25 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
           iconLetter="P"
           onPress={goPrivacy}
           accessibilityLabel="Open privacy policy"
+        />
+      </View>
+
+      <Text style={styles.sectionHeading}>App</Text>
+      <View style={styles.legalCard}>
+        <InteractiveRow
+          label="Check for updates"
+          hint="See if a newer version is available"
+          iconLetter="U"
+          onPress={onCheckForUpdates}
+          accessibilityLabel="Check for app updates"
+        />
+        <View style={styles.hairline} />
+        <InteractiveRow
+          label="Rate this app"
+          hint="Share feedback on the app store"
+          iconLetter="R"
+          onPress={onRateApp}
+          accessibilityLabel="Rate this app"
         />
       </View>
 

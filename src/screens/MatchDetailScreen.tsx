@@ -26,6 +26,8 @@ import {
   formatPlayedTime,
   isMatchLive,
 } from '../utils/cricketFormat';
+import { createRepeatMatch } from '../utils/createLiveMatch';
+import { wicketsCapForMatch } from '../utils/applyScoringDelivery';
 import { findSavedMatch } from '../utils/matchLookup';
 import { fontSize, hp, wp } from '../utils';
 import { PNGs } from '../assets/images/pngs';
@@ -257,6 +259,7 @@ export function MatchDetailScreen() {
   const { params } = useRoute<MatchDetailRoute>();
   const [activeTab, setActiveTab] = useState<0 | 1>(0);
   const savedMatches = useMatchStore(s => s.matches);
+  const addMatch = useMatchStore(s => s.addMatch);
 
   const handleTabChange = useCallback((tab: 0 | 1) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -267,6 +270,15 @@ export function MatchDetailScreen() {
     () => findSavedMatch(params.matchId, savedMatches),
     [params.matchId, savedMatches],
   );
+
+  const onRepeatMatch = useCallback(() => {
+    if (!match) {
+      return;
+    }
+    const newMatch = createRepeatMatch(match);
+    addMatch(newMatch);
+    navigation.navigate('NewMatch', { resumeMatchId: newMatch.id });
+  }, [match, addMatch, navigation]);
 
   useLayoutEffect(() => {
     if (!match) {
@@ -417,6 +429,25 @@ export function MatchDetailScreen() {
               <Text style={styles.continueScoreCtaText}>Continue scoring</Text>
               <Text style={styles.continueScoreCtaChev}>{'\u203A'}</Text>
             </Pressable>
+          ) : matchComplete ? (
+            <Pressable
+              onPress={onRepeatMatch}
+              style={({ pressed }) => [
+                styles.continueScoreCta,
+                pressed && styles.continueScoreCtaPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Repeat match with same overs and players"
+            >
+              <Text style={styles.continueScoreCtaText}>Repeat match</Text>
+              <Text style={styles.continueScoreCtaChev}>{'\u203A'}</Text>
+            </Pressable>
+          ) : null}
+          {matchComplete ? (
+            <Text style={styles.repeatMatchHint}>
+              {match.oversPerSide ?? 10} overs · {wicketsCapForMatch(match)}{' '}
+              players per team
+            </Text>
           ) : null}
         </View>
 
@@ -777,6 +808,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize(20),
     fontWeight: '300',
     color: colors.background,
+  },
+  repeatMatchHint: {
+    fontSize: fontSize(12),
+    fontWeight: '600',
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: hp(0.6),
   },
   sectionHeading: {
     fontSize: fontSize(12),

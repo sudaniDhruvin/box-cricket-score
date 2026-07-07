@@ -24,16 +24,19 @@
     "react": "19.2.3",
     "react-native": "0.85.1",
     "react-native-bootsplash": "^7.3.1",
+    "react-native-device-info": "^15.0.2",
     "react-native-gesture-handler": "^2.31.1",
     "react-native-google-mobile-ads": "^16.3.3",
+    "react-native-in-app-review": "^4.4.2",
     "react-native-mmkv": "^4.3.1",
     "react-native-nitro-modules": "^0.35.4",
-    "react-native-reanimated": "^4.3.0",
+    "react-native-reanimated": "4.3.0",
     "react-native-responsive-fontsize": "^0.5.1",
     "react-native-responsive-screen": "^1.4.2",
     "react-native-safe-area-context": "^5.7.0",
     "react-native-screens": "^4.24.0",
     "react-native-worklets": "^0.8.1",
+    "sp-react-native-in-app-updates": "^1.5.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
@@ -59,6 +62,5 @@
   },
   "engines": {
     "node": ">= 22.11.0"
-  },
-  "packageManager": "yarn@3.6.4+sha512.e70835d4d6d62c07be76b3c1529cb640c7443f0fe434ef4b6478a5a399218cbaf1511b396b3c56eb03bc86424cff2320f6167ad2fde273aa0df6e60b7754029f"
+  }
 }

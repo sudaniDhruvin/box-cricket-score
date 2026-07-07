@@ -163,8 +163,10 @@ export function NewMatchScreen() {
   if (scoringMatchId) {
     return (
       <LiveScoringPanel
+        key={scoringMatchId}
         matchId={scoringMatchId}
         onClose={() => navigation.goBack()}
+        onRepeatMatch={setScoringMatchId}
       />
     );
   }
