@@ -5,10 +5,12 @@ import React from 'react';
 
 import { CustomDrawerContent } from './CustomDrawerContent';
 import { HomeScreen } from '../screens/HomeScreen';
+import { LiveSpectatorScreen } from '../screens/LiveSpectatorScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { NewMatchScreen } from '../screens/NewMatchScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { PrivacyScreen, TermsScreen } from '../screens/LegalInfoScreen';
+import { ScanToWatchScreen } from '../screens/ScanToWatchScreen';
 import { useUserStore } from '../store/useUserStore';
 import { wp } from '../utils';
 import type {
@@ -33,6 +35,8 @@ const MainStackNavigator = () => (
     <MainStack.Screen name="MatchDetail" component={MatchDetailScreen} />
     <MainStack.Screen name="Terms" component={TermsScreen} />
     <MainStack.Screen name="Privacy" component={PrivacyScreen} />
+    <MainStack.Screen name="ScanToWatch" component={ScanToWatchScreen} />
+    <MainStack.Screen name="LiveSpectator" component={LiveSpectatorScreen} />
   </MainStack.Navigator>
 );
 

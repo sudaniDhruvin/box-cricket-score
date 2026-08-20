@@ -48,6 +48,7 @@ import { createRepeatMatch } from '../utils/createLiveMatch';
 import { countsAsLegalBall, tallyDeliveryRuns } from '../utils/deliveryScoring';
 import { fontSize, hp, wp } from '../utils';
 import { StickyBottomBannerAd } from './StickyBottomBannerAd';
+import { ShareLiveScoreModal } from './ShareLiveScoreModal';
 import { PNGs } from '../assets/images/pngs';
 
 function cloneMatch(m: MatchSummary): MatchSummary {
@@ -294,6 +295,7 @@ export function LiveScoringPanel({
   const [recentExpanded, setRecentExpanded] = useState(false);
   const [extrasExpanded, setExtrasExpanded] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [wicketOpen, setWicketOpen] = useState(false);
   const [wicketModalPhase, setWicketModalPhase] = useState<
     'dismissal' | 'run-out-runs'
@@ -670,6 +672,17 @@ export function LiveScoringPanel({
           <Text style={styles.backLbl}>Home</Text>
         </Pressable>
         <View style={styles.toolbarRight}>
+          <Pressable
+            onPress={() => setShareOpen(true)}
+            style={({ pressed }) => [
+              styles.iconHit,
+              pressed && styles.backPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Share live score"
+          >
+            <Text style={styles.iconLbl}>Share</Text>
+          </Pressable>
           <Pressable
             onPress={undo}
             style={({ pressed }) => [
@@ -1418,6 +1431,12 @@ export function LiveScoringPanel({
           </Pressable>
         </Pressable>
       </Modal>
+
+      <ShareLiveScoreModal
+        visible={shareOpen}
+        matchId={matchId}
+        onClose={() => setShareOpen(false)}
+      />
     </View>
   );
 }

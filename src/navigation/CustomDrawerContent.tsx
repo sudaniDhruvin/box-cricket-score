@@ -147,6 +147,11 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
     navigation.navigate('Main', { screen: 'Privacy' });
   }, [navigation]);
 
+  const goWatchLive = useCallback(() => {
+    navigation.closeDrawer();
+    navigation.navigate('Main', { screen: 'ScanToWatch' });
+  }, [navigation]);
+
   const onCheckForUpdates = useCallback(() => {
     navigation.closeDrawer();
     checkInAppUpdate({ notifyWhenUpToDate: true });
@@ -228,6 +233,17 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
           iconLetter="P"
           onPress={goPrivacy}
           accessibilityLabel="Open privacy policy"
+        />
+      </View>
+
+      <Text style={styles.sectionHeading}>Live match</Text>
+      <View style={styles.legalCard}>
+        <InteractiveRow
+          label="Watch live"
+          hint="Scan host QR on the same Wi‑Fi"
+          iconLetter="W"
+          onPress={goWatchLive}
+          accessibilityLabel="Watch a live match by scanning QR"
         />
       </View>
 

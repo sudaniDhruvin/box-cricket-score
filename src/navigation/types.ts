@@ -1,4 +1,5 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { LiveShareJoinPayload } from '../liveShare/protocol';
 
 export type OnboardingStackParamList = {
   Onboarding: undefined;
@@ -10,6 +11,8 @@ export type MainStackParamList = {
   MatchDetail: { matchId: string };
   Terms: undefined;
   Privacy: undefined;
+  ScanToWatch: { prefillError?: string } | undefined;
+  LiveSpectator: { joinPayload: LiveShareJoinPayload };
 };
 
 export type DrawerParamList = {
