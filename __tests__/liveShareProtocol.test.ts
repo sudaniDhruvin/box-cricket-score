@@ -9,6 +9,7 @@ import {
   LIVE_SHARE_TYPE,
   buildWsUrl,
   createSessionToken,
+  encodeFrame,
   parseMessage,
 } from '../src/liveShare/protocol';
 
@@ -38,7 +39,8 @@ describe('liveShare protocol', () => {
       token: 'ABC123',
       matchName: 'Titans vs Strikers',
     });
-    expect(buildWsUrl(parsed!)).toBe('ws://192.168.43.1:8787/live');
+    expect(LIVE_SHARE_PORT).toBe(8899);
+    expect(buildWsUrl(parsed!)).toBe('tcp://192.168.43.1:8899');
   });
 
   it('rejects invalid join payloads', () => {
@@ -50,7 +52,7 @@ describe('liveShare protocol', () => {
           v: 1,
           type: 'other',
           host: '1.1.1.1',
-          port: 8787,
+          port: 8899,
           path: '/live',
           sessionId: 'm-1',
           token: 'ABC123',
@@ -59,10 +61,13 @@ describe('liveShare protocol', () => {
     ).toBeNull();
   });
 
-  it('parses websocket messages', () => {
+  it('parses TCP newline frames', () => {
     expect(parseMessage('{"type":"session.ended"}')).toEqual({
       type: 'session.ended',
     });
+    expect(encodeFrame({ type: 'session.ended' })).toBe(
+      '{"type":"session.ended"}\n',
+    );
     expect(parseMessage('{bad')).toBeNull();
   });
 });

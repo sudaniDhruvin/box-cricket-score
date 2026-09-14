@@ -286,6 +286,10 @@ export function HomeScreen() {
     navigation.navigate('NewMatch', {});
   }, [navigation]);
 
+  const openScanToWatch = useCallback(() => {
+    navigation.navigate('ScanToWatch', {});
+  }, [navigation]);
+
   const openDrawer = useCallback(() => {
     navigation.dispatch(DrawerActions.openDrawer());
   }, [navigation]);
@@ -423,42 +427,66 @@ export function HomeScreen() {
         ListHeaderComponent={
           <View style={styles.header}>
             <View style={styles.headerBar}>
-              <View style={styles.avatarWrap}>
-                <Image
-                  source={PNGs.LOGO}
-                  style={styles.avatar}
-                  resizeMode="contain"
-                  accessibilityLabel="Box Cricket logo"
-                />
+              <View style={styles.headerSide}>
+                <View style={styles.avatarWrap}>
+                  <Image
+                    source={PNGs.LOGO}
+                    style={styles.avatar}
+                    resizeMode="contain"
+                    accessibilityLabel="Box Cricket logo"
+                  />
+                </View>
               </View>
               <Text style={styles.appTitle}>Box Cricket</Text>
-              <Pressable
-                onPress={openDrawer}
-                style={({ pressed }) => [
-                  styles.settingsBtn,
-                  pressed && styles.settingsBtnPressed,
-                ]}
-                android_ripple={{
-                  color: colors.primarySoft,
-                  borderless: true,
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Open settings menu"
-              >
-                <Image
-                  source={PNGs.SettingIcon}
-                  style={[styles.avatar, { tintColor: colors.primary }]}
-                  resizeMode="contain"
-                  accessibilityLabel="Box Cricket logo"
-                />
-                {/* <Text style={styles.settingsIcon}>{'\u2699'}</Text> */}
-              </Pressable>
+              <View style={[styles.headerSide, styles.headerActions]}>
+                <Pressable
+                  onPress={openScanToWatch}
+                  style={({ pressed }) => [
+                    styles.headerScanBtn,
+                    pressed && styles.settingsBtnPressed,
+                  ]}
+                  android_ripple={{
+                    color: colors.primarySoft,
+                    borderless: true,
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Scan QR to watch a live match"
+                >
+                  <View style={styles.headerScanGlyph} accessibilityElementsHidden>
+                    <View style={styles.headerScanCornerTL} />
+                    <View style={styles.headerScanCornerTR} />
+                    <View style={styles.headerScanCornerBL} />
+                    <View style={styles.headerScanCornerBR} />
+                    <View style={styles.headerScanDot} />
+                  </View>
+                </Pressable>
+                <Pressable
+                  onPress={openDrawer}
+                  style={({ pressed }) => [
+                    styles.settingsBtn,
+                    pressed && styles.settingsBtnPressed,
+                  ]}
+                  android_ripple={{
+                    color: colors.primarySoft,
+                    borderless: true,
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open settings menu"
+                >
+                  <Image
+                    source={PNGs.SettingIcon}
+                    style={[styles.avatar, { tintColor: colors.primary }]}
+                    resizeMode="contain"
+                    accessibilityLabel="Settings"
+                  />
+                </Pressable>
+              </View>
             </View>
 
             <View style={styles.ctaCard}>
               <Text style={styles.ctaTitle}>Ready for Action?</Text>
               <Text style={styles.ctaSub}>
-                Set up teams and start scoring instantly.
+                Start scoring your match, or scan a host QR to watch live nearby.
               </Text>
               <Pressable
                 onPress={onPressStartNewInnings}
@@ -482,6 +510,34 @@ export function HomeScreen() {
                   }}
                 />
                 <Text style={styles.quickStartText}>Quick Start</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={openScanToWatch}
+                style={({ pressed }) => [
+                  styles.scanWatchBtn,
+                  pressed && styles.scanWatchBtnPressed,
+                ]}
+                android_ripple={{
+                  color: colors.primarySoft,
+                  foreground: true,
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Scan QR code to watch a live match"
+              >
+                <View style={styles.scanWatchIcon} accessibilityElementsHidden>
+                  <View style={styles.scanWatchCornerTL} />
+                  <View style={styles.scanWatchCornerTR} />
+                  <View style={styles.scanWatchCornerBL} />
+                  <View style={styles.scanWatchCornerBR} />
+                </View>
+                <View style={styles.scanWatchTextCol}>
+                  <Text style={styles.scanWatchTitle}>Scan QR to watch</Text>
+                  <Text style={styles.scanWatchSub}>
+                    Join same Wi‑Fi · view-only live score
+                  </Text>
+                </View>
+                <Text style={styles.scanWatchChevron}>{'\u203A'}</Text>
               </Pressable>
             </View>
 
@@ -521,9 +577,21 @@ export function HomeScreen() {
           <View style={styles.listEmpty}>
             <Text style={styles.listEmptyTitle}>No matches yet</Text>
             <Text style={styles.listEmptySub}>
-              Tap Quick Start to create a match — it will show up here and stay
-              saved on this device.
+              Tap Quick Start to create a match, or Scan QR to watch a friend’s
+              live score on the same Wi‑Fi.
             </Text>
+            <Pressable
+              onPress={openScanToWatch}
+              style={({ pressed }) => [
+                styles.emptyScanBtn,
+                pressed && styles.scanWatchBtnPressed,
+              ]}
+              android_ripple={{ color: colors.primarySoft, foreground: true }}
+              accessibilityRole="button"
+              accessibilityLabel="Scan QR to watch live"
+            >
+              <Text style={styles.emptyScanBtnText}>Scan QR to watch live</Text>
+            </Pressable>
             <View style={styles.emptyBannerWrap}>
               <HomeEmptyBannerAd />
             </View>
@@ -610,6 +678,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: hp(2),
   },
+  headerSide: {
+    minWidth: wp(22),
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerActions: {
+    justifyContent: 'flex-end',
+    gap: wp(0.5),
+  },
   avatarWrap: {
     width: wp(11),
     height: wp(11),
@@ -633,6 +710,71 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primary,
     letterSpacing: -0.3,
+  },
+  headerScanBtn: {
+    width: wp(11),
+    height: wp(11),
+    borderRadius: wp(5.5),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerScanGlyph: {
+    width: wp(5.2),
+    height: wp(5.2),
+    position: 'relative',
+  },
+  headerScanCornerTL: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: wp(2.2),
+    height: wp(2.2),
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: colors.primary,
+    borderTopLeftRadius: 2,
+  },
+  headerScanCornerTR: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: wp(2.2),
+    height: wp(2.2),
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderColor: colors.primary,
+    borderTopRightRadius: 2,
+  },
+  headerScanCornerBL: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: wp(2.2),
+    height: wp(2.2),
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: colors.primary,
+    borderBottomLeftRadius: 2,
+  },
+  headerScanCornerBR: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: wp(2.2),
+    height: wp(2.2),
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderColor: colors.primary,
+    borderBottomRightRadius: 2,
+  },
+  headerScanDot: {
+    position: 'absolute',
+    top: '35%',
+    left: '35%',
+    width: wp(1.6),
+    height: wp(1.6),
+    borderRadius: wp(0.4),
+    backgroundColor: colors.primary,
   },
   settingsBtn: {
     width: wp(11),
@@ -659,7 +801,6 @@ const styles = StyleSheet.create({
     marginBottom: hp(2),
     justifyContent: 'center',
     alignItems: 'center',
-    // ...cardShadow,
   },
   ctaTitle: {
     fontSize: fontSize(22),
@@ -672,6 +813,7 @@ const styles = StyleSheet.create({
     lineHeight: fontSize(20),
     color: colors.textMuted,
     marginBottom: hp(1.6),
+    textAlign: 'center',
   },
   quickStartBtn: {
     flexDirection: 'row',
@@ -699,6 +841,112 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.background,
     letterSpacing: -0.2,
+  },
+  scanWatchBtn: {
+    marginTop: hp(1.2),
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderRadius: wp(3.5),
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: hp(1.35),
+    paddingHorizontal: wp(3.5),
+    gap: wp(3),
+    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
+  },
+  scanWatchBtnPressed: {
+    opacity: 0.92,
+    backgroundColor: colors.primaryFaint,
+  },
+  scanWatchIcon: {
+    width: wp(9),
+    height: wp(9),
+    borderRadius: wp(2.2),
+    backgroundColor: colors.primaryFaint,
+    position: 'relative',
+  },
+  scanWatchCornerTL: {
+    position: 'absolute',
+    top: wp(1.6),
+    left: wp(1.6),
+    width: wp(2.4),
+    height: wp(2.4),
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: colors.primary,
+    borderTopLeftRadius: 2,
+  },
+  scanWatchCornerTR: {
+    position: 'absolute',
+    top: wp(1.6),
+    right: wp(1.6),
+    width: wp(2.4),
+    height: wp(2.4),
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderColor: colors.primary,
+    borderTopRightRadius: 2,
+  },
+  scanWatchCornerBL: {
+    position: 'absolute',
+    bottom: wp(1.6),
+    left: wp(1.6),
+    width: wp(2.4),
+    height: wp(2.4),
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: colors.primary,
+    borderBottomLeftRadius: 2,
+  },
+  scanWatchCornerBR: {
+    position: 'absolute',
+    bottom: wp(1.6),
+    right: wp(1.6),
+    width: wp(2.4),
+    height: wp(2.4),
+    borderBottomWidth: 2,
+    borderRightWidth: 2,
+    borderColor: colors.primary,
+    borderBottomRightRadius: 2,
+  },
+  scanWatchTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  scanWatchTitle: {
+    fontSize: fontSize(15),
+    fontWeight: '800',
+    color: colors.text,
+  },
+  scanWatchSub: {
+    marginTop: hp(0.2),
+    fontSize: fontSize(12),
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  scanWatchChevron: {
+    fontSize: fontSize(22),
+    fontWeight: '700',
+    color: colors.primary,
+    marginTop: -hp(0.2),
+  },
+  emptyScanBtn: {
+    marginTop: hp(2),
+    alignSelf: 'stretch',
+    borderRadius: wp(3),
+    borderWidth: 1,
+    borderColor: colors.primary,
+    paddingVertical: hp(1.35),
+    alignItems: 'center',
+    backgroundColor: colors.primaryFaint,
+    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
+  },
+  emptyScanBtnText: {
+    fontSize: fontSize(15),
+    fontWeight: '800',
+    color: colors.primary,
   },
   dashboardSection: {
     marginBottom: hp(2),

@@ -89,7 +89,8 @@ export function ScanToWatchScreen() {
       </View>
 
       <Text style={styles.hint}>
-        Join the host Wi‑Fi or hotspot first, then scan their live score QR.
+        Join the host Wi‑Fi or hotspot first, then point your camera at their
+        Share live score QR.
       </Text>
 
       {hasPermission == null ? (

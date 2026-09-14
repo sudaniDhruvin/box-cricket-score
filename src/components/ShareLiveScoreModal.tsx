@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -10,10 +10,12 @@ import {
 import QRCode from 'react-native-qrcode-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  startHostShareSession,
-  type HostShareSession,
-} from '../liveShare';
-import { useMatchStore } from '../store/useMatchStore';
+  getHostShareState,
+  startHostShare,
+  stopHostShare,
+  subscribeHostShare,
+  type HostSharePublicState,
+} from '../liveShare/hostShareController';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
 
@@ -29,92 +31,35 @@ export function ShareLiveScoreModal({
   onClose,
 }: ShareLiveScoreModalProps) {
   const insets = useSafeAreaInsets();
-  const sessionRef = useRef<HostShareSession | null>(null);
-  const [qrValue, setQrValue] = useState<string | null>(null);
-  const [hostLabel, setHostLabel] = useState('');
-  const [viewerCount, setViewerCount] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [starting, setStarting] = useState(false);
+  const [share, setShare] = useState<HostSharePublicState>(() =>
+    getHostShareState(),
+  );
+
+  useEffect(() => subscribeHostShare(setShare), []);
 
   useEffect(() => {
     if (!visible) {
       return;
     }
-
-    let cancelled = false;
-    let unsub: (() => void) | undefined;
-
-    const start = async () => {
-      setStarting(true);
-      setError(null);
-      setQrValue(null);
-      setViewerCount(0);
-
-      try {
-        const match = useMatchStore
-          .getState()
-          .matches.find(m => m.id === matchId);
-        if (!match) {
-          throw new Error('Match not found');
-        }
-
-        const session = await startHostShareSession({
-          matchId,
-          matchName: `${match.innings[0].teamName} vs ${match.innings[1].teamName}`,
-          getMatch: () =>
-            useMatchStore.getState().matches.find(m => m.id === matchId),
-          onViewerCountChange: count => {
-            if (!cancelled) {
-              setViewerCount(count);
-            }
-          },
-        });
-
-        if (cancelled) {
-          await session.stop();
-          return;
-        }
-
-        sessionRef.current = session;
-        setQrValue(session.qrValue);
-        setHostLabel(
-          `${session.payload.host}:${session.payload.port}${session.payload.path}`,
-        );
-
-        unsub = useMatchStore.subscribe((state, prevState) => {
-          const latest = state.matches.find(m => m.id === matchId);
-          const previous = prevState.matches.find(m => m.id === matchId);
-          if (latest && latest !== previous) {
-            session.notifyMatchChanged(latest);
-          }
-        });
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Could not start sharing');
-        }
-      } finally {
-        if (!cancelled) {
-          setStarting(false);
-        }
-      }
-    };
-
-    start();
-
-    return () => {
-      cancelled = true;
-      unsub?.();
-      const session = sessionRef.current;
-      sessionRef.current = null;
-      session?.stop().catch(() => undefined);
-    };
+    const current = getHostShareState();
+    if (
+      (current.active || current.starting) &&
+      current.matchId === matchId
+    ) {
+      return;
+    }
+    void startHostShare(matchId);
   }, [visible, matchId]);
 
-  const onStop = async () => {
-    const session = sessionRef.current;
-    sessionRef.current = null;
-    await session?.stop().catch(() => undefined);
+  const onDone = () => {
+    // Hide QR only — TCP session + score broadcasts stay alive.
     onClose();
+  };
+
+  const onStop = () => {
+    void stopHostShare().finally(() => {
+      onClose();
+    });
   };
 
   return (
@@ -122,7 +67,7 @@ export function ShareLiveScoreModal({
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onStop}
+      onRequestClose={onDone}
     >
       <View
         style={[
@@ -136,44 +81,85 @@ export function ShareLiveScoreModal({
         <View style={styles.header}>
           <Text style={styles.title}>Share live score</Text>
           <Pressable
-            onPress={onStop}
+            onPress={onDone}
             style={({ pressed }) => [
               styles.closeHit,
               pressed && styles.pressed,
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Stop sharing"
+            accessibilityLabel="Hide QR and keep sharing"
           >
-            <Text style={styles.closeText}>Close</Text>
+            <Text style={styles.closeText}>Done</Text>
           </Pressable>
         </View>
 
         <Text style={styles.hint}>
-          Viewers must join the same Wi‑Fi or your phone hotspot, then scan this
-          QR in the app (Watch live).
+          Both phones on the same Wi‑Fi (or host hotspot). Scan this QR, then
+          tap Done — sharing stays on and scores update live over TCP.
         </Text>
 
         <View style={styles.qrCard}>
-          {starting ? (
+          {share.starting ? (
             <ActivityIndicator color={colors.primary} size="large" />
-          ) : error ? (
-            <Text style={styles.errorText}>{error}</Text>
-          ) : qrValue ? (
-            <QRCode value={qrValue} size={wp(55)} backgroundColor="#FFFFFF" />
+          ) : share.error ? (
+            <Text style={styles.errorText}>{share.error}</Text>
+          ) : share.qrValue ? (
+            <QRCode
+              value={share.qrValue}
+              size={wp(55)}
+              backgroundColor="#FFFFFF"
+            />
           ) : null}
         </View>
 
-        {hostLabel ? (
-          <Text style={styles.hostMeta} selectable>
-            {hostLabel}
-          </Text>
+        {share.hostLabel ? (
+          <>
+            <Text style={styles.hostMeta} selectable>
+              Host: {share.hostLabel}
+            </Text>
+            <Text style={styles.hostHint}>
+              Should look like 192.168.x.x:8899. If you switched network, tap
+              Refresh QR.
+            </Text>
+          </>
         ) : null}
 
         <Text style={styles.viewers}>
-          {viewerCount === 0
-            ? 'Waiting for viewers…'
-            : `${viewerCount} watching`}
+          {!share.active
+            ? share.starting
+              ? 'Starting…'
+              : share.error
+                ? 'Share failed'
+                : 'Not sharing'
+            : share.viewerCount === 0
+              ? 'Waiting for viewers…'
+              : `${share.viewerCount} watching`}
         </Text>
+
+        {share.active || share.error ? (
+          <Pressable
+            onPress={() => {
+              void startHostShare(matchId, { force: true });
+            }}
+            style={({ pressed }) => [
+              styles.refreshBtn,
+              pressed && styles.pressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Refresh share QR"
+          >
+            <Text style={styles.refreshBtnText}>Refresh QR</Text>
+          </Pressable>
+        ) : null}
+
+        <Pressable
+          onPress={onDone}
+          style={({ pressed }) => [styles.doneBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Hide QR and keep sharing"
+        >
+          <Text style={styles.doneBtnText}>Done — keep sharing</Text>
+        </Pressable>
 
         <Pressable
           onPress={onStop}
@@ -236,8 +222,17 @@ const styles = StyleSheet.create({
   hostMeta: {
     marginTop: hp(1.5),
     textAlign: 'center',
+    fontSize: fontSize(13),
+    fontWeight: '700',
+    color: colors.text,
+  },
+  hostHint: {
+    marginTop: hp(0.6),
+    textAlign: 'center',
     fontSize: fontSize(12),
     color: colors.textMuted,
+    lineHeight: fontSize(17),
+    paddingHorizontal: wp(2),
   },
   viewers: {
     marginTop: hp(2),
@@ -252,17 +247,43 @@ const styles = StyleSheet.create({
     fontSize: fontSize(14),
     paddingHorizontal: wp(2),
   },
-  stopBtn: {
+  doneBtn: {
     marginTop: 'auto',
     backgroundColor: colors.primary,
     borderRadius: wp(6),
     paddingVertical: hp(1.6),
     alignItems: 'center',
   },
-  stopBtnText: {
+  doneBtnText: {
     color: '#FFFFFF',
     fontSize: fontSize(16),
     fontWeight: '800',
+  },
+  refreshBtn: {
+    marginTop: hp(2),
+    borderRadius: wp(6),
+    paddingVertical: hp(1.3),
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  refreshBtnText: {
+    color: colors.primary,
+    fontSize: fontSize(14),
+    fontWeight: '700',
+  },
+  stopBtn: {
+    marginTop: hp(1.2),
+    borderRadius: wp(6),
+    paddingVertical: hp(1.4),
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  stopBtnText: {
+    color: colors.ballWicket,
+    fontSize: fontSize(15),
+    fontWeight: '700',
   },
   pressed: {
     opacity: 0.88,

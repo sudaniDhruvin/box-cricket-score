@@ -2,8 +2,10 @@ import type { MatchSummary } from '../types/match';
 
 export const LIVE_SHARE_PROTOCOL_VERSION = 1 as const;
 export const LIVE_SHARE_TYPE = 'boxcricket.live' as const;
+/** Kept for QR compatibility; TCP ignores path. */
 export const LIVE_SHARE_PATH = '/live';
-export const LIVE_SHARE_PORT = 8787;
+/** Local TCP port (Claude suggestion / react-native-tcp-socket). */
+export const LIVE_SHARE_PORT = 8899;
 
 export type LiveShareJoinPayload = {
   v: typeof LIVE_SHARE_PROTOCOL_VERSION;
@@ -63,19 +65,28 @@ export function createSessionToken(): string {
   return out;
 }
 
+/** @deprecated TCP does not use WebSocket URLs; kept for older helpers/tests. */
 export function buildWsUrl(payload: LiveShareJoinPayload): string {
-  const path = payload.path.startsWith('/') ? payload.path : `/${payload.path}`;
-  return `ws://${payload.host}:${payload.port}${path}`;
+  return `tcp://${payload.host}:${payload.port}`;
 }
 
 export function serializeMessage(message: LiveShareMessage): string {
   return JSON.stringify(message);
 }
 
+/** Newline-delimited JSON frame for TCP streams. */
+export function encodeFrame(message: LiveShareMessage): string {
+  return `${serializeMessage(message)}\n`;
+}
+
 export function parseMessage(raw: string): LiveShareMessage | null {
   try {
     const data = JSON.parse(raw) as Partial<LiveShareMessage>;
-    if (data == null || typeof data !== 'object' || typeof data.type !== 'string') {
+    if (
+      data == null ||
+      typeof data !== 'object' ||
+      typeof data.type !== 'string'
+    ) {
       return null;
     }
     return data as LiveShareMessage;

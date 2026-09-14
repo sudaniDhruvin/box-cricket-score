@@ -5,6 +5,7 @@ export {
   LIVE_SHARE_TYPE,
   buildWsUrl,
   createSessionToken,
+  encodeFrame,
   parseMessage,
   serializeMessage,
 } from './protocol';
@@ -20,6 +21,14 @@ export {
 export { getLocalIpAddress } from './getLocalIp';
 export { startHostShareSession } from './hostShareSession';
 export type { HostShareSession } from './hostShareSession';
+export {
+  getHostShareState,
+  startHostShare,
+  stopHostShare,
+  subscribeHostShare,
+  isSharingMatch,
+} from './hostShareController';
+export type { HostSharePublicState } from './hostShareController';
 export { connectViewer } from './viewerClient';
 export type {
   ViewerClient,

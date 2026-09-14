@@ -1,23 +1,18 @@
-import { ConfigServer } from 'react-native-nitro-http-server';
+import TcpSocket from 'react-native-tcp-socket';
+import type Socket from 'react-native-tcp-socket/lib/types/Socket';
+import type Server from 'react-native-tcp-socket/lib/types/Server';
 import type { MatchSummary } from '../types/match';
 import { getLocalIpAddress } from './getLocalIp';
 import { buildJoinPayload, encodeJoinPayload } from './qrPayload';
 import {
-  LIVE_SHARE_PATH,
   LIVE_SHARE_PORT,
   LIVE_SHARE_PROTOCOL_VERSION,
   createSessionToken,
+  encodeFrame,
   parseMessage,
-  serializeMessage,
   type LiveShareJoinPayload,
   type LiveShareServerMessage,
 } from './protocol';
-
-type AuthedSocket = {
-  send: (data: string) => void;
-  close: (code?: number, reason?: string) => void;
-  readyState: number;
-};
 
 export type HostShareSession = {
   payload: LiveShareJoinPayload;
@@ -34,26 +29,63 @@ type StartHostShareArgs = {
   onViewerCountChange?: (count: number) => void;
 };
 
-let activeServer: ConfigServer | null = null;
+let activeServer: Server | null = null;
 
-function sendJson(ws: AuthedSocket, message: LiveShareServerMessage) {
-  if (ws.readyState === 1) {
-    ws.send(serializeMessage(message));
+const HEARTBEAT_MS = 1500;
+
+function dataToString(data: string | Uint8Array): string {
+  if (typeof data === 'string') {
+    return data;
   }
+  try {
+    return String.fromCharCode(...data);
+  } catch {
+    return '';
+  }
+}
+
+function writeMessage(socket: Socket, message: LiveShareServerMessage) {
+  try {
+    socket.write(encodeFrame(message));
+  } catch {
+    // dead socket; cleaned up via close/error
+  }
+}
+
+function attachLineReader(socket: Socket, onLine: (line: string) => void) {
+  let buffer = '';
+  socket.on('data', data => {
+    buffer += dataToString(data as string | Uint8Array);
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed) {
+        onLine(trimmed);
+      }
+    }
+  });
 }
 
 export async function startHostShareSession(
   args: StartHostShareArgs,
 ): Promise<HostShareSession> {
   if (activeServer) {
-    await activeServer.stop();
-    activeServer = null;
+    await new Promise<void>(resolve => {
+      try {
+        activeServer?.close(() => resolve());
+      } catch {
+        resolve();
+      }
+      activeServer = null;
+    });
+    await new Promise<void>(r => setTimeout(r, 200));
   }
 
   const hostIp = await getLocalIpAddress();
   if (!hostIp) {
     throw new Error(
-      'Could not find a local IP. Join Wi‑Fi or turn on a hotspot, then try again.',
+      'Could not find this phone’s Wi‑Fi IP. Turn Wi‑Fi/hotspot on, then try Share again.',
     );
   }
 
@@ -63,123 +95,169 @@ export async function startHostShareSession(
     sessionId: args.matchId,
     token,
     matchName: args.matchName,
+    port: LIVE_SHARE_PORT,
   });
 
-  const server = new ConfigServer();
-  const viewers = new Set<AuthedSocket>();
+  const viewers = new Set<Socket>();
+  let lastSentJson: string | null = null;
+  let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   const emitViewerCount = () => {
     args.onViewerCountChange?.(viewers.size);
   };
 
-  const notifyMatchChanged = (match: MatchSummary) => {
-    const raw = serializeMessage({ type: 'match.updated', match });
-    viewers.forEach(ws => {
-      if (ws.readyState === 1) {
-        ws.send(raw);
+  const broadcastMatch = (match: MatchSummary, force = false) => {
+    const message: LiveShareServerMessage = {
+      type: 'match.updated',
+      match,
+    };
+    const raw = encodeFrame(message);
+    if (!force && raw === lastSentJson) {
+      return;
+    }
+    lastSentJson = raw;
+    Array.from(viewers).forEach(socket => {
+      try {
+        socket.write(raw);
+      } catch {
+        viewers.delete(socket);
+        emitViewerCount();
       }
     });
   };
 
-  server.onWebSocket(LIVE_SHARE_PATH, ws => {
-    ws.onmessage = event => {
-      const raw = typeof event.data === 'string' ? event.data : '';
-      const message = parseMessage(raw);
-      if (message == null || message.type !== 'session.hello') {
-        sendJson(ws, {
-          type: 'session.error',
-          code: 'invalid_message',
-          message: 'Expected session.hello',
-        });
-        ws.close(1008, 'invalid_message');
-        return;
-      }
+  const notifyMatchChanged = (match: MatchSummary) => {
+    broadcastMatch(match, true);
+  };
 
-      if (message.v !== LIVE_SHARE_PROTOCOL_VERSION) {
-        sendJson(ws, {
-          type: 'session.error',
-          code: 'unsupported_version',
-          message: 'Update the app to watch this match',
-        });
-        ws.close(1008, 'unsupported_version');
-        return;
-      }
+  const server = await new Promise<Server>((resolve, reject) => {
+    let settled = false;
 
-      if (message.sessionId !== args.matchId) {
-        sendJson(ws, {
-          type: 'session.error',
-          code: 'bad_session',
-          message: 'Session mismatch',
-        });
-        ws.close(1008, 'bad_session');
-        return;
-      }
+    const created = TcpSocket.createServer((socket: Socket) => {
+      let authed = false;
 
-      if (message.token !== token) {
-        sendJson(ws, {
-          type: 'session.error',
-          code: 'bad_token',
-          message: 'Invalid token',
-        });
-        ws.close(1008, 'bad_token');
-        return;
-      }
+      const removeClient = () => {
+        if (viewers.delete(socket)) {
+          emitViewerCount();
+        }
+      };
 
-      viewers.add(ws);
-      emitViewerCount();
+      const fail = (
+        code:
+          | 'bad_token'
+          | 'bad_session'
+          | 'unsupported_version'
+          | 'invalid_message',
+        text: string,
+      ) => {
+        writeMessage(socket, { type: 'session.error', code, message: text });
+        try {
+          socket.destroy();
+        } catch {
+          // ignore
+        }
+      };
 
-      const match = args.getMatch();
-      if (match) {
-        sendJson(ws, { type: 'match.snapshot', match });
-      }
-    };
+      attachLineReader(socket, line => {
+        const message = parseMessage(line);
+        if (!authed) {
+          if (message == null || message.type !== 'session.hello') {
+            fail('invalid_message', 'Expected session.hello');
+            return;
+          }
+          if (message.v !== LIVE_SHARE_PROTOCOL_VERSION) {
+            fail('unsupported_version', 'Update the app to watch this match');
+            return;
+          }
+          if (message.sessionId !== args.matchId) {
+            fail('bad_session', 'Session mismatch');
+            return;
+          }
+          if (message.token !== token) {
+            fail('bad_token', 'Invalid token — scan a fresh QR');
+            return;
+          }
 
-    ws.onclose = () => {
-      if (viewers.delete(ws)) {
-        emitViewerCount();
-      }
-    };
+          authed = true;
+          viewers.add(socket);
+          emitViewerCount();
 
-    ws.onerror = () => {
-      if (viewers.delete(ws)) {
-        emitViewerCount();
+          const match = args.getMatch();
+          if (match) {
+            writeMessage(socket, { type: 'match.snapshot', match });
+            lastSentJson = encodeFrame({
+              type: 'match.updated',
+              match,
+            });
+          }
+        }
+      });
+
+      socket.on('close', removeClient);
+      socket.on('error', removeClient);
+    });
+
+    created.on('error', (err: Error) => {
+      if (!settled) {
+        settled = true;
+        reject(err);
       }
-    };
+    });
+
+    created.listen(
+      { port: LIVE_SHARE_PORT, host: '0.0.0.0', reuseAddress: true },
+      () => {
+        if (!settled) {
+          settled = true;
+          resolve(created);
+        }
+      },
+    );
   });
 
-  await server.start(
-    LIVE_SHARE_PORT,
-    async () => ({
-      statusCode: 200,
-      body: 'Box Cricket live share',
-      headers: { 'content-type': 'text/plain' },
-    }),
-    {
-      mounts: [{ type: 'websocket', path: LIVE_SHARE_PATH }],
-    },
-    { host: '0.0.0.0', autoRestart: true },
-  );
-
   activeServer = server;
+  payload.port = LIVE_SHARE_PORT;
+
+  heartbeatTimer = setInterval(() => {
+    if (viewers.size === 0) {
+      return;
+    }
+    const match = args.getMatch();
+    if (match) {
+      broadcastMatch(match, false);
+    }
+  }, HEARTBEAT_MS);
 
   const stop = async () => {
-    const ended = serializeMessage({
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+
+    const ended: LiveShareServerMessage = {
       type: 'session.ended',
       reason: 'Host stopped sharing',
-    });
-    viewers.forEach(ws => {
+    };
+    const sockets = Array.from(viewers);
+    viewers.clear();
+    emitViewerCount();
+
+    for (const socket of sockets) {
+      writeMessage(socket, ended);
       try {
-        if (ws.readyState === 1) {
-          ws.send(ended);
-        }
-        ws.close(1000, 'ended');
+        socket.destroy();
       } catch {
         // ignore
       }
+    }
+
+    await new Promise<void>(resolve => {
+      try {
+        server.close(() => resolve());
+      } catch {
+        resolve();
+      }
     });
-    viewers.clear();
-    emitViewerCount();
-    await server.stop();
     if (activeServer === server) {
       activeServer = null;
     }

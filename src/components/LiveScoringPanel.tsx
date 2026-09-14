@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -19,6 +19,12 @@ import {
   maybeRequestInAppReview,
   recordCompletedMatchForReview,
 } from '../config/requestInAppReview';
+import {
+  getHostShareState,
+  isSharingMatch,
+  stopHostShare,
+  subscribeHostShare,
+} from '../liveShare';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import type {
@@ -296,6 +302,9 @@ export function LiveScoringPanel({
   const [extrasExpanded, setExtrasExpanded] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [sharingActive, setSharingActive] = useState(() =>
+    isSharingMatch(matchId),
+  );
   const [wicketOpen, setWicketOpen] = useState(false);
   const [wicketModalPhase, setWicketModalPhase] = useState<
     'dismissal' | 'run-out-runs'
@@ -315,6 +324,19 @@ export function LiveScoringPanel({
   const [editB, setEditB] = useState('');
   const [editOvers, setEditOvers] = useState(10);
   const [editPlayers, setEditPlayers] = useState(10);
+
+  useEffect(() => {
+    return subscribeHostShare(s => {
+      setSharingActive(s.active && s.matchId === matchId);
+    });
+  }, [matchId]);
+
+  const handleClose = useCallback(() => {
+    if (getHostShareState().matchId === matchId) {
+      void stopHostShare();
+    }
+    onClose();
+  }, [matchId, onClose]);
 
   const activeIdx = match?.scoringActiveInnings ?? 0;
   const activeInn = match?.innings[activeIdx];
@@ -629,9 +651,9 @@ export function LiveScoringPanel({
 
   const dismissMatchOver = useCallback(() => {
     setMatchOverModal(null);
-    onClose();
+    handleClose();
     maybeRequestInAppReview();
-  }, [onClose]);
+  }, [handleClose]);
 
   const repeatSameMatch = useCallback(() => {
     const completed = matchOverModal;
@@ -649,7 +671,7 @@ export function LiveScoringPanel({
     return (
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <Text style={styles.missing}>Match not found.</Text>
-        <Pressable onPress={onClose} style={styles.ghostBtn}>
+        <Pressable onPress={handleClose} style={styles.ghostBtn}>
           <Text style={styles.ghostBtnText}>Back</Text>
         </Pressable>
       </View>
@@ -660,7 +682,7 @@ export function LiveScoringPanel({
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.toolbar}>
         <Pressable
-          onPress={onClose}
+          onPress={handleClose}
           style={({ pressed }) => [
             styles.backBtn,
             pressed && styles.backPressed,
@@ -679,9 +701,18 @@ export function LiveScoringPanel({
               pressed && styles.backPressed,
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Share live score"
+            accessibilityLabel={
+              sharingActive ? 'Live sharing active' : 'Share live score'
+            }
           >
-            <Text style={styles.iconLbl}>Share</Text>
+            <Text
+              style={[
+                styles.iconLbl,
+                sharingActive && { color: colors.primary },
+              ]}
+            >
+              {sharingActive ? 'Live' : 'Share'}
+            </Text>
           </Pressable>
           <Pressable
             onPress={undo}
