@@ -7,6 +7,8 @@ export type HostSharePublicState = {
   qrValue: string | null;
   hostLabel: string | null;
   viewerCount: number;
+  /** True after at least one viewer has joined this share session. */
+  hadViewers: boolean;
   error: string | null;
   starting: boolean;
 };
@@ -19,6 +21,7 @@ const initialState: HostSharePublicState = {
   qrValue: null,
   hostLabel: null,
   viewerCount: 0,
+  hadViewers: false,
   error: null,
   starting: false,
 };
@@ -93,6 +96,7 @@ export async function startHostShare(
     qrValue: null,
     hostLabel: null,
     viewerCount: 0,
+    hadViewers: false,
   });
 
   await teardownSession();
@@ -109,12 +113,14 @@ export async function startHostShare(
 
     const next = await startHostShareSession({
       matchId,
-      matchName: `${match.innings[0].teamName} vs ${match.innings[1].teamName}`,
       getMatch: () =>
         useMatchStore.getState().matches.find(m => m.id === matchId),
       onViewerCountChange: count => {
         if (generation === startGeneration) {
-          setState({ viewerCount: count });
+          setState({
+            viewerCount: count,
+            hadViewers: state.hadViewers || count > 0,
+          });
         }
       },
     });
@@ -149,6 +155,7 @@ export async function startHostShare(
       qrValue: next.qrValue,
       hostLabel: `${next.payload.host}:${next.payload.port}`,
       viewerCount: next.getViewerCount(),
+      hadViewers: next.getViewerCount() > 0,
       error: null,
     });
   } catch (e) {
@@ -162,6 +169,7 @@ export async function startHostShare(
       qrValue: null,
       hostLabel: null,
       viewerCount: 0,
+      hadViewers: false,
       error: e instanceof Error ? e.message : 'Could not start sharing',
     });
   }

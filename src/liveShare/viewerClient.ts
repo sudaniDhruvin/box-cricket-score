@@ -2,7 +2,10 @@ import TcpSocket from 'react-native-tcp-socket';
 import type Socket from 'react-native-tcp-socket/lib/types/Socket';
 import type { MatchSummary } from '../types/match';
 import {
+  LIVE_SHARE_KEEPALIVE_MS,
   LIVE_SHARE_PROTOCOL_VERSION,
+  LIVE_SHARE_STALE_MS,
+  createViewerId,
   encodeFrame,
   parseMessage,
   type LiveShareJoinPayload,
@@ -23,6 +26,8 @@ export type ViewerClientHandlers = {
 
 export type ViewerClient = {
   disconnect: () => void;
+  /** Retry the same QR/session immediately (host does not need a new QR). */
+  reconnectNow: () => void;
 };
 
 function dataToString(data: string | Uint8Array): string {
@@ -36,6 +41,11 @@ function dataToString(data: string | Uint8Array): string {
   }
 }
 
+const RECONNECT_DETAIL =
+  'You got disconnected. Connecting again… Stay on this screen.';
+const RETRY_DETAIL =
+  'You got disconnected. Tap Connect again — the same QR still works if the host is sharing.';
+
 /**
  * Viewer TCP client (Claude LocalScoreClient pattern):
  * newline-delimited JSON over react-native-tcp-socket.
@@ -45,18 +55,80 @@ export function connectViewer(
   handlers: ViewerClientHandlers,
 ): ViewerClient {
   let closedByUser = false;
+  let fatal = false;
   let socket: Socket | null = null;
   let reconnectAttempt = 0;
-  const maxReconnects = 8;
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  let keepaliveTimer: ReturnType<typeof setInterval> | null = null;
+  let hadConnected = false;
+  let lastHostAt = 0;
   let buffer = '';
+  const viewerId = createViewerId();
+
+  const clearReconnectTimer = () => {
+    if (reconnectTimer != null) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+  };
+
+  const clearKeepaliveTimer = () => {
+    if (keepaliveTimer != null) {
+      clearInterval(keepaliveTimer);
+      keepaliveTimer = null;
+    }
+  };
+
+  const destroySocket = () => {
+    const current = socket;
+    socket = null;
+    try {
+      current?.destroy();
+    } catch {
+      // ignore
+    }
+  };
+
+  const canRetry = () => !closedByUser && !fatal;
+
+  const scheduleReconnect = () => {
+    if (!canRetry()) {
+      return;
+    }
+    reconnectAttempt += 1;
+    handlers.onStatus('reconnecting', RECONNECT_DETAIL);
+    const delay = Math.min(5000, 400 * reconnectAttempt);
+    clearReconnectTimer();
+    reconnectTimer = setTimeout(open, delay);
+  };
+
+  const markHostAlive = () => {
+    lastHostAt = Date.now();
+  };
+
+  const sendPing = (target: Socket) => {
+    try {
+      target.write(encodeFrame({ type: 'session.ping' }));
+    } catch {
+      // close/error will reconnect
+    }
+  };
 
   const open = () => {
-    if (closedByUser) {
+    if (!canRetry()) {
       return;
     }
 
-    handlers.onStatus(reconnectAttempt > 0 ? 'reconnecting' : 'connecting');
+    clearReconnectTimer();
+    clearKeepaliveTimer();
+    destroySocket();
     buffer = '';
+
+    const dropped = hadConnected || reconnectAttempt > 0;
+    handlers.onStatus(
+      dropped ? 'reconnecting' : 'connecting',
+      dropped ? RECONNECT_DETAIL : undefined,
+    );
 
     let opened = false;
     const next = TcpSocket.createConnection(
@@ -66,7 +138,9 @@ export function connectViewer(
       },
       () => {
         opened = true;
+        hadConnected = true;
         reconnectAttempt = 0;
+        markHostAlive();
         handlers.onStatus('connected');
         try {
           next.write(
@@ -75,6 +149,7 @@ export function connectViewer(
               v: LIVE_SHARE_PROTOCOL_VERSION,
               sessionId: payload.sessionId,
               token: payload.token,
+              viewerId,
             }),
           );
         } catch {
@@ -85,10 +160,23 @@ export function connectViewer(
 
     socket = next;
 
+    keepaliveTimer = setInterval(() => {
+      if (socket !== next || !opened || !canRetry()) {
+        return;
+      }
+      if (Date.now() - lastHostAt > LIVE_SHARE_STALE_MS) {
+        handlers.onStatus('reconnecting', RECONNECT_DETAIL);
+        destroySocket();
+        return;
+      }
+      sendPing(next);
+    }, LIVE_SHARE_KEEPALIVE_MS);
+
     next.on('data', data => {
       buffer += dataToString(data as string | Uint8Array);
       const lines = buffer.split('\n');
       buffer = lines.pop() ?? '';
+      markHostAlive();
 
       for (const line of lines) {
         const trimmed = line.trim();
@@ -97,6 +185,10 @@ export function connectViewer(
         }
         const message = parseMessage(trimmed);
         if (message == null) {
+          continue;
+        }
+
+        if (message.type === 'session.heartbeat') {
           continue;
         }
 
@@ -109,9 +201,14 @@ export function connectViewer(
         }
 
         if (message.type === 'session.ended') {
-          closedByUser = true;
+          fatal = true;
+          clearReconnectTimer();
+          clearKeepaliveTimer();
           handlers.onEnded(message.reason);
-          handlers.onStatus('ended', message.reason);
+          handlers.onStatus(
+            'ended',
+            message.reason ?? 'The host stopped sharing.',
+          );
           try {
             next.destroy();
           } catch {
@@ -121,7 +218,9 @@ export function connectViewer(
         }
 
         if (message.type === 'session.error') {
-          closedByUser = true;
+          fatal = true;
+          clearReconnectTimer();
+          clearKeepaliveTimer();
           handlers.onStatus('error', message.message);
           handlers.onEnded(message.message);
           try {
@@ -138,20 +237,18 @@ export function connectViewer(
     });
 
     next.on('close', () => {
-      if (closedByUser) {
+      if (socket === next) {
+        socket = null;
+      }
+      clearKeepaliveTimer();
+      if (!canRetry()) {
         return;
       }
-      if (reconnectAttempt >= maxReconnects) {
-        const detail = opened
-          ? 'Connection dropped. Ask the host to Refresh QR and rescan.'
-          : `Cannot reach host ${payload.host}:${payload.port}. Same Wi‑Fi/hotspot?`;
-        handlers.onStatus('error', detail);
-        handlers.onEnded(detail);
+      if (!opened && reconnectAttempt >= 12) {
+        handlers.onStatus('error', RETRY_DETAIL);
         return;
       }
-      reconnectAttempt += 1;
-      handlers.onStatus('reconnecting');
-      setTimeout(open, 600 * reconnectAttempt);
+      scheduleReconnect();
     });
   };
 
@@ -160,12 +257,17 @@ export function connectViewer(
   return {
     disconnect: () => {
       closedByUser = true;
-      try {
-        socket?.destroy();
-      } catch {
-        // ignore
+      clearReconnectTimer();
+      clearKeepaliveTimer();
+      destroySocket();
+    },
+    reconnectNow: () => {
+      if (fatal || closedByUser) {
+        return;
       }
-      socket = null;
+      reconnectAttempt = 0;
+      handlers.onStatus('reconnecting', RECONNECT_DETAIL);
+      open();
     },
   };
 }

@@ -87,10 +87,20 @@ function BallChip({ d, index }: { d: Delivery; index: number }) {
 
 interface InningsBallByBallProps {
   innings: TeamInnings;
+  /** Live viewers see newest overs first so the current over stays on screen. */
+  oversOrder?: 'oldestFirst' | 'newestFirst';
 }
 
-export function InningsBallByBall({ innings }: InningsBallByBallProps) {
+export function InningsBallByBall({
+  innings,
+  oversOrder = 'oldestFirst',
+}: InningsBallByBallProps) {
   const replay = useMemo(() => getInningsReplay(innings), [innings]);
+  const orderedReplay = useMemo(
+    () =>
+      oversOrder === 'newestFirst' ? [...replay].reverse() : replay,
+    [replay, oversOrder],
+  );
   const [collapsed, setCollapsed] = useState<Record<number, boolean>>({});
 
   const toggleOver = useCallback((overNumber: number) => {
@@ -126,7 +136,7 @@ export function InningsBallByBall({ innings }: InningsBallByBallProps) {
         <LegendDot bg={colors.ballNoBallRuns} label="Nb+" />
         <LegendDot bg={colors.ballWicket} label="W" />
       </View>
-      {replay.map(over => {
+      {orderedReplay.map(over => {
         const runs = over.deliveries.reduce((s, d) => s + tallyDeliveryRuns(d), 0);
         const wkts = over.deliveries.filter(d => d.type === 'wicket').length;
         const isCollapsed = collapsed[over.overNumber];

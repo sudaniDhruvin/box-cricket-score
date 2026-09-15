@@ -25,6 +25,10 @@ import { fontSize, hp, wp } from '../utils';
 type Nav = NativeStackNavigationProp<MainStackParamList, 'ScanToWatch'>;
 type ScanRoute = RouteProp<MainStackParamList, 'ScanToWatch'>;
 
+/** Square scan window. Library default is 300×150 (1D barcode), which rejects most QR codes. */
+const QR_SCAN_SIZE = Math.round(Math.min(wp(72), 320));
+const QR_SCAN_FRAME = { width: QR_SCAN_SIZE, height: QR_SCAN_SIZE };
+
 export function ScanToWatchScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
@@ -89,7 +93,7 @@ export function ScanToWatchScreen() {
       </View>
 
       <Text style={styles.hint}>
-        Join the host Wi‑Fi or hotspot first, then point your camera at their
+        Join the host Wi‑Fi or hotspot first, then fill the square with their
         Share live score QR.
       </Text>
 
@@ -111,7 +115,9 @@ export function ScanToWatchScreen() {
             showFrame
             laserColor={colors.primary}
             frameColor={colors.primary}
-            scanThrottleDelay={1500}
+            barcodeFrameSize={QR_SCAN_FRAME}
+            scanThrottleDelay={200}
+            allowedBarcodeTypes={['qr']}
             onReadCode={onReadCode}
           />
         </View>

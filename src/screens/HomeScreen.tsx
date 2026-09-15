@@ -450,7 +450,7 @@ export function HomeScreen() {
                     borderless: true,
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel="Scan QR to watch a live match"
+                  accessibilityLabel="Watch live. Scan a host QR code."
                 >
                   <View style={styles.headerScanGlyph} accessibilityElementsHidden>
                     <View style={styles.headerScanCornerTL} />
@@ -486,59 +486,58 @@ export function HomeScreen() {
             <View style={styles.ctaCard}>
               <Text style={styles.ctaTitle}>Ready for Action?</Text>
               <Text style={styles.ctaSub}>
-                Start scoring your match, or scan a host QR to watch live nearby.
+                Start scoring your match, or watch a live game nearby.
               </Text>
-              <Pressable
-                onPress={onPressStartNewInnings}
-                style={({ pressed }) => [
-                  styles.quickStartBtn,
-                  pressed && styles.quickStartBtnPressed,
-                ]}
-                android_ripple={{
-                  color: 'rgba(255, 255, 255, 0.22)',
-                  foreground: true,
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Quick start. Create a match and begin scoring."
-              >
-                <Image
-                  source={PNGs.PLAY_ICON}
-                  style={{
-                    width: wp(4),
-                    height: wp(4),
-                    tintColor: colors.background,
+              <View style={styles.ctaActions}>
+                <Pressable
+                  onPress={onPressStartNewInnings}
+                  style={({ pressed }) => [
+                    styles.quickStartBtn,
+                    pressed && styles.quickStartBtnPressed,
+                  ]}
+                  android_ripple={{
+                    color: 'rgba(255, 255, 255, 0.22)',
+                    foreground: true,
                   }}
-                />
-                <Text style={styles.quickStartText}>Quick Start</Text>
-              </Pressable>
+                  accessibilityRole="button"
+                  accessibilityLabel="Quick start. Create a match and begin scoring."
+                >
+                  <Image
+                    source={PNGs.PLAY_ICON}
+                    style={{
+                      width: wp(4),
+                      height: wp(4),
+                      tintColor: colors.background,
+                    }}
+                  />
+                  <Text style={styles.quickStartText}>Quick Start</Text>
+                </Pressable>
 
-              <Pressable
-                onPress={openScanToWatch}
-                style={({ pressed }) => [
-                  styles.scanWatchBtn,
-                  pressed && styles.scanWatchBtnPressed,
-                ]}
-                android_ripple={{
-                  color: colors.primarySoft,
-                  foreground: true,
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Scan QR code to watch a live match"
-              >
-                <View style={styles.scanWatchIcon} accessibilityElementsHidden>
-                  <View style={styles.scanWatchCornerTL} />
-                  <View style={styles.scanWatchCornerTR} />
-                  <View style={styles.scanWatchCornerBL} />
-                  <View style={styles.scanWatchCornerBR} />
-                </View>
-                <View style={styles.scanWatchTextCol}>
-                  <Text style={styles.scanWatchTitle}>Scan QR to watch</Text>
-                  <Text style={styles.scanWatchSub}>
-                    Join same Wi‑Fi · view-only live score
-                  </Text>
-                </View>
-                <Text style={styles.scanWatchChevron}>{'\u203A'}</Text>
-              </Pressable>
+                <Pressable
+                  onPress={openScanToWatch}
+                  style={({ pressed }) => [
+                    styles.watchLiveBtn,
+                    pressed && styles.watchLiveBtnPressed,
+                  ]}
+                  android_ripple={{
+                    color: colors.primarySoft,
+                    foreground: true,
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Watch live. Scan a host QR on the same Wi-Fi."
+                >
+                  <View
+                    style={styles.watchLiveGlyph}
+                    accessibilityElementsHidden
+                  >
+                    <View style={styles.watchLiveCornerTL} />
+                    <View style={styles.watchLiveCornerTR} />
+                    <View style={styles.watchLiveCornerBL} />
+                    <View style={styles.watchLiveCornerBR} />
+                  </View>
+                  <Text style={styles.watchLiveText}>Watch Live</Text>
+                </Pressable>
+              </View>
             </View>
 
             {lastMatch ? (
@@ -577,20 +576,20 @@ export function HomeScreen() {
           <View style={styles.listEmpty}>
             <Text style={styles.listEmptyTitle}>No matches yet</Text>
             <Text style={styles.listEmptySub}>
-              Tap Quick Start to create a match, or Scan QR to watch a friend’s
-              live score on the same Wi‑Fi.
+              Tap Quick Start to create a match, or Watch Live to join a
+              friend’s score on the same Wi‑Fi.
             </Text>
             <Pressable
               onPress={openScanToWatch}
               style={({ pressed }) => [
                 styles.emptyScanBtn,
-                pressed && styles.scanWatchBtnPressed,
+                pressed && styles.watchLiveBtnPressed,
               ]}
               android_ripple={{ color: colors.primarySoft, foreground: true }}
               accessibilityRole="button"
-              accessibilityLabel="Scan QR to watch live"
+              accessibilityLabel="Watch live. Scan a host QR on the same Wi-Fi."
             >
-              <Text style={styles.emptyScanBtnText}>Scan QR to watch live</Text>
+              <Text style={styles.emptyScanBtnText}>Watch Live</Text>
             </Pressable>
             <View style={styles.emptyBannerWrap}>
               <HomeEmptyBannerAd />
@@ -815,7 +814,12 @@ const styles = StyleSheet.create({
     marginBottom: hp(1.6),
     textAlign: 'center',
   },
+  ctaActions: {
+    width: '100%',
+    gap: hp(1.1),
+  },
   quickStartBtn: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -823,7 +827,6 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     paddingVertical: hp(1.5),
     gap: wp(2),
-    width: '100%',
     overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
   quickStartBtnPressed: {
@@ -842,95 +845,77 @@ const styles = StyleSheet.create({
     color: colors.background,
     letterSpacing: -0.2,
   },
-  scanWatchBtn: {
-    marginTop: hp(1.2),
+  watchLiveBtn: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.background,
-    borderRadius: wp(3.5),
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: hp(1.35),
-    paddingHorizontal: wp(3.5),
-    gap: wp(3),
+    borderRadius: 100,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    paddingVertical: hp(1.5),
+    gap: wp(2),
     overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
-  scanWatchBtnPressed: {
+  watchLiveBtnPressed: {
     opacity: 0.92,
     backgroundColor: colors.primaryFaint,
   },
-  scanWatchIcon: {
-    width: wp(9),
-    height: wp(9),
-    borderRadius: wp(2.2),
-    backgroundColor: colors.primaryFaint,
+  watchLiveGlyph: {
+    width: wp(4.2),
+    height: wp(4.2),
     position: 'relative',
   },
-  scanWatchCornerTL: {
+  watchLiveCornerTL: {
     position: 'absolute',
-    top: wp(1.6),
-    left: wp(1.6),
-    width: wp(2.4),
-    height: wp(2.4),
+    top: 0,
+    left: 0,
+    width: wp(1.8),
+    height: wp(1.8),
     borderTopWidth: 2,
     borderLeftWidth: 2,
     borderColor: colors.primary,
     borderTopLeftRadius: 2,
   },
-  scanWatchCornerTR: {
+  watchLiveCornerTR: {
     position: 'absolute',
-    top: wp(1.6),
-    right: wp(1.6),
-    width: wp(2.4),
-    height: wp(2.4),
+    top: 0,
+    right: 0,
+    width: wp(1.8),
+    height: wp(1.8),
     borderTopWidth: 2,
     borderRightWidth: 2,
     borderColor: colors.primary,
     borderTopRightRadius: 2,
   },
-  scanWatchCornerBL: {
+  watchLiveCornerBL: {
     position: 'absolute',
-    bottom: wp(1.6),
-    left: wp(1.6),
-    width: wp(2.4),
-    height: wp(2.4),
+    bottom: 0,
+    left: 0,
+    width: wp(1.8),
+    height: wp(1.8),
     borderBottomWidth: 2,
     borderLeftWidth: 2,
     borderColor: colors.primary,
     borderBottomLeftRadius: 2,
   },
-  scanWatchCornerBR: {
+  watchLiveCornerBR: {
     position: 'absolute',
-    bottom: wp(1.6),
-    right: wp(1.6),
-    width: wp(2.4),
-    height: wp(2.4),
+    bottom: 0,
+    right: 0,
+    width: wp(1.8),
+    height: wp(1.8),
     borderBottomWidth: 2,
     borderRightWidth: 2,
     borderColor: colors.primary,
     borderBottomRightRadius: 2,
   },
-  scanWatchTextCol: {
-    flex: 1,
-    minWidth: 0,
-  },
-  scanWatchTitle: {
-    fontSize: fontSize(15),
+  watchLiveText: {
+    fontSize: fontSize(16),
     fontWeight: '800',
-    color: colors.text,
-  },
-  scanWatchSub: {
-    marginTop: hp(0.2),
-    fontSize: fontSize(12),
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-  scanWatchChevron: {
-    fontSize: fontSize(22),
-    fontWeight: '700',
     color: colors.primary,
-    marginTop: -hp(0.2),
+    letterSpacing: -0.2,
   },
   emptyScanBtn: {
     marginTop: hp(2),

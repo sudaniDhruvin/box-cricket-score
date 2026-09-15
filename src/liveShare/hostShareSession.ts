@@ -5,8 +5,10 @@ import type { MatchSummary } from '../types/match';
 import { getLocalIpAddress } from './getLocalIp';
 import { buildJoinPayload, encodeJoinPayload } from './qrPayload';
 import {
+  LIVE_SHARE_KEEPALIVE_MS,
   LIVE_SHARE_PORT,
   LIVE_SHARE_PROTOCOL_VERSION,
+  LIVE_SHARE_STALE_MS,
   createSessionToken,
   encodeFrame,
   parseMessage,
@@ -24,14 +26,16 @@ export type HostShareSession = {
 
 type StartHostShareArgs = {
   matchId: string;
-  matchName: string;
   getMatch: () => MatchSummary | undefined;
   onViewerCountChange?: (count: number) => void;
 };
 
-let activeServer: Server | null = null;
+type ViewerEntry = {
+  socket: Socket;
+  lastSeen: number;
+};
 
-const HEARTBEAT_MS = 1500;
+let activeServer: Server | null = null;
 
 function dataToString(data: string | Uint8Array): string {
   if (typeof data === 'string') {
@@ -94,16 +98,36 @@ export async function startHostShareSession(
     host: hostIp,
     sessionId: args.matchId,
     token,
-    matchName: args.matchName,
     port: LIVE_SHARE_PORT,
   });
 
-  const viewers = new Set<Socket>();
+  /** Keyed by viewerId (or a fallback) so the same phone can reconnect without a new QR. */
+  const viewers = new Map<string, ViewerEntry>();
   let lastSentJson: string | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  let anonSeq = 0;
 
   const emitViewerCount = () => {
     args.onViewerCountChange?.(viewers.size);
+  };
+
+  const dropViewer = (key: string, socket?: Socket) => {
+    const current = viewers.get(key);
+    if (!current) {
+      return;
+    }
+    if (socket && current.socket !== socket) {
+      return;
+    }
+    viewers.delete(key);
+    emitViewerCount();
+  };
+
+  const touchViewer = (key: string) => {
+    const current = viewers.get(key);
+    if (current) {
+      current.lastSeen = Date.now();
+    }
   };
 
   const broadcastMatch = (match: MatchSummary, force = false) => {
@@ -116,12 +140,11 @@ export async function startHostShareSession(
       return;
     }
     lastSentJson = raw;
-    Array.from(viewers).forEach(socket => {
+    Array.from(viewers.entries()).forEach(([key, entry]) => {
       try {
-        socket.write(raw);
+        entry.socket.write(raw);
       } catch {
-        viewers.delete(socket);
-        emitViewerCount();
+        dropViewer(key, entry.socket);
       }
     });
   };
@@ -130,15 +153,46 @@ export async function startHostShareSession(
     broadcastMatch(match, true);
   };
 
+  const pruneStaleViewers = () => {
+    const now = Date.now();
+    let dropped = false;
+    Array.from(viewers.entries()).forEach(([key, entry]) => {
+      if (now - entry.lastSeen <= LIVE_SHARE_STALE_MS) {
+        return;
+      }
+      viewers.delete(key);
+      dropped = true;
+      try {
+        entry.socket.destroy();
+      } catch {
+        // ignore
+      }
+    });
+    if (dropped) {
+      emitViewerCount();
+    }
+  };
+
+  const sendHeartbeat = () => {
+    Array.from(viewers.entries()).forEach(([key, entry]) => {
+      try {
+        entry.socket.write(encodeFrame({ type: 'session.heartbeat' }));
+      } catch {
+        dropViewer(key, entry.socket);
+      }
+    });
+  };
+
   const server = await new Promise<Server>((resolve, reject) => {
     let settled = false;
 
     const created = TcpSocket.createServer((socket: Socket) => {
       let authed = false;
+      let viewerKey: string | null = null;
 
       const removeClient = () => {
-        if (viewers.delete(socket)) {
-          emitViewerCount();
+        if (viewerKey) {
+          dropViewer(viewerKey, socket);
         }
       };
 
@@ -179,7 +233,18 @@ export async function startHostShareSession(
           }
 
           authed = true;
-          viewers.add(socket);
+          const fromHello =
+            typeof message.viewerId === 'string' ? message.viewerId.trim() : '';
+          viewerKey = fromHello || `anon-${++anonSeq}`;
+          const previous = viewers.get(viewerKey);
+          viewers.set(viewerKey, { socket, lastSeen: Date.now() });
+          if (previous && previous.socket !== socket) {
+            try {
+              previous.socket.destroy();
+            } catch {
+              // ignore — close handler must not drop the new socket
+            }
+          }
           emitViewerCount();
 
           const match = args.getMatch();
@@ -190,6 +255,11 @@ export async function startHostShareSession(
               match,
             });
           }
+          return;
+        }
+
+        if (viewerKey) {
+          touchViewer(viewerKey);
         }
       });
 
@@ -219,14 +289,16 @@ export async function startHostShareSession(
   payload.port = LIVE_SHARE_PORT;
 
   heartbeatTimer = setInterval(() => {
+    pruneStaleViewers();
     if (viewers.size === 0) {
       return;
     }
+    sendHeartbeat();
     const match = args.getMatch();
     if (match) {
       broadcastMatch(match, false);
     }
-  }, HEARTBEAT_MS);
+  }, LIVE_SHARE_KEEPALIVE_MS);
 
   const stop = async () => {
     if (heartbeatTimer) {
@@ -238,7 +310,7 @@ export async function startHostShareSession(
       type: 'session.ended',
       reason: 'Host stopped sharing',
     };
-    const sockets = Array.from(viewers);
+    const sockets = Array.from(viewers.values()).map(entry => entry.socket);
     viewers.clear();
     emitViewerCount();
 

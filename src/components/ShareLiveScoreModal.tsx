@@ -95,7 +95,8 @@ export function ShareLiveScoreModal({
 
         <Text style={styles.hint}>
           Both phones on the same Wi‑Fi (or host hotspot). Scan this QR, then
-          tap Done — sharing stays on and scores update live over TCP.
+          tap Done — sharing stays on. If a viewer drops, they can reconnect
+          with this same QR — only tap Refresh QR if you changed network.
         </Text>
 
         <View style={styles.qrCard}>
@@ -106,8 +107,9 @@ export function ShareLiveScoreModal({
           ) : share.qrValue ? (
             <QRCode
               value={share.qrValue}
-              size={wp(55)}
+              size={wp(64)}
               backgroundColor="#FFFFFF"
+              ecl="M"
             />
           ) : null}
         </View>
@@ -132,7 +134,9 @@ export function ShareLiveScoreModal({
                 ? 'Share failed'
                 : 'Not sharing'
             : share.viewerCount === 0
-              ? 'Waiting for viewers…'
+              ? share.hadViewers
+                ? 'Viewer disconnected. They can reconnect with this same QR.'
+                : 'Waiting for viewers…'
               : `${share.viewerCount} watching`}
         </Text>
 
@@ -209,8 +213,8 @@ const styles = StyleSheet.create({
   },
   qrCard: {
     alignSelf: 'center',
-    minHeight: wp(60),
-    minWidth: wp(60),
+    minHeight: wp(70),
+    minWidth: wp(70),
     alignItems: 'center',
     justifyContent: 'center',
     padding: wp(4),

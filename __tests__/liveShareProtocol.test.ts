@@ -9,6 +9,7 @@ import {
   LIVE_SHARE_TYPE,
   buildWsUrl,
   createSessionToken,
+  createViewerId,
   encodeFrame,
   parseMessage,
 } from '../src/liveShare/protocol';
@@ -18,6 +19,26 @@ describe('liveShare protocol', () => {
     const token = createSessionToken();
     expect(token).toHaveLength(6);
     expect(token).toMatch(/^[A-Z0-9]+$/);
+  });
+
+  it('creates a viewer id for reconnecting the same phone', () => {
+    const id = createViewerId();
+    expect(id.startsWith('v-')).toBe(true);
+    expect(id.length).toBeGreaterThan(6);
+  });
+
+  it('parses a session hello that includes viewerId', () => {
+    expect(
+      parseMessage(
+        '{"type":"session.hello","v":1,"sessionId":"m-1","token":"ABC123","viewerId":"v-abc"}',
+      ),
+    ).toEqual({
+      type: 'session.hello',
+      v: 1,
+      sessionId: 'm-1',
+      token: 'ABC123',
+      viewerId: 'v-abc',
+    });
   });
 
   it('encodes and parses a valid join payload', () => {
@@ -69,5 +90,17 @@ describe('liveShare protocol', () => {
       '{"type":"session.ended"}\n',
     );
     expect(parseMessage('{bad')).toBeNull();
+  });
+
+  it('parses keepalive frames', () => {
+    expect(parseMessage('{"type":"session.heartbeat"}')).toEqual({
+      type: 'session.heartbeat',
+    });
+    expect(parseMessage('{"type":"session.ping"}')).toEqual({
+      type: 'session.ping',
+    });
+    expect(encodeFrame({ type: 'session.heartbeat' })).toBe(
+      '{"type":"session.heartbeat"}\n',
+    );
   });
 });

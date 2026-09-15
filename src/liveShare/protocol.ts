@@ -6,6 +6,10 @@ export const LIVE_SHARE_TYPE = 'boxcricket.live' as const;
 export const LIVE_SHARE_PATH = '/live';
 /** Local TCP port (Claude suggestion / react-native-tcp-socket). */
 export const LIVE_SHARE_PORT = 8899;
+/** Host and viewer ping interval. */
+export const LIVE_SHARE_KEEPALIVE_MS = 1500;
+/** Treat the link as dropped if no keepalive arrives in this window. */
+export const LIVE_SHARE_STALE_MS = 5000;
 
 export type LiveShareJoinPayload = {
   v: typeof LIVE_SHARE_PROTOCOL_VERSION;
@@ -23,6 +27,8 @@ export type SessionHelloMessage = {
   v: typeof LIVE_SHARE_PROTOCOL_VERSION;
   sessionId: string;
   token: string;
+  /** Stable per viewer app session so the host can accept the same phone again after a drop. */
+  viewerId?: string;
 };
 
 export type MatchSnapshotMessage = {
@@ -46,13 +52,24 @@ export type SessionErrorMessage = {
   message: string;
 };
 
+/** Host → viewer keepalive so drops are noticed even when the score is unchanged. */
+export type SessionHeartbeatMessage = {
+  type: 'session.heartbeat';
+};
+
+/** Viewer → host keepalive so the host can drop stale sockets. */
+export type SessionPingMessage = {
+  type: 'session.ping';
+};
+
 export type LiveShareServerMessage =
   | MatchSnapshotMessage
   | MatchUpdatedMessage
   | SessionEndedMessage
-  | SessionErrorMessage;
+  | SessionErrorMessage
+  | SessionHeartbeatMessage;
 
-export type LiveShareClientMessage = SessionHelloMessage;
+export type LiveShareClientMessage = SessionHelloMessage | SessionPingMessage;
 
 export type LiveShareMessage = LiveShareServerMessage | LiveShareClientMessage;
 
@@ -63,6 +80,10 @@ export function createSessionToken(): string {
     out += alphabet[Math.floor(Math.random() * alphabet.length)];
   }
   return out;
+}
+
+export function createViewerId(): string {
+  return `v-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
 /** @deprecated TCP does not use WebSocket URLs; kept for older helpers/tests. */

@@ -55,6 +55,7 @@ import { countsAsLegalBall, tallyDeliveryRuns } from '../utils/deliveryScoring';
 import { fontSize, hp, wp } from '../utils';
 import { StickyBottomBannerAd } from './StickyBottomBannerAd';
 import { ShareLiveScoreModal } from './ShareLiveScoreModal';
+import { LiveShareNoticeModal } from './LiveShareNoticeModal';
 import { PNGs } from '../assets/images/pngs';
 
 function cloneMatch(m: MatchSummary): MatchSummary {
@@ -305,6 +306,10 @@ export function LiveScoringPanel({
   const [sharingActive, setSharingActive] = useState(() =>
     isSharingMatch(matchId),
   );
+  const [viewerDroppedOpen, setViewerDroppedOpen] = useState(false);
+  const [viewerCount, setViewerCount] = useState(0);
+  const [hadViewers, setHadViewers] = useState(false);
+  const prevViewerCountRef = useRef(0);
   const [wicketOpen, setWicketOpen] = useState(false);
   const [wicketModalPhase, setWicketModalPhase] = useState<
     'dismissal' | 'run-out-runs'
@@ -327,7 +332,22 @@ export function LiveScoringPanel({
 
   useEffect(() => {
     return subscribeHostShare(s => {
-      setSharingActive(s.active && s.matchId === matchId);
+      const active = s.active && s.matchId === matchId;
+      setSharingActive(active);
+      setViewerCount(active ? s.viewerCount : 0);
+      setHadViewers(active ? s.hadViewers : false);
+      if (!active) {
+        prevViewerCountRef.current = 0;
+        setViewerDroppedOpen(false);
+        return;
+      }
+      if (
+        prevViewerCountRef.current > 0 &&
+        s.viewerCount < prevViewerCountRef.current
+      ) {
+        setViewerDroppedOpen(true);
+      }
+      prevViewerCountRef.current = s.viewerCount;
     });
   }, [matchId]);
 
@@ -738,6 +758,28 @@ export function LiveScoringPanel({
           </Pressable>
         </View>
       </View>
+
+      {sharingActive ? (
+        <Pressable
+          onPress={() => setShareOpen(true)}
+          style={({ pressed }) => [
+            styles.sharingBar,
+            pressed && styles.backPressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Live sharing is on. Tap to show the QR code."
+        >
+          <View style={styles.sharingDot} />
+          <Text style={styles.sharingBarText} numberOfLines={1}>
+            {viewerCount > 0
+              ? `Sharing live · ${viewerCount} watching`
+              : hadViewers
+                ? 'Sharing live · viewer disconnected'
+                : 'Sharing live · waiting for viewers'}
+          </Text>
+          <Text style={styles.sharingBarCta}>QR</Text>
+        </Pressable>
+      ) : null}
 
       <View style={styles.mainColumn}>
         <ScrollView
@@ -1463,10 +1505,25 @@ export function LiveScoringPanel({
         </Pressable>
       </Modal>
 
-      <ShareLiveScoreModal
-        visible={shareOpen}
-        matchId={matchId}
-        onClose={() => setShareOpen(false)}
+      {shareOpen ? (
+        <ShareLiveScoreModal
+          visible
+          matchId={matchId}
+          onClose={() => setShareOpen(false)}
+        />
+      ) : null}
+      <LiveShareNoticeModal
+        visible={viewerDroppedOpen}
+        title="Viewer disconnected"
+        message="A connected phone dropped off live sharing. They can tap Connect again on their screen and join with the same QR — you do not need to refresh it."
+        primaryLabel="OK"
+        onPrimary={() => setViewerDroppedOpen(false)}
+        secondaryLabel="Show QR"
+        onSecondary={() => {
+          setViewerDroppedOpen(false);
+          setShareOpen(true);
+        }}
+        onRequestClose={() => setViewerDroppedOpen(false)}
       />
     </View>
   );
@@ -1592,6 +1649,37 @@ const styles = StyleSheet.create({
   iconLbl: {
     fontSize: fontSize(14),
     fontWeight: '700',
+    color: colors.primary,
+  },
+  sharingBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(2),
+    marginHorizontal: wp(3),
+    marginTop: hp(0.6),
+    marginBottom: hp(0.4),
+    paddingHorizontal: wp(3),
+    paddingVertical: hp(0.9),
+    borderRadius: wp(2.5),
+    backgroundColor: colors.primaryFaint,
+    borderWidth: 1,
+    borderColor: colors.primarySoft,
+  },
+  sharingDot: {
+    width: wp(2.2),
+    height: wp(2.2),
+    borderRadius: wp(1.1),
+    backgroundColor: colors.primary,
+  },
+  sharingBarText: {
+    flex: 1,
+    fontSize: fontSize(12),
+    fontWeight: '700',
+    color: colors.text,
+  },
+  sharingBarCta: {
+    fontSize: fontSize(12),
+    fontWeight: '800',
     color: colors.primary,
   },
   editIcon: {
