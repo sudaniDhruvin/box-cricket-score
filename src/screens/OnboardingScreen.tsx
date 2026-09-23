@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
 import { useUserStore } from '../store/useUserStore';
 import { OnboardingNativeAd } from '../components/OnboardingNativeAd';
+import { PrimaryButton } from '../components/ui';
 
 export function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -41,16 +42,15 @@ export function OnboardingScreen() {
           <View style={styles.ball} />
         </View>
 
-        <OnboardingNativeAd />
-
-        <Pressable
-          style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+        <PrimaryButton
+          label="Get started"
           onPress={completeOnboarding}
-          accessibilityRole="button"
-          accessibilityLabel="Get started"
-        >
-          <Text style={styles.ctaLabel}>Get started</Text>
-        </Pressable>
+          style={styles.cta}
+        />
+
+        <View style={styles.adBelow}>
+          <OnboardingNativeAd />
+        </View>
       </ScrollView>
     </View>
   );
@@ -136,18 +136,8 @@ const styles = StyleSheet.create({
   },
   cta: {
     marginTop: hp(1),
-    paddingVertical: hp(2),
-    borderRadius: wp(3),
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  ctaPressed: {
-    opacity: 0.92,
-  },
-  ctaLabel: {
-    fontSize: fontSize(17),
-    fontWeight: '700',
-    color: colors.background,
+  adBelow: {
+    marginTop: hp(2.5),
   },
 });

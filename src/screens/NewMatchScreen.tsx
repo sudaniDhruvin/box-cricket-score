@@ -21,6 +21,7 @@ import type { MainStackParamList } from '../navigation/types';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import { LiveScoringPanel } from '../components/LiveScoringPanel';
+import { ScreenHeader } from '../components/ui';
 import { createLiveMatch } from '../utils/createLiveMatch';
 import { fontSize, hp, wp } from '../utils';
 import { PNGs } from '../assets/images/pngs';
@@ -173,31 +174,17 @@ export function NewMatchScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.toolbar}>
-        <Pressable
-          onPress={() => {
-            if (step === 'toss') {
-              setStep('configure');
-              setError(null);
-              return;
-            }
-            navigation.goBack();
-          }}
-          style={({ pressed }) => [
-            styles.backBtn,
-            pressed && styles.backBtnPressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={
-            step === 'toss' ? 'Back to match setup' : 'Go back'
+      <ScreenHeader
+        backLabel={step === 'toss' ? 'Setup' : 'Home'}
+        onBack={() => {
+          if (step === 'toss') {
+            setStep('configure');
+            setError(null);
+            return;
           }
-        >
-          <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
-          <Text style={styles.backLabel}>
-            {step === 'toss' ? 'Setup' : 'Home'}
-          </Text>
-        </Pressable>
-      </View>
+          navigation.goBack();
+        }}
+      />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -439,32 +426,6 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
-  },
-  toolbar: {
-    paddingHorizontal: wp(2),
-    paddingVertical: hp(0.5),
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: hp(1),
-    paddingHorizontal: wp(2),
-    borderRadius: wp(2),
-    gap: wp(1),
-    alignSelf: 'flex-start',
-  },
-  backBtnPressed: {
-    backgroundColor: colors.primaryFaint,
-  },
-  backArrow: {
-    width: wp(4),
-    height: wp(4),
-  },
-  backLabel: {
-    fontSize: fontSize(16),
-    fontWeight: '700',
-    color: colors.primary,
-    includeFontPadding: false,
   },
   scroll: {
     paddingHorizontal: wp(5),

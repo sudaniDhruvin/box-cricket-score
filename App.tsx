@@ -11,6 +11,12 @@ import { APP_OPEN_AD_UNIT_ID } from './src/config/adUnitIds';
 import { getAdFlags } from './src/store/useAdConfigStore';
 import RootNavigator from './src/navigation';
 
+/**
+ * Cold-start wait for App Open. If the ad isn't ready by then, skip it so
+ * users aren't stuck on splash — but only abandon AFTER this timeout.
+ */
+const APP_OPEN_LOAD_TIMEOUT_MS = 8000;
+
 const App = () => {
   useKeepAwake();
   const {
@@ -22,6 +28,9 @@ const App = () => {
   } = useAppOpenAd(APP_OPEN_AD_UNIT_ID);
 
   const splashHiddenRef = useRef(false);
+  /** Still eligible to show a cold-start App Open (not timed out / not shown). */
+  const coldStartPendingRef = useRef(false);
+  const appOpenShownRef = useRef(false);
 
   const hideSplashScreen = useCallback(() => {
     if (splashHiddenRef.current) {
@@ -33,15 +42,26 @@ const App = () => {
     });
   }, []);
 
+  const abandonColdStartAppOpen = useCallback(() => {
+    coldStartPendingRef.current = false;
+    hideSplashScreen();
+  }, [hideSplashScreen]);
+
   useEffect(() => {
     let cancelled = false;
+    let loadTimeout: ReturnType<typeof setTimeout> | undefined;
+
     (async () => {
       try {
         await initializeAdRemoteConfig();
-        if (getAdFlags().isAds) {
+        const flags = getAdFlags();
+        if (__DEV__) {
+          console.log('[Ads] flags', flags, 'appOpenUnit', APP_OPEN_AD_UNIT_ID);
+        }
+        if (flags.isAds) {
           await mobileAds().initialize();
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error('App startup init failed', e);
       }
       if (cancelled) {
@@ -49,23 +69,61 @@ const App = () => {
       }
       checkInAppUpdate();
 
-      if (getAdFlags().isAds && getAdFlags().isOpenApp) {
+      const flags = getAdFlags();
+      if (flags.isAds && flags.isOpenApp) {
+        coldStartPendingRef.current = true;
         loadAppOpenAd();
+        loadTimeout = setTimeout(() => {
+          if (!appOpenShownRef.current) {
+            console.warn(
+              '[Ads] App Open load timed out — continuing without it',
+            );
+            abandonColdStartAppOpen();
+          }
+        }, APP_OPEN_LOAD_TIMEOUT_MS);
       } else {
+        if (__DEV__ && flags.isAds && !flags.isOpenApp) {
+          console.warn(
+            '[Ads] isOpenApp is false in Remote Config — App Open skipped',
+          );
+        }
         hideSplashScreen();
       }
     })();
+
     return () => {
       cancelled = true;
+      if (loadTimeout) {
+        clearTimeout(loadTimeout);
+      }
     };
-  }, [loadAppOpenAd, hideSplashScreen]);
+  }, [loadAppOpenAd, hideSplashScreen, abandonColdStartAppOpen]);
 
+  // AdMob cold-start pattern: keep splash until loaded, then show ad.
+  // Do NOT gate on splashHiddenRef — that previously blocked late loads.
   useEffect(() => {
     if (!appOpenLoaded) {
       return;
     }
-    showAppOpenAd();
-  }, [appOpenLoaded, showAppOpenAd]);
+    if (!coldStartPendingRef.current || appOpenShownRef.current) {
+      return;
+    }
+
+    appOpenShownRef.current = true;
+    coldStartPendingRef.current = false;
+
+    // Let the activity settle briefly so AdMob can present over the splash.
+    const showTimer = setTimeout(() => {
+      try {
+        showAppOpenAd();
+      } catch (e) {
+        console.error('[Ads] App Open show failed', e);
+        hideSplashScreen();
+      }
+    }, 150);
+
+    return () => clearTimeout(showTimer);
+  }, [appOpenLoaded, showAppOpenAd, hideSplashScreen]);
 
   useEffect(() => {
     if (!appOpenClosed) {
@@ -78,8 +136,9 @@ const App = () => {
     if (!appOpenError) {
       return;
     }
-    hideSplashScreen();
-  }, [appOpenError, hideSplashScreen]);
+    console.warn('[Ads] App Open error', appOpenError);
+    abandonColdStartAppOpen();
+  }, [appOpenError, abandonColdStartAppOpen]);
 
   return (
     <GestureHandlerRootView style={styles.gestureRoot}>

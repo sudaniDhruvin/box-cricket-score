@@ -4,15 +4,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { Camera } from 'react-native-camera-kit';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PNGs } from '../assets/images/pngs';
+import { ScreenHeader } from '../components/ui';
 import {
   ensureCameraPermission,
   parseJoinPayload,
@@ -78,19 +76,11 @@ export function ScanToWatchScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.toolbar}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-        >
-          <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
-          <Text style={styles.backLbl}>Back</Text>
-        </Pressable>
-        <Text style={styles.title}>Watch live</Text>
-        <View style={styles.toolbarSpacer} />
-      </View>
+      <ScreenHeader
+        backLabel="Back"
+        title="Watch live"
+        onBack={() => navigation.goBack()}
+      />
 
       <Text style={styles.hint}>
         Join the host Wi‑Fi or hotspot first, then fill the square with their
@@ -136,41 +126,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: wp(2),
-    paddingVertical: hp(0.5),
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: hp(1),
-    paddingHorizontal: wp(2),
-    borderRadius: wp(2),
-    gap: wp(1),
-  },
-  backArrow: {
-    width: wp(4),
-    height: wp(4),
-  },
-  backLbl: {
-    fontSize: fontSize(16),
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  title: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: fontSize(17),
-    fontWeight: '800',
-    color: colors.text,
-  },
-  toolbarSpacer: {
-    width: wp(18),
-  },
   hint: {
     paddingHorizontal: wp(5),
     paddingVertical: hp(1.5),
@@ -206,8 +161,5 @@ const styles = StyleSheet.create({
     color: colors.ballWicket,
     fontSize: fontSize(13),
     textAlign: 'center',
-  },
-  pressed: {
-    backgroundColor: colors.primaryFaint,
   },
 });

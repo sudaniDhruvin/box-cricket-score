@@ -56,6 +56,7 @@ import { fontSize, hp, wp } from '../utils';
 import { StickyBottomBannerAd } from './StickyBottomBannerAd';
 import { ShareLiveScoreModal } from './ShareLiveScoreModal';
 import { LiveShareNoticeModal } from './LiveShareNoticeModal';
+import { EditIcon, ShareIcon, UndoIcon } from './ui';
 import { PNGs } from '../assets/images/pngs';
 
 function cloneMatch(m: MatchSummary): MatchSummary {
@@ -718,6 +719,7 @@ export function LiveScoringPanel({
             onPress={() => setShareOpen(true)}
             style={({ pressed }) => [
               styles.iconHit,
+              sharingActive && styles.iconHitActive,
               pressed && styles.backPressed,
             ]}
             accessibilityRole="button"
@@ -725,14 +727,9 @@ export function LiveScoringPanel({
               sharingActive ? 'Live sharing active' : 'Share live score'
             }
           >
-            <Text
-              style={[
-                styles.iconLbl,
-                sharingActive && { color: colors.primary },
-              ]}
-            >
-              {sharingActive ? 'Live' : 'Share'}
-            </Text>
+            <ShareIcon
+              color={sharingActive ? colors.background : colors.primary}
+            />
           </Pressable>
           <Pressable
             onPress={undo}
@@ -743,7 +740,7 @@ export function LiveScoringPanel({
             accessibilityRole="button"
             accessibilityLabel="Undo last ball"
           >
-            <Text style={styles.iconLbl}>Undo</Text>
+            <UndoIcon />
           </Pressable>
           <Pressable
             onPress={openEdit}
@@ -754,7 +751,7 @@ export function LiveScoringPanel({
             accessibilityRole="button"
             accessibilityLabel="Edit match settings"
           >
-            <Text style={styles.editIcon}>{'\u270E'}</Text>
+            <EditIcon />
           </Pressable>
         </View>
       </View>
@@ -786,7 +783,10 @@ export function LiveScoringPanel({
           style={styles.scrollFill}
           contentContainerStyle={[
             styles.scroll,
-            { paddingBottom: Math.max(insets.bottom, hp(2)) + hp(1) },
+            {
+              paddingBottom:
+                Math.max(insets.bottom, hp(2)) + hp(1) + hp(8),
+            },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -1542,6 +1542,10 @@ const styles = StyleSheet.create({
   },
   bottomAdStrip: {
     alignItems: 'center',
+    paddingBottom: 0,
+    backgroundColor: colors.background,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
   },
   scroll: {
     paddingHorizontal: wp(4),
@@ -1623,9 +1627,14 @@ const styles = StyleSheet.create({
     gap: wp(1),
   },
   iconHit: {
-    paddingVertical: hp(1),
-    paddingHorizontal: wp(2.5),
-    borderRadius: wp(2),
+    width: wp(11),
+    height: wp(11),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: wp(2.5),
+  },
+  iconHitActive: {
+    backgroundColor: colors.primary,
   },
   backPressed: {
     backgroundColor: colors.primaryFaint,
@@ -1645,11 +1654,6 @@ const styles = StyleSheet.create({
   backArrow: {
     width: wp(4),
     height: wp(4),
-  },
-  iconLbl: {
-    fontSize: fontSize(14),
-    fontWeight: '700',
-    color: colors.primary,
   },
   sharingBar: {
     flexDirection: 'row',
@@ -1681,10 +1685,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize(12),
     fontWeight: '800',
     color: colors.primary,
-  },
-  editIcon: {
-    fontSize: fontSize(18),
-    color: colors.text,
   },
   missing: {
     padding: wp(4),

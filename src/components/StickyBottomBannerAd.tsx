@@ -6,21 +6,12 @@ import { useAdFlags } from '../hooks/useAdFlags';
 
 /**
  * Anchored adaptive banner for sticky placement at the bottom of a screen
- * (e.g. new match form, live scoring).
- * Tries H1 (high) → H2 (medium) → H3 (normal) until one loads.
+ * (e.g. live scoring). Tries H1 (high) → H2 (medium) → H3 (normal).
  */
 export function StickyBottomBannerAd() {
   const { isBanner, isAds } = useAdFlags();
   const [adIndex, setAdIndex] = useState(0);
   const [visible, setVisible] = useState(true);
-
-  if (!isAds) {
-    return null;
-  }
-
-  if (!isBanner) {
-    return null;
-  }
 
   const unitId = useMemo(() => BANNER_AD_UNIT_IDS[adIndex], [adIndex]);
 
@@ -35,7 +26,7 @@ export function StickyBottomBannerAd() {
     });
   }, []);
 
-  if (!visible || !unitId) {
+  if (!isAds || !isBanner || !visible || !unitId) {
     return null;
   }
 
@@ -44,7 +35,7 @@ export function StickyBottomBannerAd() {
       <BannerAd
         key={unitId}
         unitId={unitId}
-        size={BannerAdSize.FULL_BANNER}
+        size={BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER}
         onAdFailedToLoad={handleAdFailedToLoad}
       />
     </View>

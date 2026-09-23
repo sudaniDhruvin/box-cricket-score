@@ -3,7 +3,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { InningsBallByBall } from '../components/InningsBallByBall';
 import { LiveShareNoticeModal } from '../components/LiveShareNoticeModal';
-import { PNGs } from '../assets/images/pngs';
+import { ScreenHeader } from '../components/ui';
 import {
   connectViewer,
   type ViewerClient,
@@ -165,9 +164,7 @@ export function LiveSpectatorScreen() {
         <Text style={styles.bannerTitle}>{bannerTitle(status)}</Text>
         <Text style={styles.bannerBody}>
           {statusDetail ??
-            (status === 'connecting'
-              ? 'Waiting for match data…'
-              : 'Stay on this screen or tap Connect again. The host does not need a new QR.')}
+            'Stay on this screen or tap Connect again. The host does not need a new QR.'}
         </Text>
         {showConnectAgain ? (
           <Pressable
@@ -200,32 +197,27 @@ export function LiveSpectatorScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.toolbar}>
-        <Pressable
-          onPress={() => navigation.navigate('Home')}
-          style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel="Back to home"
-        >
-          <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
-          <Text style={styles.backLbl}>Home</Text>
-        </Pressable>
-        <View
-          style={[
-            styles.livePill,
-            showBanner && styles.livePillDisconnected,
-          ]}
-        >
-          <Text
+      <ScreenHeader
+        backLabel="Home"
+        onBack={() => navigation.navigate('Home')}
+        right={
+          <View
             style={[
-              styles.livePillText,
-              showBanner && styles.livePillDisconnectedText,
+              styles.livePill,
+              showBanner && styles.livePillDisconnected,
             ]}
           >
-            {statusLabel(status)}
-          </Text>
-        </View>
-      </View>
+            <Text
+              style={[
+                styles.livePillText,
+                showBanner && styles.livePillDisconnectedText,
+              ]}
+            >
+              {statusLabel(status)}
+            </Text>
+          </View>
+        }
+      />
 
       {connectionBanner}
 
@@ -402,32 +394,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: wp(2),
-    paddingVertical: hp(0.5),
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: hp(1),
-    paddingHorizontal: wp(2),
-    borderRadius: wp(2),
-    gap: wp(1),
-  },
-  backArrow: {
-    width: wp(4),
-    height: wp(4),
-  },
-  backLbl: {
-    fontSize: fontSize(16),
-    fontWeight: '700',
-    color: colors.primary,
   },
   livePill: {
     backgroundColor: colors.primarySoft,

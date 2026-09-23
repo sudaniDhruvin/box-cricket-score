@@ -13,14 +13,6 @@ export function HomeEmptyBannerAd() {
   const [adIndex, setAdIndex] = useState(0);
   const [visible, setVisible] = useState(true);
 
-  if (!isAds) {
-    return null;
-  }
-
-  if (!isHomeBanner) {
-    return null;
-  }
-
   const unitId = useMemo(
     () => HOME_EMPTY_BANNER_AD_UNIT_IDS[adIndex],
     [adIndex],
@@ -37,7 +29,7 @@ export function HomeEmptyBannerAd() {
     });
   }, []);
 
-  if (!visible || !unitId) {
+  if (!isAds || !isHomeBanner || !visible || !unitId) {
     return null;
   }
 

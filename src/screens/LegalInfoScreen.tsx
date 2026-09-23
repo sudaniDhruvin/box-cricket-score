@@ -1,19 +1,12 @@
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React from 'react';
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScreenHeader } from '../components/ui';
 import type { MainStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
-import { PNGs } from '../assets/images/pngs';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -42,20 +35,7 @@ function LegalBody({
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.toolbar}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={({ pressed }) => [
-            styles.backBtn,
-            pressed && styles.backBtnPressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
-          <Text style={styles.backLabel}>Back</Text>
-        </Pressable>
-      </View>
+      <ScreenHeader backLabel="Back" onBack={() => navigation.goBack()} />
 
       <ScrollView
         contentContainerStyle={[
@@ -88,34 +68,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  toolbar: {
-    paddingHorizontal: wp(2),
-    paddingVertical: hp(0.5),
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingVertical: hp(1),
-    paddingHorizontal: wp(2),
-    borderRadius: wp(2),
-    gap: wp(1),
-  },
-  backBtnPressed: {
-    backgroundColor: colors.primaryFaint,
-  },
-  backLabel: {
-    fontSize: fontSize(16),
-    fontWeight: '700',
-    color: colors.primary,
-    includeFontPadding: false,
-  },
-  backArrow: {
-    width: wp(4),
-    height: wp(4),
   },
   scroll: {
     paddingHorizontal: wp(5),

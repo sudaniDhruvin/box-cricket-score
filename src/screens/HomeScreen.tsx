@@ -51,6 +51,9 @@ type HomeListRow =
   | { kind: 'match'; match: MatchSummary }
   | { kind: 'ad'; id: string };
 
+/** Insert a native ad after every N matches within a day section. */
+const NATIVE_AD_EVERY_N_MATCHES = 4;
+
 function sectionsWithNativeAdsBetweenMatches(
   sections: MatchDaySection[],
 ): { title: string; sortKey: string; data: HomeListRow[] }[] {
@@ -59,7 +62,12 @@ function sectionsWithNativeAdsBetweenMatches(
     for (let i = 0; i < section.data.length; i += 1) {
       const match = section.data[i];
       data.push({ kind: 'match', match });
-      if (i < section.data.length - 1) {
+      const matchIndex = i + 1;
+      const isLast = i === section.data.length - 1;
+      if (
+        matchIndex % NATIVE_AD_EVERY_N_MATCHES === 0 &&
+        !isLast
+      ) {
         data.push({
           kind: 'ad',
           id: `ad-${section.sortKey}-after-${match.id}`,
@@ -354,6 +362,23 @@ export function HomeScreen() {
     )[0];
   }, [savedMatches]);
 
+  const liveMatch = useMemo(() => {
+    const lives = savedMatches.filter(isMatchLive);
+    if (lives.length === 0) {
+      return null;
+    }
+    return [...lives].sort(
+      (a, b) => new Date(b.playedAt).getTime() - new Date(a.playedAt).getTime(),
+    )[0];
+  }, [savedMatches]);
+
+  const continueLiveScoring = useCallback(() => {
+    if (!liveMatch) {
+      return;
+    }
+    navigation.navigate('NewMatch', { resumeMatchId: liveMatch.id });
+  }, [liveMatch, navigation]);
+
   const seasonStats = useMemo(
     () => ({
       runs: seasonAggregateRuns(savedMatches),
@@ -539,6 +564,38 @@ export function HomeScreen() {
                 </Pressable>
               </View>
             </View>
+
+            {liveMatch ? (
+              <Pressable
+                onPress={continueLiveScoring}
+                style={({ pressed }) => [
+                  styles.continueLiveStrip,
+                  pressed && styles.continueLiveStripPressed,
+                ]}
+                android_ripple={{
+                  color: 'rgba(255, 255, 255, 0.18)',
+                  foreground: true,
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Continue scoring live match"
+              >
+                <View style={styles.continueLiveLeft}>
+                  <View style={styles.continueLiveBadge}>
+                    <View style={styles.continueLiveDot} />
+                    <Text style={styles.continueLiveBadgeText}>LIVE</Text>
+                  </View>
+                  <Text style={styles.continueLiveTeams} numberOfLines={1}>
+                    {liveMatch.innings[0].teamName} vs{' '}
+                    {liveMatch.innings[1].teamName}
+                  </Text>
+                  <Text style={styles.continueLiveScore} numberOfLines={1}>
+                    {liveMatch.innings[0].runs}/{liveMatch.innings[0].wickets} ·{' '}
+                    {liveMatch.innings[1].runs}/{liveMatch.innings[1].wickets}
+                  </Text>
+                </View>
+                <Text style={styles.continueLiveCta}>Continue</Text>
+              </Pressable>
+            ) : null}
 
             {lastMatch ? (
               <View style={styles.dashboardSection}>
@@ -817,6 +874,64 @@ const styles = StyleSheet.create({
   ctaActions: {
     width: '100%',
     gap: hp(1.1),
+  },
+  continueLiveStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: wp(3),
+    backgroundColor: colors.primary,
+    borderRadius: wp(3.5),
+    paddingHorizontal: wp(4),
+    paddingVertical: hp(1.5),
+    marginBottom: hp(2),
+    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
+  },
+  continueLiveStripPressed: {
+    opacity: 0.92,
+  },
+  continueLiveLeft: {
+    flex: 1,
+    minWidth: 0,
+    gap: hp(0.25),
+  },
+  continueLiveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(1.2),
+    marginBottom: hp(0.15),
+  },
+  continueLiveDot: {
+    width: wp(1.8),
+    height: wp(1.8),
+    borderRadius: wp(1),
+    backgroundColor: colors.background,
+  },
+  continueLiveBadgeText: {
+    fontSize: fontSize(10),
+    fontWeight: '900',
+    color: colors.background,
+    letterSpacing: 0.8,
+  },
+  continueLiveTeams: {
+    fontSize: fontSize(15),
+    fontWeight: '800',
+    color: colors.background,
+  },
+  continueLiveScore: {
+    fontSize: fontSize(12),
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.85)',
+  },
+  continueLiveCta: {
+    fontSize: fontSize(14),
+    fontWeight: '900',
+    color: colors.background,
+    paddingVertical: hp(0.6),
+    paddingHorizontal: wp(3),
+    borderRadius: wp(2),
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    overflow: 'hidden',
   },
   quickStartBtn: {
     width: '100%',

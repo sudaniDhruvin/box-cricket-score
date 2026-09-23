@@ -10,6 +10,19 @@ export type AdRemoteConfig = {
   isNative: boolean;
 };
 
+/**
+ * Used when Remote Config is missing, invalid, or unreachable so ads do not
+ * silently turn off in production.
+ */
+export const DEFAULT_AD_REMOTE_CONFIG: AdRemoteConfig = {
+  isAds: true,
+  isHomeBanner: true,
+  isBanner: true,
+  isOpenApp: true,
+  isInter: true,
+  isNative: true,
+};
+
 function isAdRemoteConfig(value: unknown): value is AdRemoteConfig {
   if (!value || typeof value !== 'object') {
     return false;

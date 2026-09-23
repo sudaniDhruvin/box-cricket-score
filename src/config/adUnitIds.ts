@@ -38,20 +38,17 @@ export const BANNER_AD_UNIT_IDS = __DEV__
 export const NATIVE_AD_UNIT_ID = __DEV__
   ? TestIds.NATIVE
   : Platform.select({
-      android: 'ca-app-pub-7085320120847108/3733730051', // TODO: Native (Android)
+      android: 'ca-app-pub-7085320120847108/3733730051',
     }) ?? TestIds.NATIVE;
 
 export const INTERSTITIAL_AD_UNIT_ID = __DEV__
   ? TestIds.INTERSTITIAL
   : Platform.select({
-      android: 'ca-app-pub-7085320120847108/3218724737', // TODO: Interstitial (Android)
+      android: 'ca-app-pub-7085320120847108/3218724737',
     }) ?? TestIds.INTERSTITIAL;
-
-// H1: ca-app-pub-7085320120847108/3856880335
 
 export const APP_OPEN_AD_UNIT_ID = __DEV__
   ? TestIds.APP_OPEN
   : Platform.select({
-      android: 'ca-app-pub-7085320120847108/XXXXXXXX', // TODO: App Open ad unit (Android)
-      ios: 'ca-app-pub-7085320120847108/YYYYYYYY', // TODO: App Open ad unit (iOS)
+      android: 'ca-app-pub-7085320120847108/3856880335',
     }) ?? TestIds.APP_OPEN;

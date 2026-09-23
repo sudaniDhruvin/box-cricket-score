@@ -3,7 +3,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
-  Image,
   LayoutAnimation,
   Platform,
   Pressable,
@@ -15,6 +14,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { InningsBallByBall } from '../components/InningsBallByBall';
+import { ShareLiveScoreModal } from '../components/ShareLiveScoreModal';
+import {
+  ChevronRightIcon,
+  PrimaryButton,
+  ScreenHeader,
+} from '../components/ui';
 import type { MainStackParamList } from '../navigation/types';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
@@ -30,7 +35,6 @@ import { createRepeatMatch } from '../utils/createLiveMatch';
 import { wicketsCapForMatch } from '../utils/applyScoringDelivery';
 import { findSavedMatch } from '../utils/matchLookup';
 import { fontSize, hp, wp } from '../utils';
-import { PNGs } from '../assets/images/pngs';
 
 if (
   Platform.OS === 'android' &&
@@ -258,6 +262,7 @@ export function MatchDetailScreen() {
   const navigation = useNavigation<MatchDetailNav>();
   const { params } = useRoute<MatchDetailRoute>();
   const [activeTab, setActiveTab] = useState<0 | 1>(0);
+  const [shareOpen, setShareOpen] = useState(false);
   const savedMatches = useMatchStore(s => s.matches);
   const addMatch = useMatchStore(s => s.addMatch);
 
@@ -303,20 +308,10 @@ export function MatchDetailScreen() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.toolbar}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={({ pressed }) => [
-            styles.backBtn,
-            pressed && styles.backBtnPressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
-          <Text style={styles.backLabel}>Matches</Text>
-        </Pressable>
-      </View>
+      <ScreenHeader
+        backLabel="Matches"
+        onBack={() => navigation.goBack()}
+      />
 
       <ScrollView
         contentContainerStyle={[
@@ -415,33 +410,31 @@ export function MatchDetailScreen() {
           </View>
 
           {live && savedMatches.some(m => m.id === match.id) ? (
-            <Pressable
-              onPress={() =>
-                navigation.navigate('NewMatch', { resumeMatchId: match.id })
-              }
-              style={({ pressed }) => [
-                styles.continueScoreCta,
-                pressed && styles.continueScoreCtaPressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Continue scoring this match"
-            >
-              <Text style={styles.continueScoreCtaText}>Continue scoring</Text>
-              <Text style={styles.continueScoreCtaChev}>{'\u203A'}</Text>
-            </Pressable>
+            <View style={styles.ctaStack}>
+              <PrimaryButton
+                label="Resume scoring"
+                onPress={() =>
+                  navigation.navigate('NewMatch', { resumeMatchId: match.id })
+                }
+                accessibilityLabel="Resume scoring this match"
+                trailing={<ChevronRightIcon />}
+                style={styles.resumeCta}
+              />
+              <PrimaryButton
+                label="Share live"
+                variant="outline"
+                onPress={() => setShareOpen(true)}
+                accessibilityLabel="Share live score with QR"
+              />
+            </View>
           ) : matchComplete ? (
-            <Pressable
+            <PrimaryButton
+              label="Repeat match"
               onPress={onRepeatMatch}
-              style={({ pressed }) => [
-                styles.continueScoreCta,
-                pressed && styles.continueScoreCtaPressed,
-              ]}
-              accessibilityRole="button"
               accessibilityLabel="Repeat match with same overs and players"
-            >
-              <Text style={styles.continueScoreCtaText}>Repeat match</Text>
-              <Text style={styles.continueScoreCtaChev}>{'\u203A'}</Text>
-            </Pressable>
+              trailing={<ChevronRightIcon />}
+              style={styles.resumeCta}
+            />
           ) : null}
           {matchComplete ? (
             <Text style={styles.repeatMatchHint}>
@@ -460,6 +453,14 @@ export function MatchDetailScreen() {
           }
         />
       </ScrollView>
+
+      {live ? (
+        <ShareLiveScoreModal
+          visible={shareOpen}
+          matchId={match.id}
+          onClose={() => setShareOpen(false)}
+        />
+      ) : null}
     </View>
   );
 }
@@ -468,34 +469,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  toolbar: {
-    paddingHorizontal: wp(2),
-    paddingVertical: hp(0.5),
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingVertical: hp(1),
-    paddingHorizontal: wp(2),
-    borderRadius: wp(2),
-    gap: wp(1),
-  },
-  backBtnPressed: {
-    backgroundColor: colors.primaryFaint,
-  },
-  backLabel: {
-    fontSize: fontSize(16),
-    fontWeight: '700',
-    color: colors.primary,
-    includeFontPadding: false,
-  },
-  backArrow: {
-    width: wp(4),
-    height: wp(4),
   },
   scroll: {
     paddingHorizontal: wp(5),
@@ -785,29 +758,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textMuted,
   },
-  continueScoreCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: wp(1),
-    marginTop: hp(1.2),
-    paddingVertical: hp(1.3),
-    paddingHorizontal: wp(3),
-    borderRadius: wp(2.5),
-    backgroundColor: colors.primary,
+  ctaStack: {
+    marginTop: hp(1.4),
+    gap: hp(1),
   },
-  continueScoreCtaPressed: {
-    opacity: 0.92,
-  },
-  continueScoreCtaText: {
-    fontSize: fontSize(16),
-    fontWeight: '800',
-    color: colors.background,
-  },
-  continueScoreCtaChev: {
-    fontSize: fontSize(20),
-    fontWeight: '300',
-    color: colors.background,
+  resumeCta: {
+    marginTop: 0,
   },
   repeatMatchHint: {
     fontSize: fontSize(12),
