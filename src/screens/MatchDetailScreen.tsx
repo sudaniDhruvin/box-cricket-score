@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HomeListNativeAd } from '../components/HomeListNativeAd';
 import { InningsBallByBall } from '../components/InningsBallByBall';
 import { ShareLiveScoreModal } from '../components/ShareLiveScoreModal';
 import {
@@ -443,6 +444,8 @@ export function MatchDetailScreen() {
             </Text>
           ) : null}
         </View>
+
+        <HomeListNativeAd />
 
         <Text style={styles.sectionHeading}>Scorecard</Text>
         <InningsDetail

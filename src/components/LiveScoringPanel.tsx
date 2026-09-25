@@ -14,11 +14,14 @@ import {
   UIManager,
   View,
 } from 'react-native';
+import { useInterstitialAd } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { INTERSTITIAL_AD_UNIT_ID } from '../config/adUnitIds';
 import {
   maybeRequestInAppReview,
   recordCompletedMatchForReview,
 } from '../config/requestInAppReview';
+import { useAdFlags } from '../hooks/useAdFlags';
 import {
   getHostShareState,
   isSharingMatch,
@@ -53,6 +56,10 @@ import {
 import { createRepeatMatch } from '../utils/createLiveMatch';
 import { countsAsLegalBall, tallyDeliveryRuns } from '../utils/deliveryScoring';
 import { fontSize, hp, wp } from '../utils';
+import {
+  OverCompleteNativeAd,
+  usePreloadedNativeAd,
+} from './OverCompleteNativeAd';
 import { StickyBottomBannerAd } from './StickyBottomBannerAd';
 import { ShareLiveScoreModal } from './ShareLiveScoreModal';
 import { LiveShareNoticeModal } from './LiveShareNoticeModal';
@@ -631,6 +638,106 @@ export function LiveScoringPanel({
     }));
   }, [match, updateMatch]);
 
+  const repeatSameMatch = useCallback(() => {
+    const completed = matchOverModal;
+    if (completed == null) {
+      return;
+    }
+    const newMatch = createRepeatMatch(completed);
+    addMatch(newMatch);
+    setMatchOverModal(null);
+    undoRef.current = [];
+    onRepeatMatch?.(newMatch.id);
+  }, [matchOverModal, addMatch, onRepeatMatch]);
+
+  const { isInter, isAds } = useAdFlags();
+  const {
+    load: loadInterstitial,
+    show: showInterstitial,
+    isLoaded: interstitialLoaded,
+    isClosed: interstitialClosed,
+    error: interstitialError,
+  } = useInterstitialAd(INTERSTITIAL_AD_UNIT_ID);
+  const pendingScoringAdRef = useRef<'startSecond' | 'repeatMatch' | null>(
+    null,
+  );
+  const [holdScoringModals, setHoldScoringModals] = useState(false);
+  const {
+    nativeAd: overNativeAd,
+    failed: overNativeAdFailed,
+    loadNext: loadNextOverNativeAd,
+  } = usePreloadedNativeAd();
+  const overModalWasOpenRef = useRef(false);
+
+  useEffect(() => {
+    const open = overCompleteModal != null;
+    if (overModalWasOpenRef.current && !open) {
+      loadNextOverNativeAd();
+    }
+    overModalWasOpenRef.current = open;
+  }, [overCompleteModal, loadNextOverNativeAd]);
+
+  useEffect(() => {
+    if (isInter && isAds) {
+      loadInterstitial();
+    }
+  }, [loadInterstitial, isInter, isAds]);
+
+  const finishPendingScoringAd = useCallback(() => {
+    const action = pendingScoringAdRef.current;
+    if (action == null) {
+      return;
+    }
+    pendingScoringAdRef.current = null;
+    setHoldScoringModals(false);
+    if (action === 'startSecond') {
+      startSecond();
+    } else {
+      repeatSameMatch();
+    }
+    if (isInter && isAds) {
+      loadInterstitial();
+    }
+  }, [startSecond, repeatSameMatch, isInter, isAds, loadInterstitial]);
+
+  useEffect(() => {
+    if (!interstitialClosed) {
+      return;
+    }
+    finishPendingScoringAd();
+  }, [interstitialClosed, finishPendingScoringAd]);
+
+  useEffect(() => {
+    if (!interstitialError) {
+      return;
+    }
+    finishPendingScoringAd();
+  }, [interstitialError, finishPendingScoringAd]);
+
+  const runAfterInterstitial = useCallback(
+    (action: 'startSecond' | 'repeatMatch') => {
+      if (isInter && isAds && interstitialLoaded) {
+        pendingScoringAdRef.current = action;
+        setHoldScoringModals(true);
+        showInterstitial();
+        return;
+      }
+      if (action === 'startSecond') {
+        startSecond();
+      } else {
+        repeatSameMatch();
+      }
+    },
+    [
+      isInter,
+      isAds,
+      interstitialLoaded,
+      showInterstitial,
+      startSecond,
+      repeatSameMatch,
+    ],
+  );
+
   const toggleRecent = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setRecentExpanded(e => !e);
@@ -675,18 +782,6 @@ export function LiveScoringPanel({
     handleClose();
     maybeRequestInAppReview();
   }, [handleClose]);
-
-  const repeatSameMatch = useCallback(() => {
-    const completed = matchOverModal;
-    if (completed == null) {
-      return;
-    }
-    const newMatch = createRepeatMatch(completed);
-    addMatch(newMatch);
-    setMatchOverModal(null);
-    undoRef.current = [];
-    onRepeatMatch?.(newMatch.id);
-  }, [matchOverModal, addMatch, onRepeatMatch]);
 
   if (!match || !activeInn) {
     return (
@@ -1195,7 +1290,7 @@ export function LiveScoringPanel({
       </Modal>
 
       <Modal
-        visible={overCompleteModal != null}
+        visible={overCompleteModal != null && !holdScoringModals}
         transparent
         animationType="fade"
         onRequestClose={dismissOverCompleteModal}
@@ -1209,7 +1304,11 @@ export function LiveScoringPanel({
             onPress={e => e.stopPropagation()}
           >
             {overCompleteModal ? (
-              <>
+              <ScrollView
+                bounces={false}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
                 <Text style={styles.overCompleteTitle}>Over complete</Text>
                 <Text style={styles.overCompleteSubtitle}>
                   Over {overCompleteModal.overNumber} · {activeInn.teamName}
@@ -1253,9 +1352,13 @@ export function LiveScoringPanel({
                     <MiniBall key={`oc-${i}`} d={d} />
                   ))}
                 </ScrollView>
+                <OverCompleteNativeAd
+                  nativeAd={overNativeAd}
+                  failed={overNativeAdFailed}
+                />
                 {firstInnDone && activeIdx === 0 ? (
                   <Pressable
-                    onPress={startSecond}
+                    onPress={() => runAfterInterstitial('startSecond')}
                     style={({ pressed }) => [
                       styles.overCompleteCta,
                       pressed && styles.overCompleteCtaPressed,
@@ -1280,14 +1383,14 @@ export function LiveScoringPanel({
                     <Text style={styles.overCompleteCtaText}>Continue</Text>
                   </Pressable>
                 )}
-              </>
+              </ScrollView>
             ) : null}
           </Pressable>
         </Pressable>
       </Modal>
 
       <Modal
-        visible={showStartSecondCta}
+        visible={showStartSecondCta && !holdScoringModals}
         transparent
         animationType="fade"
         onRequestClose={() => undefined}
@@ -1328,7 +1431,7 @@ export function LiveScoringPanel({
                 When both sides are ready, start the second innings.
               </Text>
               <Pressable
-                onPress={startSecond}
+                onPress={() => runAfterInterstitial('startSecond')}
                 style={({ pressed }) => [
                   styles.matchOverCta,
                   pressed && styles.matchOverCtaPressed,
@@ -1344,7 +1447,7 @@ export function LiveScoringPanel({
       </Modal>
 
       <Modal
-        visible={matchOverModal != null}
+        visible={matchOverModal != null && !holdScoringModals}
         transparent
         animationType="fade"
         onRequestClose={dismissMatchOver}
@@ -1386,7 +1489,7 @@ export function LiveScoringPanel({
             ) : null}
             <View style={styles.matchOverCtaRow}>
               <Pressable
-                onPress={repeatSameMatch}
+                onPress={() => runAfterInterstitial('repeatMatch')}
                 style={({ pressed }) => [
                   styles.matchOverCta,
                   pressed && styles.matchOverCtaPressed,

@@ -13,10 +13,10 @@ export const HOME_BANNER_AD_UNIT_IDs = {
 export const HOME_EMPTY_BANNER_AD_UNIT_IDS = __DEV__
   ? [TestIds.BANNER]
   : [
-      HOME_BANNER_AD_UNIT_IDs.H1,
-      HOME_BANNER_AD_UNIT_IDs.H2,
-      HOME_BANNER_AD_UNIT_IDs.H3,
-    ];
+    HOME_BANNER_AD_UNIT_IDs.H1,
+    HOME_BANNER_AD_UNIT_IDs.H2,
+    HOME_BANNER_AD_UNIT_IDs.H3,
+  ];
 
 // H1: ca-app-pub-7085320120847108/6252473767, H2: ca-app-pub-7085320120847108/2313228757
 
@@ -30,25 +30,25 @@ export const BANNER_AD_UNIT_IDs = {
 export const BANNER_AD_UNIT_IDS = __DEV__
   ? [TestIds.BANNER]
   : [
-      BANNER_AD_UNIT_IDs.H1,
-      BANNER_AD_UNIT_IDs.H2,
-      BANNER_AD_UNIT_IDs.H3,
-    ];
+    BANNER_AD_UNIT_IDs.H1,
+    BANNER_AD_UNIT_IDs.H2,
+    BANNER_AD_UNIT_IDs.H3,
+  ];
 
 export const NATIVE_AD_UNIT_ID = __DEV__
   ? TestIds.NATIVE
   : Platform.select({
-      android: 'ca-app-pub-7085320120847108/3733730051',
-    }) ?? TestIds.NATIVE;
+    android: 'ca-app-pub-7085320120847108/3733730051',
+  }) ?? TestIds.NATIVE;
 
 export const INTERSTITIAL_AD_UNIT_ID = __DEV__
   ? TestIds.INTERSTITIAL
   : Platform.select({
-      android: 'ca-app-pub-7085320120847108/3218724737',
-    }) ?? TestIds.INTERSTITIAL;
+    android: 'ca-app-pub-7085320120847108/3218724737',
+  }) ?? TestIds.INTERSTITIAL;
 
 export const APP_OPEN_AD_UNIT_ID = __DEV__
   ? TestIds.APP_OPEN
   : Platform.select({
-      android: 'ca-app-pub-7085320120847108/3856880335',
-    }) ?? TestIds.APP_OPEN;
+    android: 'ca-app-pub-7085320120847108/9427768222', // TODO: App Open ad unit (Android)
+  }) ?? TestIds.APP_OPEN;

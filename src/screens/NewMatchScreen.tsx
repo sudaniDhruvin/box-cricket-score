@@ -21,7 +21,9 @@ import type { MainStackParamList } from '../navigation/types';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import { LiveScoringPanel } from '../components/LiveScoringPanel';
+import { StickyBottomBannerAd } from '../components/StickyBottomBannerAd';
 import { ScreenHeader } from '../components/ui';
+import { useAdFlags } from '../hooks/useAdFlags';
 import { createLiveMatch } from '../utils/createLiveMatch';
 import { fontSize, hp, wp } from '../utils';
 import { PNGs } from '../assets/images/pngs';
@@ -98,6 +100,8 @@ export function NewMatchScreen() {
   const navigation = useNavigation<Nav>();
   const { params } = useRoute<NewMatchRoute>();
   const addMatch = useMatchStore(s => s.addMatch);
+  const { isBanner, isAds } = useAdFlags();
+  const showBanner = isAds && isBanner;
 
   const [step, setStep] = useState<SetupStep>('configure');
   const [teamA, setTeamA] = useState('');
@@ -304,7 +308,11 @@ export function NewMatchScreen() {
             <View
               style={[
                 styles.footer,
-                { paddingBottom: Math.max(insets.bottom, hp(2)) },
+                {
+                  paddingBottom: showBanner
+                    ? hp(1.2)
+                    : Math.max(insets.bottom, hp(2)),
+                },
               ]}
             >
               <Pressable
@@ -326,7 +334,11 @@ export function NewMatchScreen() {
           <ScrollView
             contentContainerStyle={[
               styles.scroll,
-              { paddingBottom: Math.max(insets.bottom, hp(4)) },
+              {
+                paddingBottom: showBanner
+                  ? hp(2)
+                  : Math.max(insets.bottom, hp(4)),
+              },
             ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -402,6 +414,13 @@ export function NewMatchScreen() {
           </ScrollView>
         )}
       </KeyboardAvoidingView>
+      {showBanner ? (
+        <View
+          style={[styles.bannerStrip, { paddingBottom: insets.bottom }]}
+        >
+          <StickyBottomBannerAd />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -594,6 +613,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.ballWicket,
     marginBottom: hp(1),
+  },
+  bannerStrip: {
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    paddingTop: hp(0.6),
   },
   footer: {
     position: 'absolute',
