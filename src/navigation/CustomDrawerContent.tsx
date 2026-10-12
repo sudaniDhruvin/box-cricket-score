@@ -116,7 +116,7 @@ function InteractiveDangerAction({ onPress }: DangerActionProps) {
         Platform.OS === 'ios' && pressed ? { opacity: 0.9 } : undefined
       }
       android_ripple={{
-        color: 'rgba(229, 57, 53, 0.18)',
+        color: colors.primarySoft,
         foreground: true,
         borderless: false,
       }}
@@ -127,7 +127,7 @@ function InteractiveDangerAction({ onPress }: DangerActionProps) {
         style={[styles.dangerBtnInner, { transform: [{ scale }] }]}
       >
         <View style={styles.dangerIconRing}>
-          <TrashIcon size={wp(5)} color={colors.live} />
+          <TrashIcon size={wp(5)} color={colors.primary} />
         </View>
         <View style={styles.dangerTextCol}>
           <Text style={styles.dangerTitle}>Clear all data</Text>
@@ -223,7 +223,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         </View>
         <Text style={styles.brandKicker}>BOX CRICKET</Text>
         <Text style={styles.brandSub}>
-          Open legal information or reset data stored on this device.
+          Watch a game, read about the app, or clear saved scores.
         </Text>
       </View>
 
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     ...Platform.select({
       ios: {
-        shadowColor: '#070707',
+        shadowColor: '#000000',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.07,
         shadowRadius: 10,
@@ -409,15 +409,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: wp(3.5),
     borderRadius: wp(2.5),
     borderWidth: 1.5,
-    borderColor: 'rgba(229, 57, 53, 0.45)',
-    backgroundColor: 'rgba(229, 57, 53, 0.07)',
+    borderColor: colors.primarySoft,
+    backgroundColor: colors.primaryFaint,
   },
   dangerIconRing: {
     width: wp(10.5),
     height: wp(10.5),
     borderRadius: wp(5.25),
     borderWidth: 2,
-    borderColor: 'rgba(229, 57, 53, 0.45)',
+    borderColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: wp(2.5),
@@ -429,12 +429,12 @@ const styles = StyleSheet.create({
   dangerTitle: {
     fontSize: fontSize(16),
     fontWeight: '800',
-    color: colors.live,
+    color: colors.primary,
   },
   dangerSub: {
     marginTop: hp(0.35),
     fontSize: fontSize(12),
     lineHeight: fontSize(17),
-    color: 'rgba(229, 57, 53, 0.85)',
+    color: colors.textMuted,
   },
 });

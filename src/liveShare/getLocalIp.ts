@@ -57,7 +57,7 @@ function addCandidate(into: string[], raw: string | null | undefined) {
 
 /**
  * Host phone LAN IPv4 for QR join.
- * Never use router gateway IP — that is not this device.
+ * Use the host phone IP. The router gateway belongs to a different device.
  */
 export async function getLocalIpAddress(): Promise<string | null> {
   const wifiFirst: string[] = [];

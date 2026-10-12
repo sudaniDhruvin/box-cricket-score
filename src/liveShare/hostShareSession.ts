@@ -228,7 +228,7 @@ export async function startHostShareSession(
             return;
           }
           if (message.token !== token) {
-            fail('bad_token', 'Invalid token — scan a fresh QR');
+            fail('bad_token', 'Invalid token. Scan a fresh QR code.');
             return;
           }
 
@@ -242,7 +242,7 @@ export async function startHostShareSession(
             try {
               previous.socket.destroy();
             } catch {
-              // ignore — close handler must not drop the new socket
+              // ignore, close handler must not drop the new socket
             }
           }
           emitViewerCount();

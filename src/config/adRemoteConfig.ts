@@ -1,4 +1,4 @@
-/** Firebase Remote Config key — value is a JSON string of {@link AdRemoteConfig}. */
+/** Firebase Remote Config key, value is a JSON string of {@link AdRemoteConfig}. */
 export const AD_REMOTE_CONFIG_KEY = 'ads';
 
 export type AdRemoteConfig = {

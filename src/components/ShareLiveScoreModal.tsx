@@ -52,7 +52,7 @@ export function ShareLiveScoreModal({
   }, [visible, matchId]);
 
   const onDone = () => {
-    // Hide QR only — TCP session + score broadcasts stay alive.
+    // Hide QR only, TCP session + score broadcasts stay alive.
     onClose();
   };
 
@@ -94,9 +94,9 @@ export function ShareLiveScoreModal({
         </View>
 
         <Text style={styles.hint}>
-          Both phones on the same Wi‑Fi (or host hotspot). Scan this QR, then
-          tap Done — sharing stays on. If a viewer drops, they can reconnect
-          with this same QR — only tap Refresh QR if you changed network.
+          Keep both phones on the same Wi-Fi or hotspot. Scan this QR and tap
+          Done to hide it while sharing continues. Viewers can scan the same QR
+          to reconnect. Refresh the QR only after changing networks.
         </Text>
 
         <View style={styles.qrCard}>
@@ -162,7 +162,7 @@ export function ShareLiveScoreModal({
           accessibilityRole="button"
           accessibilityLabel="Hide QR and keep sharing"
         >
-          <Text style={styles.doneBtnText}>Done — keep sharing</Text>
+          <Text style={styles.doneBtnText}>Done, keep sharing</Text>
         </Pressable>
 
         <Pressable

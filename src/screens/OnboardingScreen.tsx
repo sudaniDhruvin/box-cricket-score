@@ -5,7 +5,11 @@ import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
 import { useUserStore } from '../store/useUserStore';
 import { OnboardingNativeAd } from '../components/OnboardingNativeAd';
-import { PrimaryButton } from '../components/ui';
+import {
+  CricketBatBallIcon,
+  CricketScorebookIcon,
+  PrimaryButton,
+} from '../components/ui';
 
 export function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -23,23 +27,44 @@ export function OnboardingScreen() {
       >
         <View style={styles.hero}>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>BOX CRICKET</Text>
+            <Text style={styles.badgeText}>BOX CRICKET SCORE</Text>
           </View>
-          <Text style={styles.title}>Score every ball.</Text>
-          <Text style={styles.titleAccent}>Own the box.</Text>
+          <Text style={styles.title}>Every ball,</Text>
+          <Text style={styles.titleAccent}>on the board.</Text>
           <Text style={styles.subtitle}>
-            Track runs, wickets, and overs in real time—built for tight indoor
-            pitches and fast games.
+            Set up your sides, score each delivery, and share the game as it happens.
           </Text>
         </View>
 
         <View style={styles.illustrationWrap}>
-          <View style={styles.pitch}>
-            <View style={styles.stump} />
-            <View style={styles.stump} />
-            <View style={styles.stump} />
+          <View style={styles.previewHeader}>
+            <View style={styles.previewLabel}>
+              <CricketScorebookIcon size={wp(4.5)} color={colors.background} />
+              <Text style={styles.previewLabelText}>SCORECARD PREVIEW</Text>
+            </View>
+            <View style={styles.liveTag}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveTagText}>LIVE</Text>
+            </View>
           </View>
-          <View style={styles.ball} />
+
+          <View style={styles.previewScoreRow}>
+            <View style={styles.previewTeam}>
+              <Text style={styles.previewTeamLabel}>YOUR TEAM</Text>
+              <Text style={styles.previewScore}>00/00</Text>
+              <Text style={styles.previewOvers}>0.0 overs</Text>
+            </View>
+            <View style={styles.previewDivider}>
+              <CricketBatBallIcon size={wp(7)} color={colors.accent} />
+            </View>
+            <View style={[styles.previewTeam, styles.previewTeamRight]}>
+              <Text style={styles.previewTeamLabel}>TARGET</Text>
+              <Text style={styles.previewScore}>000</Text>
+              <Text style={styles.previewOvers}>runs to win</Text>
+            </View>
+          </View>
+
+          <Text style={styles.previewFooter}>YOUR SCORE, AS IT HAPPENS</Text>
         </View>
 
         <PrimaryButton
@@ -79,7 +104,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: fontSize(11),
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: 1.2,
     color: colors.primary,
   },
@@ -106,33 +131,92 @@ const styles = StyleSheet.create({
   },
   illustrationWrap: {
     flex: 1,
-    minHeight: hp(22),
+    minHeight: hp(24),
     marginVertical: hp(2),
     borderRadius: wp(4),
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.primary,
+    paddingHorizontal: wp(5),
+    paddingVertical: hp(2.5),
+    justifyContent: 'space-between',
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  previewLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(2),
+  },
+  previewLabelText: {
+    fontSize: fontSize(10),
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.82)',
+    letterSpacing: 0.9,
+  },
+  liveTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(1.4),
+    borderRadius: wp(4),
+    paddingHorizontal: wp(2.4),
+    paddingVertical: hp(0.55),
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  liveDot: {
+    width: wp(1.6),
+    height: wp(1.6),
+    borderRadius: wp(1),
+    backgroundColor: colors.background,
+  },
+  liveTagText: {
+    fontSize: fontSize(9),
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    color: colors.background,
+  },
+  previewScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: hp(2.5),
+  },
+  previewTeam: {
+    flex: 1,
+  },
+  previewTeamRight: {
+    alignItems: 'flex-end',
+  },
+  previewTeamLabel: {
+    fontSize: fontSize(10),
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.66)',
+    letterSpacing: 0.9,
+  },
+  previewScore: {
+    marginTop: hp(0.6),
+    fontSize: fontSize(32),
+    lineHeight: fontSize(38),
+    fontWeight: '900',
+    letterSpacing: -0.7,
+    color: colors.background,
+  },
+  previewOvers: {
+    marginTop: hp(0.15),
+    fontSize: fontSize(12),
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.72)',
+  },
+  previewDivider: {
+    width: wp(13),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pitch: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: wp(2),
-    marginBottom: hp(2),
-  },
-  stump: {
-    width: wp(2.2),
-    height: hp(12),
-    borderRadius: wp(0.6),
-    backgroundColor: colors.text,
-    opacity: 0.85,
-  },
-  ball: {
-    width: wp(10),
-    height: wp(10),
-    borderRadius: wp(5),
-    backgroundColor: colors.primary,
+  previewFooter: {
+    fontSize: fontSize(9),
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.64)',
+    letterSpacing: 1,
   },
   cta: {
     marginTop: hp(1),

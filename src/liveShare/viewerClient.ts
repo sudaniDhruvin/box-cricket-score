@@ -44,7 +44,7 @@ function dataToString(data: string | Uint8Array): string {
 const RECONNECT_DETAIL =
   'You got disconnected. Connecting again… Stay on this screen.';
 const RETRY_DETAIL =
-  'You got disconnected. Tap Connect again — the same QR still works if the host is sharing.';
+  'You got disconnected. Tap Connect again to rejoin with the same QR code, as long as the host is still sharing.';
 
 /**
  * Viewer TCP client (Claude LocalScoreClient pattern):

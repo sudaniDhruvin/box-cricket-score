@@ -253,6 +253,41 @@ export function CloseIcon({
   );
 }
 
+export function MenuIcon({
+  size = 24,
+  color = colors.primary,
+}: CricketIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 7h16M4 12h16M4 17h16"
+        stroke={color}
+        strokeWidth={STROKE_WIDTH}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+export function TeamIcon({
+  size = 24,
+  color = colors.primary,
+}: CricketIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="9" cy="8" r="3" stroke={color} strokeWidth={STROKE_WIDTH} />
+      <Circle cx="17" cy="9" r="2.3" stroke={color} strokeWidth={STROKE_WIDTH} />
+      <Path
+        d="M3.5 19v-1.3a5.5 5.5 0 0 1 11 0V19h-11Zm12-5.2a4.4 4.4 0 0 1 5 4.3v.9h-4"
+        stroke={color}
+        strokeWidth={STROKE_WIDTH}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 export type DismissalKind =
   | 'bowled'
   | 'caught'

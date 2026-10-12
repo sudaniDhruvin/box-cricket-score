@@ -10,7 +10,6 @@ import React, {
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import {
   Alert,
-  Image,
   ListRenderItemInfo,
   Platform,
   Pressable,
@@ -21,7 +20,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useInterstitialAd } from 'react-native-google-mobile-ads';
-import { PNGs } from '../assets/images/pngs';
 import { HomeEmptyBannerAd } from '../components/HomeEmptyBannerAd';
 import { HomeListNativeAd } from '../components/HomeListNativeAd';
 import { MatchCard } from '../components/MatchCard';
@@ -30,8 +28,8 @@ import {
   CricketScorebookIcon,
   CricketStumpsIcon,
   CricketTrophyIcon,
+  MenuIcon,
   QrScanIcon,
-  SettingsSlidersIcon,
   TrashIcon,
 } from '../components/ui';
 import type { MainStackParamList } from '../navigation/types';
@@ -463,12 +461,7 @@ export function HomeScreen() {
             <View style={styles.headerBar}>
               <View style={styles.headerSide}>
                 <View style={styles.avatarWrap}>
-                  <Image
-                    source={PNGs.LOGO}
-                    style={styles.avatar}
-                    resizeMode="contain"
-                    accessibilityLabel="Box Cricket logo"
-                  />
+                  <CricketBatBallIcon size={wp(6)} color={colors.primary} />
                 </View>
               </View>
               <Text style={styles.appTitle}>Box Cricket</Text>
@@ -501,15 +494,19 @@ export function HomeScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Open settings menu"
                 >
-                  <SettingsSlidersIcon size={wp(5.5)} color={colors.primary} />
+                  <MenuIcon size={wp(5.5)} color={colors.primary} />
                 </Pressable>
               </View>
             </View>
 
             <View style={styles.ctaCard}>
-              <Text style={styles.ctaTitle}>Ready for Action?</Text>
+              <View style={styles.ctaEyebrow}>
+                <CricketScorebookIcon size={wp(4)} color={colors.background} />
+                <Text style={styles.ctaEyebrowText}>READY WHEN YOU ARE</Text>
+              </View>
+              <Text style={styles.ctaTitle}>Make it a match</Text>
               <Text style={styles.ctaSub}>
-                Set up a match to score, or watch a live game nearby.
+                Set your teams, choose the overs, and keep every ball in play.
               </Text>
               <View style={styles.ctaActions}>
                 <Pressable
@@ -525,7 +522,7 @@ export function HomeScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="New match. Set up a match and begin scoring."
                 >
-                  <CricketBatBallIcon size={wp(4.5)} color={colors.background} />
+                  <CricketBatBallIcon size={wp(4.5)} color={colors.primary} />
                   <Text style={styles.quickStartText}>New Match</Text>
                 </Pressable>
 
@@ -542,7 +539,7 @@ export function HomeScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Watch live. Scan a host QR on the same Wi-Fi."
                 >
-                  <QrScanIcon size={wp(4.5)} color={colors.primary} />
+                  <QrScanIcon size={wp(4.5)} color={colors.background} />
                   <Text style={styles.watchLiveText}>Watch Live</Text>
                 </Pressable>
               </View>
@@ -617,22 +614,9 @@ export function HomeScreen() {
           <View style={styles.listEmpty}>
             <Text style={styles.listEmptyTitle}>No matches yet</Text>
             <Text style={styles.listEmptySub}>
-              Tap New Match to set up a match, or Watch Live to join a
-              friend’s score on the same Wi‑Fi.
+              Your scorecards will show up here when the game gets going.
             </Text>
-            <Pressable
-              onPress={openScanToWatch}
-              style={({ pressed }) => [
-                styles.emptyScanBtn,
-                pressed && styles.watchLiveBtnPressed,
-              ]}
-              android_ripple={{ color: colors.primarySoft, foreground: true }}
-              accessibilityRole="button"
-              accessibilityLabel="Watch live. Scan a host QR on the same Wi-Fi."
-            >
-              <QrScanIcon size={wp(5)} color={colors.primary} />
-              <Text style={styles.emptyScanBtnText}>Watch Live</Text>
-            </Pressable>
+
             <View style={styles.emptyBannerWrap}>
               <HomeEmptyBannerAd />
             </View>
@@ -666,7 +650,7 @@ export function HomeScreen() {
 
 const cardShadow = Platform.select({
   ios: {
-    shadowColor: '#070707',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.07,
     shadowRadius: 10,
@@ -713,12 +697,13 @@ const styles = StyleSheet.create({
     marginBottom: hp(2),
   },
   headerSide: {
-    minWidth: wp(22),
+    minWidth: wp(11),
     flexDirection: 'row',
     alignItems: 'center',
   },
   headerActions: {
     justifyContent: 'flex-end',
+    minWidth: wp(23),
     gap: wp(0.5),
   },
   avatarWrap: {
@@ -732,15 +717,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  avatar: {
-    width: wp(8),
-    height: wp(8),
-    borderRadius: 100,
-  },
   appTitle: {
     flex: 1,
-    textAlign: 'center',
-    fontSize: fontSize(20),
+    textAlign: 'left',
+    marginLeft: wp(3),
+    fontSize: fontSize(18),
     fontWeight: '800',
     color: colors.primary,
     letterSpacing: -0.3,
@@ -763,28 +744,43 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   ctaCard: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.primary,
     borderRadius: wp(4),
     borderWidth: 1,
-    borderColor: colors.primarySoft,
-    paddingHorizontal: wp(4.5),
+    borderColor: colors.primary,
+    paddingHorizontal: wp(5),
     paddingVertical: hp(2.2),
     marginBottom: hp(2),
     justifyContent: 'center',
+    alignItems: 'flex-start',
+    overflow: 'hidden',
+  },
+  ctaEyebrow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: wp(2),
+    marginBottom: hp(1.1),
+  },
+  ctaEyebrowText: {
+    fontSize: fontSize(10),
+    fontWeight: '800',
+    letterSpacing: 1.1,
+    color: 'rgba(255, 255, 255, 0.82)',
   },
   ctaTitle: {
-    fontSize: fontSize(22),
+    fontSize: fontSize(25),
     fontWeight: '800',
-    color: colors.text,
+    color: colors.background,
     marginBottom: hp(0.5),
+    letterSpacing: -0.3,
   },
   ctaSub: {
     fontSize: fontSize(14),
     lineHeight: fontSize(20),
-    color: colors.textMuted,
+    color: 'rgba(255, 255, 255, 0.82)',
     marginBottom: hp(1.6),
-    textAlign: 'center',
+    textAlign: 'left',
+    maxWidth: wp(78),
   },
   ctaActions: {
     width: '100%',
@@ -854,7 +850,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.background,
     borderRadius: 100,
     paddingVertical: hp(1.35),
     paddingHorizontal: wp(1.5),
@@ -868,7 +864,7 @@ const styles = StyleSheet.create({
   quickStartText: {
     fontSize: fontSize(15),
     fontWeight: '800',
-    color: colors.background,
+    color: colors.primary,
     letterSpacing: -0.2,
   },
   watchLiveBtn: {
@@ -876,10 +872,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 100,
     borderWidth: 1.5,
-    borderColor: colors.primary,
+    borderColor: 'rgba(255, 255, 255, 0.55)',
     paddingVertical: hp(1.35),
     paddingHorizontal: wp(1),
     gap: wp(1),
@@ -892,27 +888,8 @@ const styles = StyleSheet.create({
   watchLiveText: {
     fontSize: fontSize(13),
     fontWeight: '800',
-    color: colors.primary,
+    color: colors.background,
     letterSpacing: -0.2,
-  },
-  emptyScanBtn: {
-    marginTop: hp(2),
-    alignSelf: 'stretch',
-    borderRadius: wp(3),
-    borderWidth: 1,
-    borderColor: colors.primary,
-    paddingVertical: hp(1.35),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: GOLDEN_SPACING.sm,
-    backgroundColor: colors.primaryFaint,
-    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
-  },
-  emptyScanBtnText: {
-    fontSize: fontSize(15),
-    fontWeight: '800',
-    color: colors.primary,
   },
   dashboardSection: {
     marginBottom: hp(2),
@@ -1113,10 +1090,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  seasonIconText: {
-    fontSize: fontSize(20),
-    color: colors.primary,
-  },
   seasonBigValue: {
     fontSize: fontSize(36),
     fontWeight: '900',
@@ -1146,25 +1119,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.6,
     color: colors.textMuted,
-  },
-  seasonStatTrend: {
-    fontSize: fontSize(14),
-    fontWeight: '800',
-    color: colors.primary,
-  },
-  seasonWicketIcon: {
-    width: wp(5.5),
-    height: wp(5.5),
-    borderRadius: wp(2.75),
-    borderWidth: 1.5,
-    borderColor: colors.live,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  seasonWicketIconText: {
-    fontSize: fontSize(10),
-    fontWeight: '900',
-    color: colors.live,
   },
   seasonStatValue: {
     fontSize: fontSize(24),
@@ -1222,7 +1176,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: '#070707',
+        shadowColor: '#000000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.22,
         shadowRadius: 8,

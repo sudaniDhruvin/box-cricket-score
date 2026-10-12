@@ -121,7 +121,7 @@ export function InningsBallByBall({
               </View>
             ) : (
               <Text style={styles.collapsedHint}>
-                {over.deliveries.length} deliveries — tap to expand
+                {over.deliveries.length} deliveries, tap to expand
               </Text>
             )}
           </View>

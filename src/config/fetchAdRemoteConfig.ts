@@ -23,7 +23,7 @@ export async function initializeAdRemoteConfig(): Promise<AdRemoteConfig> {
     const parsed = parseAdRemoteConfig(raw);
     if (!parsed) {
       console.warn(
-        `Remote Config "${AD_REMOTE_CONFIG_KEY}" is missing or invalid — using defaults`,
+        `Remote Config "${AD_REMOTE_CONFIG_KEY}" is missing or invalid. Using defaults.`,
       );
     }
 
@@ -33,7 +33,7 @@ export async function initializeAdRemoteConfig(): Promise<AdRemoteConfig> {
     return config;
   } catch (error) {
     console.error(
-      'Firebase Remote Config fetch failed — using ad defaults',
+      'Firebase Remote Config fetch failed. Using ad defaults.',
       error,
     );
     setConfig(DEFAULT_AD_REMOTE_CONFIG);

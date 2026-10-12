@@ -10,6 +10,8 @@ export {
   ArrowLeftIcon,
   ArrowRightIcon,
   CloseIcon,
+  MenuIcon,
+  TeamIcon,
   CricketBatBallIcon,
   CricketScorebookIcon,
   CricketStumpsIcon,

@@ -81,7 +81,7 @@ export type MatchStatus = 'live' | 'completed';
 
 export interface MatchSummary {
   id: string;
-  /** ISO 8601 — used for day grouping and ordering */
+  /** ISO 8601 value used for day grouping and ordering */
   playedAt: string;
   innings: [TeamInnings, TeamInnings];
   winnerTeamId: string;
@@ -93,7 +93,7 @@ export interface MatchSummary {
   oversPerSide?: number;
   /**
    * Wickets to lose before an innings is all out (e.g. 4 for 4-a-side, 10 for full sides).
-   * Omitted in older saves — treat as 10.
+   * Omitted in older saves, treat as 10.
    */
   wicketsPerSide?: number;
   /** While live: which innings index is being scored (0 = first). */

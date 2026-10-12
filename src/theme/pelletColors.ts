@@ -1,16 +1,16 @@
 import type { Delivery } from '../types/match';
 
 export const PELLET_COLORS = {
-  dot: { bg: '#64748B', fg: '#FFFFFF' },
-  single: { bg: '#2563EB', fg: '#FFFFFF' },
-  multi: { bg: '#0F766E', fg: '#FFFFFF' },
-  four: { bg: '#15803D', fg: '#FFFFFF' },
-  six: { bg: '#7C3AED', fg: '#FFFFFF' },
-  wicket: { bg: '#DC2626', fg: '#FFFFFF' },
-  wide: { bg: '#F59E0B', fg: '#1F2937' },
-  noBall: { bg: '#C2410C', fg: '#FFFFFF' },
-  bye: { bg: '#0E7490', fg: '#FFFFFF' },
-  penalty: { bg: '#BE185D', fg: '#FFFFFF' },
+  dot: { bg: '#B1B3B4', fg: '#000000' },
+  single: { bg: '#1573EA', fg: '#FFFFFF' },
+  multi: { bg: '#074089', fg: '#FFFFFF' },
+  four: { bg: '#1573EA', fg: '#FFFFFF' },
+  six: { bg: '#000000', fg: '#FFFFFF' },
+  wicket: { bg: '#000000', fg: '#FFFFFF' },
+  wide: { bg: '#B1B3B4', fg: '#000000' },
+  noBall: { bg: '#074089', fg: '#FFFFFF' },
+  bye: { bg: '#074089', fg: '#FFFFFF' },
+  penalty: { bg: '#000000', fg: '#FFFFFF' },
 } as const;
 
 export interface PelletStyle {

@@ -34,9 +34,9 @@ if (
 
 interface MatchCardProps {
   match: MatchSummary;
-  /** Optional — e.g. navigate to match detail */
+  /** Optional callback for opening match details */
   onPress?: () => void;
-  /** Optional — e.g. show delete confirmation (long-press) */
+  /** Optional callback for confirming match deletion */
   onLongPress?: () => void;
 }
 
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#070707',
+        shadowColor: '#000000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.07,
         shadowRadius: 10,

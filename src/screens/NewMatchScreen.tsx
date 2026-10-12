@@ -4,7 +4,7 @@ import {
   type RouteProp,
 } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -21,7 +21,13 @@ import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import { LiveScoringPanel } from '../components/LiveScoringPanel';
 import { StickyBottomBannerAd } from '../components/StickyBottomBannerAd';
-import { ArrowRightIcon, CricketBatBallIcon, ScreenHeader } from '../components/ui';
+import {
+  ArrowRightIcon,
+  CricketScorebookIcon,
+  CricketStumpsIcon,
+  ScreenHeader,
+  TeamIcon,
+} from '../components/ui';
 import { useAdFlags } from '../hooks/useAdFlags';
 import { createLiveMatch } from '../utils/createLiveMatch';
 import { fontSize, hp, wp } from '../utils';
@@ -38,6 +44,7 @@ const DEFAULT_TEAM_A_NAME = 'Team A';
 const DEFAULT_TEAM_B_NAME = 'Team B';
 
 type StepperRowProps = {
+  icon: ReactNode;
   title: string;
   subtitle: string;
   value: number;
@@ -48,6 +55,7 @@ type StepperRowProps = {
 };
 
 function StepperRow({
+  icon,
   title,
   subtitle,
   value,
@@ -58,6 +66,7 @@ function StepperRow({
 }: StepperRowProps) {
   return (
     <View style={styles.paramRow}>
+      <View style={styles.paramIcon}>{icon}</View>
       <View style={styles.paramLabels}>
         <Text style={styles.paramTitle}>{title}</Text>
         <Text style={styles.paramSub}>{subtitle}</Text>
@@ -177,6 +186,7 @@ export function NewMatchScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <ScreenHeader
+        title={step === 'toss' ? 'First innings' : 'New match'}
         backLabel={step === 'toss' ? 'Setup' : 'Home'}
         onBack={() => {
           if (step === 'toss') {
@@ -203,15 +213,16 @@ export function NewMatchScreen() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <Text style={styles.title}>Match Setup</Text>
+              <Text style={styles.eyebrow}>SET UP A GAME</Text>
+              <Text style={styles.title}>Match setup</Text>
               <Text style={styles.lead}>
-                Configure the teams and match parameters.
+                Add both teams, then choose the overs and squad size.
               </Text>
 
               <View style={styles.card}>
-                <Text style={styles.teamFieldLabel}>Team A</Text>
+                <Text style={styles.teamFieldLabel}>TEAM A</Text>
                 <View style={styles.inputWrap}>
-                  <CricketBatBallIcon size={wp(5)} color={colors.primary} />
+                  <TeamIcon size={wp(5)} color={colors.primary} />
                   <TextInput
                     value={teamA}
                     onChangeText={t => {
@@ -234,9 +245,9 @@ export function NewMatchScreen() {
                   <View style={styles.vsLine} />
                 </View>
 
-                <Text style={styles.teamFieldLabel}>Team B</Text>
+                <Text style={styles.teamFieldLabel}>TEAM B</Text>
                 <View style={styles.inputWrap}>
-                  <CricketBatBallIcon size={wp(5)} color={colors.primary} />
+                  <TeamIcon size={wp(5)} color={colors.primary} />
                   <TextInput
                     value={teamB}
                     onChangeText={t => {
@@ -256,6 +267,12 @@ export function NewMatchScreen() {
 
               <View style={styles.card}>
                 <StepperRow
+                  icon={
+                    <CricketScorebookIcon
+                      size={wp(5)}
+                      color={colors.primary}
+                    />
+                  }
                   title="Overs"
                   subtitle="Per innings"
                   value={overs}
@@ -272,6 +289,12 @@ export function NewMatchScreen() {
                 />
                 <View style={styles.paramDivider} />
                 <StepperRow
+                  icon={
+                    <CricketStumpsIcon
+                      size={wp(5)}
+                      color={colors.primary}
+                    />
+                  }
                   title="Players"
                   subtitle="Per team"
                   value={players}
@@ -329,9 +352,10 @@ export function NewMatchScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.title}>Toss</Text>
+            <Text style={styles.eyebrow}>MATCH ORDER</Text>
+            <Text style={styles.title}>Who bats first?</Text>
             <Text style={styles.lead}>
-              Select the team batting first. The toss-winning team may choose to bat or field.
+              Choose which team starts at the crease.
             </Text>
 
             <View style={styles.card}>
@@ -413,7 +437,7 @@ export function NewMatchScreen() {
 
 const cardShadow = Platform.select({
   ios: {
-    shadowColor: '#070707',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.07,
     shadowRadius: 10,
@@ -434,14 +458,21 @@ const styles = StyleSheet.create({
   },
   scroll: {
     paddingHorizontal: wp(5),
-    paddingTop: hp(1),
+    paddingTop: hp(2),
+  },
+  eyebrow: {
+    fontSize: fontSize(11),
+    fontWeight: '800',
+    letterSpacing: 1.3,
+    color: colors.accent,
+    marginBottom: hp(0.7),
   },
   title: {
-    fontSize: fontSize(28),
+    fontSize: fontSize(30),
     fontWeight: '900',
     color: colors.text,
     letterSpacing: -0.4,
-    marginBottom: hp(0.6),
+    marginBottom: hp(0.5),
   },
   lead: {
     fontSize: fontSize(15),
@@ -450,35 +481,31 @@ const styles = StyleSheet.create({
     marginBottom: hp(2.2),
   },
   card: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderRadius: wp(4),
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: wp(4),
-    paddingVertical: hp(2),
+    paddingVertical: hp(2.2),
     marginBottom: hp(2),
     ...cardShadow,
   },
   teamFieldLabel: {
-    fontSize: fontSize(14),
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: hp(0.8),
+    fontSize: fontSize(11),
+    fontWeight: '800',
+    letterSpacing: 0.9,
+    color: colors.textMuted,
+    marginBottom: hp(0.7),
   },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.primarySoft,
     borderRadius: wp(3),
     paddingHorizontal: wp(3),
-    backgroundColor: colors.background,
-    gap: wp(2.5)
-  },
-  inputIcon: {
-    fontSize: fontSize(18),
-    color: colors.primary,
-    marginRight: wp(2.5),
+    backgroundColor: colors.surface,
+    gap: wp(2.5),
   },
   input: {
     flex: 1,
@@ -507,12 +534,16 @@ const styles = StyleSheet.create({
   paramRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: wp(3),
-    paddingHorizontal: wp(3.5),
-    paddingVertical: hp(1.6),
+    paddingVertical: hp(0.7),
+  },
+  paramIcon: {
+    width: wp(10),
+    height: wp(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: wp(2.5),
+    backgroundColor: colors.primaryFaint,
+    marginRight: wp(3),
   },
   paramLabels: {
     flex: 1,
@@ -543,7 +574,7 @@ const styles = StyleSheet.create({
     height: wp(10),
     borderRadius: wp(5),
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background,
@@ -576,6 +607,7 @@ const styles = StyleSheet.create({
   tossOptionActive: {
     borderColor: colors.primary,
     backgroundColor: colors.primaryFaint,
+    borderWidth: 2,
   },
   tossOptionPressed: {
     opacity: 0.92,
@@ -623,13 +655,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    borderRadius: wp(6),
+    borderRadius: wp(3.5),
     paddingVertical: hp(1.9),
     paddingHorizontal: wp(4),
     gap: wp(2),
     ...Platform.select({
       ios: {
-        shadowColor: '#070707',
+        shadowColor: '#000000',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.12,
         shadowRadius: 8,

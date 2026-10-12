@@ -651,7 +651,7 @@ export function LiveScoringPanel({
     if (editOvers < minOvers) {
       Alert.alert(
         'Overs',
-        `Cannot set fewer than ${minOvers} overs — that much has already been bowled.`,
+        `At least ${minOvers} overs have already been bowled.`,
       );
       return;
     }
@@ -660,9 +660,9 @@ export function LiveScoringPanel({
     if (editPlayers < minWkts) {
       Alert.alert(
         'Players',
-        `Cannot set fewer than ${minWkts} players — ${minWkts} wicket${
+        `The match already has ${minWkts} recorded dismissal${
           minWkts === 1 ? '' : 's'
-        } already recorded.`,
+        }. Increase the player limit to continue.`,
       );
       return;
     }
@@ -724,7 +724,7 @@ export function LiveScoringPanel({
           (finalized.scoringActiveInnings ?? 0) === 0 &&
           isInningsComplete(inn0, cap, wicketsCapForMatch(finalized))
         ) {
-          // 1st innings finished (e.g. last ball of the last over) — show
+          // 1st innings finished (e.g. last ball of the last over), show
           // the dedicated 1st-innings break modal, not the generic over sheet.
         } else {
           setOverCompleteModal(result.overJustCompleted);
@@ -1277,7 +1277,7 @@ export function LiveScoringPanel({
             ) : (
               <>
                 <Text style={styles.wicketSheetTitle}>
-                  Wicket — select dismissal type
+                  Choose a dismissal type
                 </Text>
                 <View style={styles.wicketGrid}>
                   {WICKET_OPTIONS.map(opt => (
@@ -1431,7 +1431,7 @@ export function LiveScoringPanel({
           <View style={styles.matchOverSheet}>
             <Text style={styles.matchOverTitle}>1st innings complete</Text>
             <Text style={styles.firstBreakHeadline}>
-              {activeInn.teamName} — {activeInn.runs}/{activeInn.wickets}
+              {activeInn.teamName}: {activeInn.runs}/{activeInn.wickets}
               <Text style={styles.firstBreakOversSub}>
                 {' '}
                 ({formatOvers(activeInn.overs)} ov)
@@ -1649,7 +1649,7 @@ export function LiveScoringPanel({
       <LiveShareNoticeModal
         visible={viewerDroppedOpen}
         title="Viewer disconnected"
-        message="A connected phone dropped off live sharing. They can tap Connect again on their screen and join with the same QR — you do not need to refresh it."
+        message="A phone dropped from live scoring. Tap Connect again to rejoin with the same QR code. There is no need to refresh it."
         primaryLabel="OK"
         onPrimary={() => setViewerDroppedOpen(false)}
         secondaryLabel="Show QR"

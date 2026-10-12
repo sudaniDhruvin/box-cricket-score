@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   livePillDisconnected: {
-    backgroundColor: 'rgba(229, 57, 53, 0.12)',
+    backgroundColor: colors.primaryFaint,
   },
   livePillDisconnectedText: {
     color: colors.live,
@@ -333,8 +333,8 @@ const styles = StyleSheet.create({
     borderColor: colors.primarySoft,
   },
   bannerError: {
-    backgroundColor: 'rgba(229, 57, 53, 0.08)',
-    borderColor: 'rgba(229, 57, 53, 0.35)',
+    backgroundColor: colors.primaryFaint,
+    borderColor: colors.primarySoft,
   },
   bannerTitle: {
     fontSize: fontSize(16),

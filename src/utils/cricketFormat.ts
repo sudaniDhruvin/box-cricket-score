@@ -65,7 +65,7 @@ export function runRateFromLegalBalls(
 
 export function formatRunRate(rr: number | null): string {
   if (rr == null) {
-    return '—';
+    return 'N/A';
   }
   return rr.toFixed(2);
 }
