@@ -101,6 +101,7 @@ function applyStats(inn: TeamInnings, d: Delivery): TeamInnings {
       next.extras = { ...next.extras, noBalls: next.extras.noBalls + 1 };
       break;
     case 'bye':
+    case 'leg-bye':
       next.extras = {
         ...next.extras,
         byes: (next.extras.byes ?? 0) + 1,

@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   errorText: {
-    color: colors.ballWicket,
+    color: colors.live,
     textAlign: 'center',
     fontSize: fontSize(14),
     paddingHorizontal: wp(2),
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   stopBtnText: {
-    color: colors.ballWicket,
+    color: colors.live,
     fontSize: fontSize(15),
     fontWeight: '700',
   },

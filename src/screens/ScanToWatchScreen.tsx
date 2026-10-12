@@ -152,13 +152,13 @@ const styles = StyleSheet.create({
   },
   errorText: {
     textAlign: 'center',
-    color: colors.ballWicket,
+    color: colors.live,
     fontSize: fontSize(15),
   },
   scanError: {
     paddingHorizontal: wp(5),
     paddingBottom: hp(2),
-    color: colors.ballWicket,
+    color: colors.live,
     fontSize: fontSize(13),
     textAlign: 'center',
   },

@@ -22,7 +22,9 @@ export type DeliveryType =
   | 'wicket'
   | 'wide'
   | 'no-ball'
-  | 'bye';
+  | 'bye'
+  | 'leg-bye'
+  | 'penalty';
 
 export type WicketDismissal =
   | 'bowled'

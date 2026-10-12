@@ -130,7 +130,7 @@ function TeamTabs({
           onPress={() => onChange(0)}
           android_ripple={
             Platform.OS === 'android'
-              ? { color: 'rgba(1, 180, 137, 0.12)' }
+              ? { color: colors.primarySoft }
               : undefined
           }
           style={({ pressed }) => [
@@ -194,7 +194,7 @@ function TeamTabs({
           onPress={() => onChange(1)}
           android_ripple={
             Platform.OS === 'android'
-              ? { color: 'rgba(1, 180, 137, 0.12)' }
+              ? { color: colors.primarySoft }
               : undefined
           }
           style={({ pressed }) => [
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   tabSegmentActive: {
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: 'rgba(1, 180, 137, 0.35)',
+    borderColor: colors.primarySoft,
     ...Platform.select({
       ios: {
         shadowColor: '#070707',

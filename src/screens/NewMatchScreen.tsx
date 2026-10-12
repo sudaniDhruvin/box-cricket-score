@@ -6,7 +6,6 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
 import {
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -22,11 +21,10 @@ import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import { LiveScoringPanel } from '../components/LiveScoringPanel';
 import { StickyBottomBannerAd } from '../components/StickyBottomBannerAd';
-import { ScreenHeader } from '../components/ui';
+import { ArrowRightIcon, CricketBatBallIcon, ScreenHeader } from '../components/ui';
 import { useAdFlags } from '../hooks/useAdFlags';
 import { createLiveMatch } from '../utils/createLiveMatch';
 import { fontSize, hp, wp } from '../utils';
-import { PNGs } from '../assets/images/pngs';
 
 type Nav = NativeStackNavigationProp<MainStackParamList, 'NewMatch'>;
 type NewMatchRoute = RouteProp<MainStackParamList, 'NewMatch'>;
@@ -213,13 +211,7 @@ export function NewMatchScreen() {
               <View style={styles.card}>
                 <Text style={styles.teamFieldLabel}>Team A</Text>
                 <View style={styles.inputWrap}>
-                  <Image
-                    source={PNGs.BatBallOutlineIcon}
-                    style={{
-                      width: wp(5),
-                      height: wp(5),
-                    }}
-                  />
+                  <CricketBatBallIcon size={wp(5)} color={colors.primary} />
                   <TextInput
                     value={teamA}
                     onChangeText={t => {
@@ -244,13 +236,7 @@ export function NewMatchScreen() {
 
                 <Text style={styles.teamFieldLabel}>Team B</Text>
                 <View style={styles.inputWrap}>
-                  <Image
-                    source={PNGs.BatBallOutlineIcon}
-                    style={{
-                      width: wp(5),
-                      height: wp(5),
-                    }}
-                  />
+                  <CricketBatBallIcon size={wp(5)} color={colors.primary} />
                   <TextInput
                     value={teamB}
                     onChangeText={t => {
@@ -323,10 +309,10 @@ export function NewMatchScreen() {
                 ]}
                 android_ripple={{ color: 'rgba(255,255,255,0.22)' }}
                 accessibilityRole="button"
-                accessibilityLabel="Start Match"
+                accessibilityLabel="Choose who bats first"
               >
-                <Text style={styles.ctaText}>Start Toss</Text>
-                <Image source={PNGs.RightArrowIcon} style={{width: wp(4), height: wp(4), tintColor: colors.background}}/>
+                <Text style={styles.ctaText}>Choose who bats first</Text>
+                <ArrowRightIcon size={wp(4)} color={colors.background} />
               </Pressable>
             </View>
           </>
@@ -345,7 +331,7 @@ export function NewMatchScreen() {
           >
             <Text style={styles.title}>Toss</Text>
             <Text style={styles.lead}>
-              Who bats first? Pick the team that won the toss.
+              Select the team batting first. The toss-winning team may choose to bat or field.
             </Text>
 
             <View style={styles.card}>
@@ -409,7 +395,7 @@ export function NewMatchScreen() {
               accessibilityLabel="Create match and start scoring"
             >
               <Text style={styles.ctaText}>Start match</Text>
-              <Text style={styles.ctaArrow}>{'\u2192'}</Text>
+              <ArrowRightIcon size={wp(4)} color={colors.background} />
             </Pressable>
           </ScrollView>
         )}
@@ -611,7 +597,7 @@ const styles = StyleSheet.create({
   error: {
     fontSize: fontSize(13),
     fontWeight: '700',
-    color: colors.ballWicket,
+    color: colors.live,
     marginBottom: hp(1),
   },
   bannerStrip: {
@@ -661,11 +647,6 @@ const styles = StyleSheet.create({
   ctaText: {
     fontSize: fontSize(17),
     fontWeight: '800',
-    color: colors.background,
-  },
-  ctaArrow: {
-    fontSize: fontSize(20),
-    fontWeight: '600',
     color: colors.background,
   },
 });

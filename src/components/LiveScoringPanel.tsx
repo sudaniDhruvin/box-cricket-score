@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
-  Image,
-  ImageSourcePropType,
   LayoutAnimation,
   Modal,
   Platform,
@@ -30,6 +28,8 @@ import {
 } from '../liveShare';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
+import { GOLDEN_SPACING } from '../theme/golden';
+import { PELLET_COLORS } from '../theme/pelletColors';
 import type {
   Delivery,
   MatchSummary,
@@ -63,8 +63,16 @@ import {
 import { StickyBottomBannerAd } from './StickyBottomBannerAd';
 import { ShareLiveScoreModal } from './ShareLiveScoreModal';
 import { LiveShareNoticeModal } from './LiveShareNoticeModal';
-import { EditIcon, ShareIcon, UndoIcon } from './ui';
-import { PNGs } from '../assets/images/pngs';
+import {
+  ArrowLeftIcon,
+  ChevronRightIcon,
+  DismissalIcon,
+  EditIcon,
+  ShareIcon,
+  UndoIcon,
+  type DismissalKind,
+} from './ui';
+import { Pellet } from './Pellet';
 
 function cloneMatch(m: MatchSummary): MatchSummary {
   return JSON.parse(JSON.stringify(m)) as MatchSummary;
@@ -162,19 +170,19 @@ if (
 const WICKET_OPTIONS: {
   id: WicketDismissal;
   label: string;
-  icon: ImageSourcePropType;
+  icon: DismissalKind;
 }[] = [
-  { id: 'bowled', label: 'Bowled', icon: PNGs.StumpedOutIcon },
-  { id: 'caught', label: 'Caught', icon: PNGs.CaughtOutIcon },
-  { id: 'run-out', label: 'Run Out', icon: PNGs.RunOutIcon },
-  { id: 'stumped', label: 'Stumped', icon: PNGs.StumpedOutIcon },
-  { id: 'lbw', label: 'LBW', icon: PNGs.LBWOutIcon },
-  { id: 'hit-wicket', label: 'Hit Wicket', icon: PNGs.WarningIcon },
+  { id: 'bowled', label: 'Bowled', icon: 'bowled' },
+  { id: 'caught', label: 'Caught', icon: 'caught' },
+  { id: 'run-out', label: 'Run Out', icon: 'run-out' },
+  { id: 'stumped', label: 'Stumped', icon: 'stumped' },
+  { id: 'lbw', label: 'LBW', icon: 'lbw' },
+  { id: 'hit-wicket', label: 'Hit Wicket', icon: 'hit-wicket' },
 ];
 
 type WicketTypeTileProps = {
   label: string;
-  icon: ImageSourcePropType;
+  icon: DismissalKind;
   selected: boolean;
   onPress: () => void;
 };
@@ -203,16 +211,11 @@ function WicketTypeTile({
         </View>
       ) : null}
 
-      {icon && (
-        <Image
-          source={icon}
-          style={{
-            width: wp(8),
-            height: wp(8),
-            tintColor: selected ? colors.primary : undefined,
-          }}
-        />
-      )}
+      <DismissalIcon
+        kind={icon}
+        size={wp(8)}
+        color={selected ? colors.primary : colors.textSecondary}
+      />
       <Text
         style={[
           styles.wicketTileLabel,
@@ -227,7 +230,206 @@ function WicketTypeTile({
 
 const UNDO_MAX = 40;
 const RUNS_ROW: (0 | 1 | 2 | 3 | 4 | 5 | 6)[] = [0, 1, 2, 3, 4, 5, 6];
-const RUNS_GRID: (0 | 1 | 2 | 3 | 4 | 6)[] = [0, 1, 2, 3, 4, 6];
+const EXTRA_RUNS = [1, 2, 3, 4, 5, 6] as const;
+
+function ScoringPad({
+  apply,
+  onMoreExtras,
+  onWicket,
+}: {
+  apply: (delivery: Delivery) => void;
+  onMoreExtras: () => void;
+  onWicket: () => void;
+}) {
+  return (
+    <View style={styles.scoringPad}>
+      <View style={styles.scoringRunsGrid}>
+        {RUNS_ROW.map(r => (
+          <Pressable
+            key={r}
+            onPress={() => apply(runsDelivery(r))}
+            style={({ pressed }) => [
+              styles.runBtn,
+              (r === 4 || r === 6) && styles.runBtnBoundary,
+              r === 4 && styles.runBtnFour,
+              r === 6 && styles.runBtnSix,
+              pressed && styles.runCellPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={
+              r === 0 ? 'Dot ball' : r === 1 ? 'One run' : `${r} runs`
+            }>
+            <Text
+              style={[
+                styles.runBtnText,
+                (r === 4 || r === 6) && styles.runBtnTextBoundary,
+              ]}>
+              {r}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={styles.extrasGrid4}>
+        <Pressable
+          onPress={() => apply({ type: 'wide', label: 'Wd', wideRuns: 0 })}
+          style={({ pressed }) => [
+            styles.extraPadBtn,
+            pressed && styles.runCellPressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Wide, one penalty run">
+          <Text style={styles.extraPadBtnText}>Wide</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => apply({ type: 'no-ball', label: 'Nb', noBallRuns: 0 })}
+          style={({ pressed }) => [
+            styles.extraPadBtn,
+            pressed && styles.runCellPressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="No-ball, one penalty run">
+          <Text style={styles.extraPadBtnText}>No-ball</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => apply({ type: 'bye', label: 'B' })}
+          style={({ pressed }) => [
+            styles.extraPadBtn,
+            pressed && styles.runCellPressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Bye">
+          <Text style={styles.extraPadBtnText}>Bye</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => apply({ type: 'leg-bye', label: 'Lb' })}
+          style={({ pressed }) => [
+            styles.extraPadBtn,
+            pressed && styles.runCellPressed,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel="Leg bye">
+          <Text style={styles.extraPadBtnText}>Leg bye</Text>
+        </Pressable>
+      </View>
+
+      <Pressable
+        onPress={onMoreExtras}
+        style={({ pressed }) => [
+          styles.moreExtrasToggle,
+          pressed && styles.backPressed,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="More wide and no-ball scoring options">
+        <Text style={styles.moreExtrasToggleText}>More extras</Text>
+        <View style={styles.moreExtrasChevron}>
+          <ChevronRightIcon size={wp(3.5)} color={colors.primary} />
+        </View>
+      </Pressable>
+
+      <Pressable
+        onPress={onWicket}
+        style={({ pressed }) => [
+          styles.wicketBtnFull,
+          pressed && styles.runCellPressed,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="Log wicket">
+        <Text style={styles.wicketBtnFullText}>WICKET</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function ExtrasSheet({
+  onClose,
+  onSelect,
+}: {
+  onClose: () => void;
+  onSelect: (delivery: Delivery) => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const selectWide = (runs: number) => {
+    onSelect({
+      type: 'wide',
+      label: runs === 0 ? 'Wd' : `Wd+${runs}`,
+      wideRuns: runs,
+    });
+    onClose();
+  };
+  const selectNoBall = (runs: number) => {
+    onSelect({
+      type: 'no-ball',
+      label: runs === 0 ? 'Nb' : `Nb+${runs}`,
+      noBallRuns: runs,
+    });
+    onClose();
+  };
+
+  return (
+    <Modal transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.bottomSheetBackdrop} onPress={onClose}>
+        <Pressable
+          style={[
+            styles.extrasBottomSheet,
+            { paddingBottom: Math.max(insets.bottom, hp(2)) },
+          ]}
+          onPress={event => event.stopPropagation()}>
+          <View style={styles.sheetHandle} />
+          <Text style={styles.wicketSheetTitle}>More extras</Text>
+          <Text style={styles.wicketSheetSub}>
+            Add completed runs to the one-run penalty.
+          </Text>
+          <Text style={styles.extraSheetSectionTitle}>Wide + completed runs</Text>
+          <View style={styles.extraSheetRunRow}>
+            {EXTRA_RUNS.map(runs => (
+              <Pressable
+                key={`wide-${runs}`}
+                onPress={() => selectWide(runs)}
+                style={({ pressed }) => [
+                  styles.extraSheetRunButton,
+                  pressed && styles.runCellPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Wide plus ${runs} completed ${runs === 1 ? 'run' : 'runs'}`}>
+                <Text style={styles.extraSheetRunValue}>{runs}</Text>
+                <Text style={styles.extraSheetRunCaption}>
+                  {runs === 1 ? 'run' : 'runs'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.extraSheetSectionTitle}>No-ball + bat runs</Text>
+          <View style={styles.extraSheetRunRow}>
+            {EXTRA_RUNS.map(runs => (
+              <Pressable
+                key={`no-ball-${runs}`}
+                onPress={() => selectNoBall(runs)}
+                style={({ pressed }) => [
+                  styles.extraSheetRunButton,
+                  pressed && styles.runCellPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={`No-ball plus ${runs} ${runs === 1 ? 'run' : 'runs'} off the bat`}>
+                <Text style={styles.extraSheetRunValue}>{runs}</Text>
+                <Text style={styles.extraSheetRunCaption}>
+                  {runs === 1 ? 'run' : 'runs'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Pressable
+            onPress={onClose}
+            style={styles.extraSheetCancel}
+            accessibilityRole="button"
+            accessibilityLabel="Close more extras">
+            <Text style={styles.extraSheetCancelText}>Cancel</Text>
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
 
 function ThisOverRow({
   deliveries,
@@ -240,54 +442,13 @@ function ThisOverRow({
   return (
     <View style={styles.thisOverRow}>
       {deliveries.map((d, i) => (
-        <MiniBall key={`cb-${i}`} d={d} />
+        <Pellet key={`cb-${i}`} ball={d} size={wp(9)} />
       ))}
       {Array.from({ length: emptySlots }).map((_, i) => (
         <View key={`empty-${i}`} style={styles.emptyBallSlot} />
       ))}
     </View>
   );
-}
-
-function MiniBall({ d }: { d: Delivery }) {
-  const { bg, fg } = miniPalette(d);
-  return (
-    <View style={[styles.miniBall, { backgroundColor: bg }]}>
-      <Text style={[styles.miniBallText, { color: fg }]} numberOfLines={1}>
-        {d.label}
-      </Text>
-    </View>
-  );
-}
-
-function miniPalette(d: Delivery): { bg: string; fg: string } {
-  switch (d.type) {
-    case 'dot':
-      return { bg: colors.ballDot, fg: colors.ballDotText };
-    case 'single':
-    case 'two':
-    case 'three':
-    case 'five':
-      return { bg: colors.ballRuns, fg: colors.ballRunsText };
-    case 'four':
-      return { bg: colors.ballFour, fg: colors.background };
-    case 'six':
-      return { bg: colors.ballSix, fg: colors.background };
-    case 'wicket':
-      return { bg: colors.ballWicket, fg: colors.background };
-    case 'wide':
-      return (d.wideRuns ?? 0) > 0
-        ? { bg: colors.ballWideExtra, fg: colors.background }
-        : { bg: colors.ballWide, fg: colors.background };
-    case 'no-ball':
-      return (d.noBallRuns ?? 0) > 0
-        ? { bg: colors.ballNoBallRuns, fg: colors.background }
-        : { bg: colors.ballNoBall, fg: colors.background };
-    case 'bye':
-      return { bg: colors.ballBye, fg: colors.background };
-    default:
-      return { bg: colors.ballDot, fg: colors.ballDotText };
-  }
 }
 
 export interface LiveScoringPanelProps {
@@ -361,7 +522,7 @@ export function LiveScoringPanel({
 
   const handleClose = useCallback(() => {
     if (getHostShareState().matchId === matchId) {
-      void stopHostShare();
+      stopHostShare().catch(() => undefined);
     }
     onClose();
   }, [matchId, onClose]);
@@ -806,7 +967,7 @@ export function LiveScoringPanel({
           accessibilityRole="button"
           accessibilityLabel="Back to home"
         >
-          <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
+          <ArrowLeftIcon size={wp(5)} color={colors.primary} />
           <Text style={styles.backLbl}>Home</Text>
         </Pressable>
         <View style={styles.toolbarRight}>
@@ -879,8 +1040,7 @@ export function LiveScoringPanel({
           contentContainerStyle={[
             styles.scroll,
             {
-              paddingBottom:
-                Math.max(insets.bottom, hp(2)) + hp(1) + hp(8),
+              paddingBottom: GOLDEN_SPACING.md,
             },
           ]}
           keyboardShouldPersistTaps="handled"
@@ -955,9 +1115,14 @@ export function LiveScoringPanel({
                 ]}
               >
                 <Text style={styles.recentTitle}>Recent overs</Text>
-                <Text style={styles.recentCaret}>
-                  {recentExpanded ? '\u25B2' : '\u25BC'}
-                </Text>
+                <View
+                  style={[
+                    styles.recentCaret,
+                    { transform: [{ rotate: recentExpanded ? '-90deg' : '90deg' }] },
+                  ]}
+                  accessibilityElementsHidden>
+                  <ChevronRightIcon size={wp(4)} color={colors.primary} />
+                </View>
               </Pressable>
               {!recentExpanded ? (
                 <Text style={styles.recentCollapsed} numberOfLines={2}>
@@ -980,7 +1145,7 @@ export function LiveScoringPanel({
                       </Text>
                       <View style={styles.recentChips}>
                         {o.deliveries.map((d, i) => (
-                          <MiniBall key={`${o.overNumber}-${i}`} d={d} />
+                          <Pellet key={`${o.overNumber}-${i}`} ball={d} size={wp(9)} />
                         ))}
                       </View>
                     </View>
@@ -990,177 +1155,43 @@ export function LiveScoringPanel({
             </View>
           ) : null}
 
+        </ScrollView>
+        <View style={styles.scoreEntryDock}>
           {showStartSecondCta ? (
-            <View style={styles.inningsCompleteHint}>
-              <Text style={styles.inningsCompleteHintText}>
-                First innings is complete. When you are ready, start the second
-                innings using the button below.
+            <View style={styles.secondInningsDock}>
+              <Text style={styles.secondInningsDockText}>
+                First innings complete. Start the chase when the teams are ready.
               </Text>
-            </View>
-          ) : (
-            <View style={styles.scoringPad}>
-              <View style={styles.runsGrid3x2}>
-                {RUNS_GRID.map(r => (
-                  <Pressable
-                    key={r}
-                    onPress={() => apply(runsDelivery(r))}
-                    style={({ pressed }) => [
-                      styles.runBtn,
-                      (r === 4 || r === 6) && styles.runBtnBoundary,
-                      r === 4 && styles.runBtnFour,
-                      r === 6 && styles.runBtnSix,
-                      pressed && styles.runCellPressed,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.runBtnText,
-                        (r === 4 || r === 6) && styles.runBtnTextBoundary,
-                      ]}
-                    >
-                      {r}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <View style={styles.extrasGrid4}>
-                <Pressable
-                  onPress={() =>
-                    apply({ type: 'wide', label: 'Wd', wideRuns: 0 })
-                  }
-                  style={({ pressed }) => [
-                    styles.extraPadBtn,
-                    pressed && styles.runCellPressed,
-                  ]}
-                >
-                  <Text style={styles.extraPadBtnText}>Wide</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() =>
-                    apply({ type: 'no-ball', label: 'Nb', noBallRuns: 0 })
-                  }
-                  style={({ pressed }) => [
-                    styles.extraPadBtn,
-                    pressed && styles.runCellPressed,
-                  ]}
-                >
-                  <Text style={styles.extraPadBtnText}>NB</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => apply({ type: 'bye', label: 'Lb' })}
-                  style={({ pressed }) => [
-                    styles.extraPadBtn,
-                    pressed && styles.runCellPressed,
-                  ]}
-                >
-                  <Text style={styles.extraPadBtnText}>LB</Text>
-                </Pressable>
-              </View>
-
               <Pressable
-                onPress={() => setExtrasExpanded(e => !e)}
+                onPress={() => runAfterInterstitial('startSecond')}
                 style={({ pressed }) => [
-                  styles.moreExtrasToggle,
-                  pressed && styles.backPressed,
-                ]}
-              >
-                <Text style={styles.moreExtrasToggleText}>
-                  {extrasExpanded ? 'Hide' : 'More'} extras & 5 runs
-                </Text>
-                <Text style={styles.recentCaret}>
-                  {extrasExpanded ? '\u25B2' : '\u25BC'}
-                </Text>
-              </Pressable>
-
-              {extrasExpanded ? (
-                <View style={styles.extrasMoreRow}>
-                  <Pressable
-                    onPress={() => apply(runsDelivery(5))}
-                    style={({ pressed }) => [
-                      styles.extrasMoreBtn,
-                      { borderColor: colors.border },
-                      pressed && styles.runCellPressed,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="5 runs"
-                  >
-                    <Text style={styles.extrasMoreBtnText}>5</Text>
-                  </Pressable>
-                  {[1, 2, 4].map(n => (
-                    <Pressable
-                      key={`wd${n}`}
-                      onPress={() =>
-                        apply({
-                          type: 'wide',
-                          label: `Wd+${n}`,
-                          wideRuns: n,
-                        })
-                      }
-                      style={({ pressed }) => [
-                        styles.extrasMoreBtn,
-                        { borderColor: colors.ballWideExtra },
-                        pressed && styles.runCellPressed,
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Wide plus ${n}`}
-                    >
-                      <Text style={styles.extrasMoreBtnText}>WD+{n}</Text>
-                    </Pressable>
-                  ))}
-                  <View
-                    style={{
-                      height: '90%',
-                      width: 2,
-                      backgroundColor: colors.textMuted,
-                      borderRadius: 100,
-                      alignSelf: 'center',
-                    }}
-                  />
-                  {[1, 4, 6].map(n => (
-                    <Pressable
-                      key={`nb${n}`}
-                      onPress={() =>
-                        apply({
-                          type: 'no-ball',
-                          label: `Nb+${n}`,
-                          noBallRuns: n,
-                        })
-                      }
-                      style={({ pressed }) => [
-                        styles.extrasMoreBtn,
-                        { borderColor: colors.ballNoBallRuns },
-                        pressed && styles.runCellPressed,
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`No ball plus ${n}`}
-                    >
-                      <Text style={styles.extrasMoreBtnText}>NB+{n}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
-
-              <Pressable
-                onPress={() => {
-                  openWicketModal();
-                }}
-                style={({ pressed }) => [
-                  styles.wicketBtnFull,
+                  styles.secondInningsButton,
                   pressed && styles.runCellPressed,
                 ]}
                 accessibilityRole="button"
-                accessibilityLabel="Log wicket"
-              >
-                <Text style={styles.wicketBtnFullText}>WICKET</Text>
+                accessibilityLabel="Start second innings">
+                <Text style={styles.wicketBtnFullText}>Start 2nd innings</Text>
               </Pressable>
             </View>
+          ) : (
+            <ScoringPad
+              apply={apply}
+              onMoreExtras={() => setExtrasExpanded(true)}
+              onWicket={openWicketModal}
+            />
           )}
-        </ScrollView>
+        </View>
         <View style={styles.bottomAdStrip}>
           <StickyBottomBannerAd />
         </View>
       </View>
+
+      {extrasExpanded ? (
+        <ExtrasSheet
+          onClose={() => setExtrasExpanded(false)}
+          onSelect={apply}
+        />
+      ) : null}
 
       <Modal
         visible={wicketOpen}
@@ -1349,13 +1380,9 @@ export function LiveScoringPanel({
                   contentContainerStyle={styles.overCompleteChipsRow}
                 >
                   {overCompleteModal.deliveries.map((d, i) => (
-                    <MiniBall key={`oc-${i}`} d={d} />
+                    <Pellet key={`oc-${i}`} ball={d} size={wp(9)} />
                   ))}
                 </ScrollView>
-                <OverCompleteNativeAd
-                  nativeAd={overNativeAd}
-                  failed={overNativeAdFailed}
-                />
                 {firstInnDone && activeIdx === 0 ? (
                   <Pressable
                     onPress={() => runAfterInterstitial('startSecond')}
@@ -1383,6 +1410,10 @@ export function LiveScoringPanel({
                     <Text style={styles.overCompleteCtaText}>Continue</Text>
                   </Pressable>
                 )}
+                <OverCompleteNativeAd
+                  nativeAd={overNativeAd}
+                  failed={overNativeAdFailed}
+                />
               </ScrollView>
             ) : null}
           </Pressable>
@@ -1421,7 +1452,7 @@ export function LiveScoringPanel({
                   contentContainerStyle={styles.firstBreakChipsRow}
                 >
                   {firstInningsLastOver.deliveries.map((d, i) => (
-                    <MiniBall key={`fb-${i}`} d={d} />
+                    <Pellet key={`fb-${i}`} ball={d} size={wp(9)} />
                   ))}
                 </ScrollView>
               </>
@@ -1640,6 +1671,30 @@ const styles = StyleSheet.create({
   mainColumn: {
     flex: 1,
   },
+  scoreEntryDock: {
+    flexShrink: 0,
+    paddingHorizontal: GOLDEN_SPACING.md,
+    paddingTop: GOLDEN_SPACING.xs,
+    paddingBottom: GOLDEN_SPACING.xs,
+    backgroundColor: colors.background,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  secondInningsDock: {
+    gap: GOLDEN_SPACING.sm,
+  },
+  secondInningsDockText: {
+    fontSize: fontSize(13),
+    fontWeight: '600',
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  secondInningsButton: {
+    paddingVertical: hp(1.2),
+    borderRadius: wp(3),
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+  },
   scrollFill: {
     flex: 1,
   },
@@ -1742,21 +1797,11 @@ const styles = StyleSheet.create({
   backPressed: {
     backgroundColor: colors.primaryFaint,
   },
-  backChev: {
-    fontSize: fontSize(26),
-    fontWeight: '300',
-    color: colors.primary,
-    marginRight: wp(0.5),
-  },
   backLbl: {
     fontSize: fontSize(16),
     fontWeight: '700',
     color: colors.primary,
     includeFontPadding: false,
-  },
-  backArrow: {
-    width: wp(4),
-    height: wp(4),
   },
   sharingBar: {
     flexDirection: 'row',
@@ -1837,14 +1882,14 @@ const styles = StyleSheet.create({
     paddingVertical: hp(0.35),
     borderRadius: wp(1.5),
     borderWidth: 1.5,
-    borderColor: colors.ballFour,
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderColor: colors.live,
+    backgroundColor: colors.live,
   },
   liveBadgeText: {
     fontSize: fontSize(10),
     fontWeight: '900',
     letterSpacing: 0.8,
-    color: colors.ballFour,
+    color: colors.background,
   },
   scoreMain: {
     fontSize: fontSize(42),
@@ -1917,19 +1962,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scoringPad: {
-    marginTop: hp(0.5),
-    paddingTop: hp(1),
+    gap: GOLDEN_SPACING.xs,
   },
-  runsGrid3x2: {
+  scoringRunsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: wp(2.5),
-    marginBottom: hp(1.2),
+    gap: wp(1.5),
   },
   runBtn: {
-    width: (wp(100) - wp(8) - wp(2.5) * 3) / 3,
-    height: hp(6.2),
-    borderRadius: wp(3),
+    width:
+      (wp(100) - GOLDEN_SPACING.md * 2 - wp(1.5) * 3) / 4,
+    height: hp(5.2),
+    borderRadius: wp(2.5),
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceMuted,
@@ -1940,10 +1984,10 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   runBtnFour: {
-    backgroundColor: colors.ballFour,
+    backgroundColor: PELLET_COLORS.four.bg,
   },
   runBtnSix: {
-    backgroundColor: colors.ballSix,
+    backgroundColor: PELLET_COLORS.six.bg,
   },
   runBtnText: {
     fontSize: fontSize(22),
@@ -1955,13 +1999,14 @@ const styles = StyleSheet.create({
   },
   extrasGrid4: {
     flexDirection: 'row',
-    gap: wp(2),
-    marginBottom: hp(0.8),
+    gap: wp(1.5),
   },
   extraPadBtn: {
     flex: 1,
-    paddingVertical: hp(1.2),
-    borderRadius: wp(2.5),
+    minHeight: hp(4.2),
+    paddingHorizontal: wp(0.5),
+    paddingVertical: hp(0.8),
+    borderRadius: wp(2),
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceMuted,
@@ -1977,24 +2022,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: wp(1),
-    paddingVertical: hp(0.6),
-    marginBottom: hp(0.4),
+    paddingVertical: GOLDEN_SPACING.xxs,
   },
   moreExtrasToggleText: {
     fontSize: fontSize(12),
     fontWeight: '700',
     color: colors.primary,
   },
+  moreExtrasChevron: {
+    transform: [{ rotate: '90deg' }],
+  },
   wicketBtnFull: {
-    paddingVertical: hp(1.6),
+    paddingVertical: hp(1.1),
     borderRadius: wp(3),
-    backgroundColor: colors.ballWicket,
+    backgroundColor: PELLET_COLORS.wicket.bg,
     alignItems: 'center',
-    marginTop: hp(0.4),
-    marginBottom: hp(0.5),
+    marginTop: hp(0.1),
   },
   wicketBtnFullText: {
-    fontSize: fontSize(16),
+    fontSize: fontSize(15),
     fontWeight: '900',
     letterSpacing: 1,
     color: colors.background,
@@ -2129,18 +2175,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: colors.textMuted,
   },
-  miniBall: {
-    minWidth: wp(9),
-    height: wp(9),
-    borderRadius: wp(4.5),
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: wp(1),
-  },
-  miniBallText: {
-    fontSize: fontSize(11),
-    fontWeight: '900',
-  },
   recentBlock: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -2162,9 +2196,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   recentCaret: {
-    fontSize: fontSize(10),
-    color: colors.primary,
-    fontWeight: '900',
+    padding: wp(0.5),
   },
   recentCollapsed: {
     fontSize: fontSize(10),
@@ -2235,34 +2267,10 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: colors.text,
   },
-  extrasMoreRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    gap: wp(1.2),
-    marginTop: hp(0.6),
-    marginBottom: hp(0.5),
-  },
-  extrasMoreBtn: {
-    flex: 1,
-    minWidth: 0,
-    height: hp(5),
-    borderRadius: wp(2.5),
-    borderWidth: 1.5,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: wp(0.5),
-  },
-  extrasMoreBtnText: {
-    fontSize: fontSize(10),
-    fontWeight: '800',
-    color: colors.text,
-    textAlign: 'center',
-  },
   wicketBtn: {
     paddingVertical: hp(1.4),
     borderRadius: wp(2.5),
-    backgroundColor: colors.ballWicket,
+    backgroundColor: PELLET_COLORS.wicket.bg,
     alignItems: 'center',
     marginBottom: hp(2),
   },
@@ -2283,6 +2291,55 @@ const styles = StyleSheet.create({
     paddingHorizontal: wp(5),
     paddingTop: hp(1),
     maxHeight: '88%',
+  },
+  extrasBottomSheet: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: wp(5),
+    borderTopRightRadius: wp(5),
+    paddingHorizontal: wp(5),
+    paddingTop: hp(1.2),
+    maxHeight: '88%',
+  },
+  extraSheetSectionTitle: {
+    fontSize: fontSize(13),
+    fontWeight: '800',
+    color: colors.text,
+    marginTop: hp(0.4),
+    marginBottom: hp(0.8),
+  },
+  extraSheetRunRow: {
+    flexDirection: 'row',
+    gap: wp(1.5),
+    marginBottom: hp(1.2),
+  },
+  extraSheetRunButton: {
+    flex: 1,
+    minHeight: hp(6.5),
+    borderRadius: wp(2.5),
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  extraSheetRunValue: {
+    fontSize: fontSize(18),
+    fontWeight: '900',
+    color: colors.text,
+  },
+  extraSheetRunCaption: {
+    fontSize: fontSize(10),
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  extraSheetCancel: {
+    alignItems: 'center',
+    paddingVertical: hp(1),
+  },
+  extraSheetCancelText: {
+    fontSize: fontSize(14),
+    fontWeight: '800',
+    color: colors.primary,
   },
   sheetHandle: {
     width: wp(12),
@@ -2397,7 +2454,7 @@ const styles = StyleSheet.create({
     borderRadius: wp(3),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.ballWicket,
+    backgroundColor: PELLET_COLORS.wicket.bg,
   },
   wicketConfirmBtnDisabled: {
     opacity: 0.45,

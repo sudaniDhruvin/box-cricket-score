@@ -29,7 +29,12 @@ export function tallyDeliveryRuns(d: Delivery): number {
     case 'no-ball':
       return 1 + (d.noBallRuns ?? 0);
     case 'bye':
+    case 'leg-bye':
       return 1;
+    case 'penalty': {
+      const match = /^p\+(\d+)$/i.exec(d.label);
+      return match ? Number(match[1]) : 0;
+    }
     default:
       return 0;
   }

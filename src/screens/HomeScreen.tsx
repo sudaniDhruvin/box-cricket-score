@@ -25,9 +25,19 @@ import { PNGs } from '../assets/images/pngs';
 import { HomeEmptyBannerAd } from '../components/HomeEmptyBannerAd';
 import { HomeListNativeAd } from '../components/HomeListNativeAd';
 import { MatchCard } from '../components/MatchCard';
+import {
+  CricketBatBallIcon,
+  CricketScorebookIcon,
+  CricketStumpsIcon,
+  CricketTrophyIcon,
+  QrScanIcon,
+  SettingsSlidersIcon,
+  TrashIcon,
+} from '../components/ui';
 import type { MainStackParamList } from '../navigation/types';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
+import { GOLDEN_SPLIT, GOLDEN_SPACING } from '../theme/golden';
 import type { MatchSummary } from '../types/match';
 import type { MatchDaySection } from '../utils/groupMatchesByDay';
 import { groupMatchesByDay } from '../utils/groupMatchesByDay';
@@ -86,12 +96,14 @@ type LastMatchPreviewProps = {
   match: MatchSummary;
   onPress: () => void;
   onLongPress: () => void;
+  onDelete: () => void;
 };
 
 function LastMatchPreview({
   match: m,
   onPress,
   onLongPress,
+  onDelete,
 }: LastMatchPreviewProps) {
   const [first, second] = m.innings;
   const live = isMatchLive(m);
@@ -101,19 +113,20 @@ function LastMatchPreview({
   const winnerSecond = !live && !tied && second.teamId === m.winnerTeamId;
 
   return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      delayLongPress={420}
-      style={({ pressed }) => [
-        styles.lastMatchCard,
-        pressed && styles.lastMatchCardPressed,
-      ]}
-      android_ripple={{ color: colors.primarySoft, foreground: true }}
-      accessibilityRole="button"
-      accessibilityLabel="Open last match details"
-      accessibilityHint="Long press to delete this match"
-    >
+    <View style={styles.lastMatchCard}>
+      <Pressable
+        onPress={onPress}
+        onLongPress={onLongPress}
+        delayLongPress={420}
+        style={({ pressed }) => [
+          styles.lastMatchCardMain,
+          pressed && styles.lastMatchCardPressed,
+        ]}
+        android_ripple={{ color: colors.primarySoft, foreground: true }}
+        accessibilityRole="button"
+        accessibilityLabel="Open last match details"
+        accessibilityHint="Use the Delete match button below to remove it"
+      >
       <View style={styles.lastMatchTop}>
         <View style={styles.lastMatchStatusRow}>
           <View
@@ -183,16 +196,26 @@ function LastMatchPreview({
 
       <View style={styles.lastMatchResultRow}>
         <View style={styles.lastMatchTrophy}>
-          <Image
-            source={PNGs.TrophyIcon}
-            style={{ width: wp(4), height: wp(4), tintColor: colors.primary }}
-          />
+          <CricketTrophyIcon size={wp(4.5)} color={colors.primary} />
         </View>
         <Text style={styles.lastMatchResult} numberOfLines={2}>
           {headline}
         </Text>
       </View>
-    </Pressable>
+      </Pressable>
+      <Pressable
+        onPress={onDelete}
+        style={({ pressed }) => [
+          styles.lastMatchDeleteBtn,
+          pressed && styles.lastMatchDeleteBtnPressed,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={`Delete ${first.teamName} versus ${second.teamName}`}
+      >
+        <TrashIcon size={wp(4)} color={colors.live} />
+        <Text style={styles.lastMatchDeleteText}>Delete match</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -211,11 +234,7 @@ function SeasonOverview({
     <View style={styles.seasonGrid}>
       <View style={[styles.seasonCard, styles.seasonMatchesCard]}>
         <View style={styles.seasonIconWrap}>
-          {/* <Text style={styles.seasonIconText}>{'\u26BE'}</Text> */}
-          <Image
-            source={PNGs.BatBallIcon}
-            style={{ width: wp(4), height: wp(4), tintColor: colors.primary }}
-          />
+          <CricketBatBallIcon size={wp(4.5)} color={colors.primary} />
         </View>
         <Text style={styles.seasonBigValue}>{matchCount}</Text>
         <Text style={styles.seasonLabel}>MATCHES</Text>
@@ -225,10 +244,7 @@ function SeasonOverview({
         <View style={[styles.seasonCard, styles.seasonStatCard]}>
           <View style={styles.seasonStatTop}>
             <Text style={styles.seasonStatLabel}>TOTAL RUNS</Text>
-            <Image
-              source={PNGs.GraphIcon}
-              style={{ width: wp(4), height: wp(4), tintColor: colors.primary }}
-            />
+            <CricketScorebookIcon size={wp(4.5)} color={colors.primary} />
           </View>
           <Text style={[styles.seasonStatValue, styles.seasonRunsValue]}>
             {totalRuns.toLocaleString()}
@@ -238,14 +254,7 @@ function SeasonOverview({
         <View style={[styles.seasonCard, styles.seasonStatCard]}>
           <View style={styles.seasonStatTop}>
             <Text style={styles.seasonStatLabel}>WICKETS</Text>
-            <Image
-              source={PNGs.DotCircleIcon}
-              style={{
-                width: wp(5),
-                height: wp(5),
-                tintColor: colors.ballWicket,
-              }}
-            />
+            <CricketStumpsIcon size={wp(4.5)} color={colors.live} />
           </View>
           <Text style={[styles.seasonStatValue, styles.seasonWicketsValue]}>
             {totalWickets.toLocaleString()}
@@ -477,13 +486,7 @@ export function HomeScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Watch live. Scan a host QR code."
                 >
-                  <View style={styles.headerScanGlyph} accessibilityElementsHidden>
-                    <View style={styles.headerScanCornerTL} />
-                    <View style={styles.headerScanCornerTR} />
-                    <View style={styles.headerScanCornerBL} />
-                    <View style={styles.headerScanCornerBR} />
-                    <View style={styles.headerScanDot} />
-                  </View>
+                  <QrScanIcon size={wp(5.5)} color={colors.primary} />
                 </Pressable>
                 <Pressable
                   onPress={openDrawer}
@@ -498,12 +501,7 @@ export function HomeScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Open settings menu"
                 >
-                  <Image
-                    source={PNGs.SettingIcon}
-                    style={[styles.avatar, { tintColor: colors.primary }]}
-                    resizeMode="contain"
-                    accessibilityLabel="Settings"
-                  />
+                  <SettingsSlidersIcon size={wp(5.5)} color={colors.primary} />
                 </Pressable>
               </View>
             </View>
@@ -511,7 +509,7 @@ export function HomeScreen() {
             <View style={styles.ctaCard}>
               <Text style={styles.ctaTitle}>Ready for Action?</Text>
               <Text style={styles.ctaSub}>
-                Start scoring your match, or watch a live game nearby.
+                Set up a match to score, or watch a live game nearby.
               </Text>
               <View style={styles.ctaActions}>
                 <Pressable
@@ -525,17 +523,10 @@ export function HomeScreen() {
                     foreground: true,
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel="Quick start. Create a match and begin scoring."
+                  accessibilityLabel="New match. Set up a match and begin scoring."
                 >
-                  <Image
-                    source={PNGs.PLAY_ICON}
-                    style={{
-                      width: wp(4),
-                      height: wp(4),
-                      tintColor: colors.background,
-                    }}
-                  />
-                  <Text style={styles.quickStartText}>Quick Start</Text>
+                  <CricketBatBallIcon size={wp(4.5)} color={colors.background} />
+                  <Text style={styles.quickStartText}>New Match</Text>
                 </Pressable>
 
                 <Pressable
@@ -551,15 +542,7 @@ export function HomeScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Watch live. Scan a host QR on the same Wi-Fi."
                 >
-                  <View
-                    style={styles.watchLiveGlyph}
-                    accessibilityElementsHidden
-                  >
-                    <View style={styles.watchLiveCornerTL} />
-                    <View style={styles.watchLiveCornerTR} />
-                    <View style={styles.watchLiveCornerBL} />
-                    <View style={styles.watchLiveCornerBR} />
-                  </View>
+                  <QrScanIcon size={wp(4.5)} color={colors.primary} />
                   <Text style={styles.watchLiveText}>Watch Live</Text>
                 </Pressable>
               </View>
@@ -604,6 +587,7 @@ export function HomeScreen() {
                   match={lastMatch}
                   onPress={openLastMatch}
                   onLongPress={() => confirmDeleteMatch(lastMatch)}
+                  onDelete={() => confirmDeleteMatch(lastMatch)}
                 />
               </View>
             ) : null}
@@ -633,7 +617,7 @@ export function HomeScreen() {
           <View style={styles.listEmpty}>
             <Text style={styles.listEmptyTitle}>No matches yet</Text>
             <Text style={styles.listEmptySub}>
-              Tap Quick Start to create a match, or Watch Live to join a
+              Tap New Match to set up a match, or Watch Live to join a
               friend’s score on the same Wi‑Fi.
             </Text>
             <Pressable
@@ -646,6 +630,7 @@ export function HomeScreen() {
               accessibilityRole="button"
               accessibilityLabel="Watch live. Scan a host QR on the same Wi-Fi."
             >
+              <QrScanIcon size={wp(5)} color={colors.primary} />
               <Text style={styles.emptyScanBtnText}>Watch Live</Text>
             </Pressable>
             <View style={styles.emptyBannerWrap}>
@@ -671,14 +656,7 @@ export function HomeScreen() {
           accessibilityRole="button"
           accessibilityLabel="Start new match"
         >
-          <Image
-            source={PNGs.BatBallIcon}
-            style={{
-              width: wp(5),
-              height: wp(5),
-              tintColor: colors.background,
-            }}
-          />
+          <CricketBatBallIcon size={wp(5)} color={colors.background} />
           <Text style={styles.fabPlus}>New Match</Text>
         </Pressable>
       ) : null}
@@ -774,64 +752,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerScanGlyph: {
-    width: wp(5.2),
-    height: wp(5.2),
-    position: 'relative',
-  },
-  headerScanCornerTL: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: wp(2.2),
-    height: wp(2.2),
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: colors.primary,
-    borderTopLeftRadius: 2,
-  },
-  headerScanCornerTR: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: wp(2.2),
-    height: wp(2.2),
-    borderTopWidth: 2,
-    borderRightWidth: 2,
-    borderColor: colors.primary,
-    borderTopRightRadius: 2,
-  },
-  headerScanCornerBL: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: wp(2.2),
-    height: wp(2.2),
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: colors.primary,
-    borderBottomLeftRadius: 2,
-  },
-  headerScanCornerBR: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: wp(2.2),
-    height: wp(2.2),
-    borderBottomWidth: 2,
-    borderRightWidth: 2,
-    borderColor: colors.primary,
-    borderBottomRightRadius: 2,
-  },
-  headerScanDot: {
-    position: 'absolute',
-    top: '35%',
-    left: '35%',
-    width: wp(1.6),
-    height: wp(1.6),
-    borderRadius: wp(0.4),
-    backgroundColor: colors.primary,
-  },
   settingsBtn: {
     width: wp(11),
     height: wp(11),
@@ -841,11 +761,6 @@ const styles = StyleSheet.create({
   },
   settingsBtnPressed: {
     opacity: 0.7,
-  },
-  settingsIcon: {
-    fontSize: fontSize(22),
-    color: colors.primary,
-    lineHeight: fontSize(24),
   },
   ctaCard: {
     backgroundColor: colors.surfaceMuted,
@@ -873,7 +788,8 @@ const styles = StyleSheet.create({
   },
   ctaActions: {
     width: '100%',
-    gap: hp(1.1),
+    flexDirection: 'row',
+    gap: GOLDEN_SPACING.sm,
   },
   continueLiveStrip: {
     flexDirection: 'row',
@@ -934,34 +850,29 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   quickStartBtn: {
-    width: '100%',
+    flex: GOLDEN_SPLIT.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
     borderRadius: 100,
-    paddingVertical: hp(1.5),
-    gap: wp(2),
+    paddingVertical: hp(1.35),
+    paddingHorizontal: wp(1.5),
+    gap: wp(1.5),
     overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
   quickStartBtnPressed: {
     opacity: 0.94,
     transform: [{ scale: 0.99 }],
   },
-  quickStartIcon: {
-    fontSize: fontSize(14),
-    fontWeight: '800',
-    color: colors.background,
-    marginTop: -hp(0.1),
-  },
   quickStartText: {
-    fontSize: fontSize(16),
+    fontSize: fontSize(15),
     fontWeight: '800',
     color: colors.background,
     letterSpacing: -0.2,
   },
   watchLiveBtn: {
-    width: '100%',
+    flex: GOLDEN_SPLIT.secondary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -969,65 +880,17 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     borderWidth: 1.5,
     borderColor: colors.primary,
-    paddingVertical: hp(1.5),
-    gap: wp(2),
+    paddingVertical: hp(1.35),
+    paddingHorizontal: wp(1),
+    gap: wp(1),
     overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
   watchLiveBtnPressed: {
     opacity: 0.92,
     backgroundColor: colors.primaryFaint,
   },
-  watchLiveGlyph: {
-    width: wp(4.2),
-    height: wp(4.2),
-    position: 'relative',
-  },
-  watchLiveCornerTL: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: wp(1.8),
-    height: wp(1.8),
-    borderTopWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: colors.primary,
-    borderTopLeftRadius: 2,
-  },
-  watchLiveCornerTR: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: wp(1.8),
-    height: wp(1.8),
-    borderTopWidth: 2,
-    borderRightWidth: 2,
-    borderColor: colors.primary,
-    borderTopRightRadius: 2,
-  },
-  watchLiveCornerBL: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: wp(1.8),
-    height: wp(1.8),
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: colors.primary,
-    borderBottomLeftRadius: 2,
-  },
-  watchLiveCornerBR: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: wp(1.8),
-    height: wp(1.8),
-    borderBottomWidth: 2,
-    borderRightWidth: 2,
-    borderColor: colors.primary,
-    borderBottomRightRadius: 2,
-  },
   watchLiveText: {
-    fontSize: fontSize(16),
+    fontSize: fontSize(13),
     fontWeight: '800',
     color: colors.primary,
     letterSpacing: -0.2,
@@ -1039,7 +902,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.primary,
     paddingVertical: hp(1.35),
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: GOLDEN_SPACING.sm,
     backgroundColor: colors.primaryFaint,
     overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
@@ -1062,12 +928,31 @@ const styles = StyleSheet.create({
     borderRadius: wp(4),
     borderWidth: 1,
     borderColor: colors.border,
+    ...cardShadow,
+  },
+  lastMatchCardMain: {
     paddingHorizontal: wp(4),
     paddingVertical: hp(1.8),
-    ...cardShadow,
   },
   lastMatchCardPressed: {
     backgroundColor: colors.primaryFaint,
+  },
+  lastMatchDeleteBtn: {
+    minHeight: hp(5),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: GOLDEN_SPACING.xs,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  lastMatchDeleteBtnPressed: {
+    backgroundColor: colors.primaryFaint,
+  },
+  lastMatchDeleteText: {
+    fontSize: fontSize(13),
+    fontWeight: '700',
+    color: colors.live,
   },
   lastMatchTop: {
     flexDirection: 'row',
@@ -1086,7 +971,7 @@ const styles = StyleSheet.create({
     borderRadius: wp(1),
   },
   lastMatchDotFinal: {
-    backgroundColor: colors.ballWicket,
+    backgroundColor: colors.completed,
   },
   lastMatchDotLive: {
     backgroundColor: colors.primary,
@@ -1192,11 +1077,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  lastMatchTrophyIcon: {
-    fontSize: fontSize(14),
-    fontWeight: '800',
-    color: colors.primary,
-  },
   lastMatchResult: {
     fontSize: fontSize(14),
     fontWeight: '700',
@@ -1205,11 +1085,11 @@ const styles = StyleSheet.create({
   },
   seasonGrid: {
     flexDirection: 'row',
-    gap: wp(3),
+    gap: GOLDEN_SPACING.sm,
     minHeight: hp(18),
   },
   seasonRightCol: {
-    flex: 1,
+    flex: GOLDEN_SPLIT.secondary,
     gap: wp(3),
   },
   seasonCard: {
@@ -1220,7 +1100,7 @@ const styles = StyleSheet.create({
     ...cardShadow,
   },
   seasonMatchesCard: {
-    flex: 1,
+    flex: GOLDEN_SPLIT.primary,
     paddingHorizontal: wp(3.5),
     paddingVertical: hp(2),
     justifyContent: 'space-between',
@@ -1277,14 +1157,14 @@ const styles = StyleSheet.create({
     height: wp(5.5),
     borderRadius: wp(2.75),
     borderWidth: 1.5,
-    borderColor: colors.ballWicket,
+    borderColor: colors.live,
     alignItems: 'center',
     justifyContent: 'center',
   },
   seasonWicketIconText: {
     fontSize: fontSize(10),
     fontWeight: '900',
-    color: colors.ballWicket,
+    color: colors.live,
   },
   seasonStatValue: {
     fontSize: fontSize(24),
@@ -1295,7 +1175,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   seasonWicketsValue: {
-    color: colors.ballWicket,
+    color: colors.live,
   },
   allMatchesHeader: {
     marginBottom: hp(0.5),

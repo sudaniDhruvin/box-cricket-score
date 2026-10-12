@@ -9,10 +9,13 @@ import {
   View,
 } from 'react-native';
 import { colors } from '../theme/colors';
+import { Pellet } from './Pellet';
 import type { Delivery, TeamInnings } from '../types/match';
+import { getPelletStyle } from '../theme/pelletColors';
 import { getInningsReplay } from '../utils/buildInningsReplay';
 import { countsAsLegalBall, tallyDeliveryRuns } from '../utils/deliveryScoring';
 import { fontSize, hp, wp } from '../utils';
+import { ChevronRightIcon } from './ui';
 
 if (
   Platform.OS === 'android' &&
@@ -22,68 +25,6 @@ if (
 }
 
 const CHIP = wp(12);
-
-function chipPalette(d: Delivery): { bg: string; fg: string } {
-  switch (d.type) {
-    case 'dot':
-      return { bg: colors.ballDot, fg: colors.ballDotText };
-    case 'single':
-    case 'two':
-    case 'three':
-    case 'five':
-      return { bg: colors.ballRuns, fg: colors.ballRunsText };
-    case 'four':
-      return { bg: colors.ballFour, fg: colors.background };
-    case 'six':
-      return { bg: colors.ballSix, fg: colors.background };
-    case 'wicket':
-      return { bg: colors.ballWicket, fg: colors.background };
-    case 'wide':
-      return (d.wideRuns ?? 0) > 0
-        ? { bg: colors.ballWideExtra, fg: colors.background }
-        : { bg: colors.ballWide, fg: colors.background };
-    case 'no-ball':
-      return (d.noBallRuns ?? 0) > 0
-        ? { bg: colors.ballNoBallRuns, fg: colors.background }
-        : { bg: colors.ballNoBall, fg: colors.background };
-    case 'bye':
-      return { bg: colors.ballBye, fg: colors.background };
-    default:
-      return { bg: colors.ballDot, fg: colors.ballDotText };
-  }
-}
-
-function BallChip({ d, index }: { d: Delivery; index: number }) {
-  const { bg, fg } = chipPalette(d);
-  const compact = d.label.length > 2;
-
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.chip,
-        {
-          width: CHIP,
-          height: CHIP,
-          borderRadius: CHIP / 2,
-          backgroundColor: bg,
-        },
-        pressed && styles.chipPressed,
-      ]}
-      accessibilityLabel={`Ball ${index + 1}: ${d.label}`}>
-      <Text
-        style={[
-          styles.chipText,
-          compact && styles.chipTextCompact,
-          { color: fg },
-        ]}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.65}>
-        {d.label}
-      </Text>
-    </Pressable>
-  );
-}
 
 interface InningsBallByBallProps {
   innings: TeamInnings;
@@ -128,13 +69,12 @@ export function InningsBallByBall({
         </Text>
       ) : null}
       <View style={styles.legendRow}>
-        <LegendDot bg={colors.ballFour} label="4" />
-        <LegendDot bg={colors.ballSix} label="6" />
-        <LegendDot bg={colors.ballWide} label="Wd" />
-        <LegendDot bg={colors.ballWideExtra} label="Wd+" />
-        <LegendDot bg={colors.ballNoBall} label="Nb" />
-        <LegendDot bg={colors.ballNoBallRuns} label="Nb+" />
-        <LegendDot bg={colors.ballWicket} label="W" />
+        <LegendDot ball={{ type: 'four', label: '4' }} label="4" />
+        <LegendDot ball={{ type: 'six', label: '6' }} label="6" />
+        <LegendDot ball={{ type: 'wide', label: 'Wd' }} label="Wd" />
+        <LegendDot ball={{ type: 'no-ball', label: 'Nb' }} label="Nb" />
+        <LegendDot ball={{ type: 'bye', label: 'B' }} label="B" />
+        <LegendDot ball={{ type: 'wicket', label: 'W' }} label="W" />
       </View>
       {orderedReplay.map(over => {
         const runs = over.deliveries.reduce((s, d) => s + tallyDeliveryRuns(d), 0);
@@ -164,14 +104,19 @@ export function InningsBallByBall({
                   {` · ${legal} legal`}
                 </Text>
               </View>
-              <Text style={styles.overCaret}>
-                {isCollapsed ? '\u25BC' : '\u25B2'}
-              </Text>
+              <View
+                style={[
+                  styles.overCaret,
+                  { transform: [{ rotate: isCollapsed ? '90deg' : '-90deg' }] },
+                ]}
+                accessibilityElementsHidden>
+                <ChevronRightIcon size={wp(4)} color={colors.primary} />
+              </View>
             </Pressable>
             {!isCollapsed ? (
               <View style={styles.chipsWrap}>
                 {over.deliveries.map((d, i) => (
-                  <BallChip key={`${over.overNumber}-${i}`} d={d} index={i} />
+                  <Pellet key={`${over.overNumber}-${i}`} ball={d} size={CHIP} />
                 ))}
               </View>
             ) : (
@@ -186,7 +131,14 @@ export function InningsBallByBall({
   );
 }
 
-function LegendDot({ bg, label }: { bg: string; label: string }) {
+function LegendDot({
+  ball,
+  label,
+}: {
+  ball: Delivery;
+  label: string;
+}) {
+  const { bg } = getPelletStyle(ball);
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendSwatch, { backgroundColor: bg }]} />
@@ -267,9 +219,6 @@ const styles = StyleSheet.create({
     marginTop: hp(0.2),
   },
   overCaret: {
-    fontSize: fontSize(12),
-    color: colors.primary,
-    fontWeight: '900',
     marginLeft: wp(2),
   },
   chipsWrap: {
@@ -279,25 +228,6 @@ const styles = StyleSheet.create({
     paddingVertical: hp(1.2),
     gap: wp(2.5),
     alignItems: 'center',
-  },
-  chip: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  chipPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.94 }],
-  },
-  chipText: {
-    fontSize: fontSize(13),
-    fontWeight: '900',
-    textAlign: 'center',
-    paddingHorizontal: wp(0.5),
-  },
-  chipTextCompact: {
-    fontSize: fontSize(10),
-    fontWeight: '900',
   },
   collapsedHint: {
     fontSize: fontSize(11),

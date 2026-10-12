@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { InningsBallByBall } from '../components/InningsBallByBall';
-import { LiveShareNoticeModal } from '../components/LiveShareNoticeModal';
 import { ScreenHeader } from '../components/ui';
 import {
   connectViewer,
@@ -75,9 +74,7 @@ export function LiveSpectatorScreen() {
   const [status, setStatus] = useState<ViewerConnectionStatus>('connecting');
   const [statusDetail, setStatusDetail] = useState<string | undefined>();
   const [activeTab, setActiveTab] = useState<0 | 1>(0);
-  const [noticeOpen, setNoticeOpen] = useState(false);
   const clientRef = useRef<ViewerClient | null>(null);
-  const noticeStatusRef = useRef<ViewerConnectionStatus | null>(null);
 
   useEffect(() => {
     const client = connectViewer(params.joinPayload, {
@@ -96,21 +93,6 @@ export function LiveSpectatorScreen() {
       clientRef.current = null;
     };
   }, [params.joinPayload]);
-
-  useEffect(() => {
-    if (status === 'connected' || status === 'connecting') {
-      noticeStatusRef.current = null;
-      setNoticeOpen(false);
-      return;
-    }
-    if (
-      (status === 'reconnecting' || status === 'error' || status === 'ended') &&
-      noticeStatusRef.current !== status
-    ) {
-      noticeStatusRef.current = status;
-      setNoticeOpen(true);
-    }
-  }, [status]);
 
   useEffect(() => {
     if (match?.scoringActiveInnings === 0 || match?.scoringActiveInnings === 1) {
@@ -221,74 +203,12 @@ export function LiveSpectatorScreen() {
 
       {connectionBanner}
 
-      <LiveShareNoticeModal
-        visible={noticeOpen}
-        title={
-          status === 'ended'
-            ? 'Host stopped sharing'
-            : 'You got disconnected'
-        }
-        message={
-          status === 'ended'
-            ? statusDetail ??
-              'The organizer stopped live sharing. Scan the QR again if they share a new code.'
-            : 'The live score link dropped. Tap Connect again — the host does not need a new QR if they are still sharing.'
-        }
-        primaryLabel={status === 'ended' ? 'Scan QR again' : 'Connect again'}
-        onPrimary={() => {
-          if (status === 'ended') {
-            setNoticeOpen(false);
-            navigation.navigate('ScanToWatch', {});
-            return;
-          }
-          clientRef.current?.reconnectNow();
-        }}
-        secondaryLabel={
-          match ? 'Keep last score' : status === 'ended' ? 'Home' : undefined
-        }
-        onSecondary={
-          match
-            ? () => setNoticeOpen(false)
-            : status === 'ended'
-              ? () => navigation.navigate('Home')
-              : undefined
-        }
-        onRequestClose={() => setNoticeOpen(false)}
-      />
 
       {!match ? (
         <View style={styles.center}>
           <Text style={styles.waiting}>
             {statusDetail ?? 'Waiting for match data…'}
           </Text>
-          {showConnectAgain ? (
-            <Pressable
-              onPress={() => clientRef.current?.reconnectNow()}
-              style={({ pressed }) => [
-                styles.rescanBtn,
-                styles.centerAction,
-                pressed && styles.pressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Connect again"
-            >
-              <Text style={styles.rescanText}>Connect again</Text>
-            </Pressable>
-          ) : null}
-          {showScanAgain ? (
-            <Pressable
-              onPress={() => navigation.navigate('ScanToWatch', {})}
-              style={({ pressed }) => [
-                styles.scanAgainBtn,
-                styles.centerAction,
-                pressed && styles.pressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Scan QR again"
-            >
-              <Text style={styles.scanAgainText}>Scan QR again</Text>
-            </Pressable>
-          ) : null}
         </View>
       ) : (
         <ScrollView
@@ -371,19 +291,6 @@ export function LiveSpectatorScreen() {
             </View>
           ) : null}
 
-          {showScanAgain ? (
-            <Pressable
-              onPress={() => navigation.navigate('ScanToWatch', {})}
-              style={({ pressed }) => [
-                styles.scanAgainBtn,
-                pressed && styles.pressed,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Scan QR again"
-            >
-              <Text style={styles.scanAgainText}>Scan QR again</Text>
-            </Pressable>
-          ) : null}
         </ScrollView>
       )}
     </View>
@@ -411,7 +318,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(229, 57, 53, 0.12)',
   },
   livePillDisconnectedText: {
-    color: colors.ballWicket,
+    color: colors.live,
   },
   banner: {
     marginHorizontal: wp(4),
@@ -466,10 +373,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize(13),
     fontWeight: '700',
-  },
-  centerAction: {
-    alignSelf: 'stretch',
-    marginTop: hp(1.6),
   },
   center: {
     flex: 1,
@@ -578,31 +481,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.text,
     marginBottom: hp(0.8),
-  },
-  rescanBtn: {
-    marginTop: hp(2.5),
-    backgroundColor: colors.primary,
-    borderRadius: wp(6),
-    paddingVertical: hp(1.5),
-    alignItems: 'center',
-  },
-  rescanText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: fontSize(15),
-  },
-  scanAgainBtn: {
-    marginTop: hp(1.2),
-    borderRadius: wp(6),
-    paddingVertical: hp(1.4),
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  scanAgainText: {
-    color: colors.text,
-    fontWeight: '800',
-    fontSize: fontSize(15),
   },
   pressed: {
     opacity: 0.88,

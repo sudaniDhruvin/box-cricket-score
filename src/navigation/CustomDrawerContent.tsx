@@ -1,6 +1,6 @@
 import type { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, type ReactNode } from 'react';
 import {
   Alert,
   Animated,
@@ -19,13 +19,23 @@ import { useMatchStore } from '../store/useMatchStore';
 import { useUserStore } from '../store/useUserStore';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
+import {
+  ChevronRightIcon,
+  CloseIcon,
+  CricketScorebookIcon,
+  CricketTrophyIcon,
+  QrScanIcon,
+  RefreshIcon,
+  ShieldIcon,
+  TrashIcon,
+} from '../components/ui';
 
 const SPRING = { friction: 5, tension: 380 } as const;
 
 type InteractiveRowProps = {
   label: string;
   hint?: string;
-  iconLetter: string;
+  icon: ReactNode;
   onPress: () => void;
   accessibilityLabel: string;
 };
@@ -33,7 +43,7 @@ type InteractiveRowProps = {
 function InteractiveRow({
   label,
   hint,
-  iconLetter,
+  icon,
   onPress,
   accessibilityLabel,
 }: InteractiveRowProps) {
@@ -67,15 +77,15 @@ function InteractiveRow({
         style={[styles.interactiveRow, { transform: [{ scale }] }]}
         pointerEvents="box-none"
       >
-        <View style={styles.iconBadge}>
-          <Text style={styles.iconBadgeText}>{iconLetter}</Text>
+        <View style={styles.iconBadge} accessibilityElementsHidden>
+          {icon}
         </View>
         <View style={styles.rowTextCol}>
           <Text style={styles.rowLabel}>{label}</Text>
           {hint ? <Text style={styles.rowHint}>{hint}</Text> : null}
         </View>
-        <View style={styles.chevronPill}>
-          <Text style={styles.chevronPillText}>{'\u203A'}</Text>
+        <View style={styles.chevronPill} accessibilityElementsHidden>
+          <ChevronRightIcon size={wp(4)} color={colors.primary} />
         </View>
       </Animated.View>
     </Pressable>
@@ -117,7 +127,7 @@ function InteractiveDangerAction({ onPress }: DangerActionProps) {
         style={[styles.dangerBtnInner, { transform: [{ scale }] }]}
       >
         <View style={styles.dangerIconRing}>
-          <Text style={styles.dangerIconText}>{'\u21BB'}</Text>
+          <TrashIcon size={wp(5)} color={colors.live} />
         </View>
         <View style={styles.dangerTextCol}>
           <Text style={styles.dangerTitle}>Clear all data</Text>
@@ -200,7 +210,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
           style={styles.closeIconWrap}
           onPress={() => navigation.closeDrawer()}
         >
-          <Image source={PNGs.CROSS} style={styles.closeIcon} />
+          <CloseIcon size={wp(5)} color={colors.textSecondary} />
         </Pressable>
         <View style={styles.logoWrap}>
           <Image
@@ -222,7 +232,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         <InteractiveRow
           label="Terms & conditions"
           hint="How you may use the app"
-          iconLetter="T"
+          icon={<CricketScorebookIcon size={wp(5)} color={colors.primary} />}
           onPress={goTerms}
           accessibilityLabel="Open terms and conditions"
         />
@@ -230,7 +240,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         <InteractiveRow
           label="Privacy policy"
           hint="How we handle your data on device"
-          iconLetter="P"
+          icon={<ShieldIcon size={wp(5)} color={colors.primary} />}
           onPress={goPrivacy}
           accessibilityLabel="Open privacy policy"
         />
@@ -241,7 +251,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         <InteractiveRow
           label="Watch live"
           hint="Scan host QR on the same Wi‑Fi"
-          iconLetter="W"
+          icon={<QrScanIcon size={wp(5)} color={colors.primary} />}
           onPress={goWatchLive}
           accessibilityLabel="Watch a live match by scanning QR"
         />
@@ -252,7 +262,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         <InteractiveRow
           label="Check for updates"
           hint="See if a newer version is available"
-          iconLetter="U"
+          icon={<RefreshIcon size={wp(5)} color={colors.primary} />}
           onPress={onCheckForUpdates}
           accessibilityLabel="Check for app updates"
         />
@@ -260,7 +270,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         <InteractiveRow
           label="Rate this app"
           hint="Share feedback on the app store"
-          iconLetter="R"
+          icon={<CricketTrophyIcon size={wp(5)} color={colors.primary} />}
           onPress={onRateApp}
           accessibilityLabel="Rate this app"
         />
@@ -285,10 +295,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-  },
-  closeIcon: {
-    width: wp(4),
-    height: wp(4),
   },
   logoWrap: {
     width: '100%',
@@ -364,11 +370,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: wp(2.5),
   },
-  iconBadgeText: {
-    fontSize: fontSize(16),
-    fontWeight: '800',
-    color: colors.primary,
-  },
   rowTextCol: {
     flex: 1,
     minWidth: 0,
@@ -391,12 +392,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  chevronPillText: {
-    fontSize: fontSize(20),
-    fontWeight: '300',
-    color: colors.primary,
-    marginTop: -hp(0.2),
   },
   hairline: {
     height: StyleSheet.hairlineWidth,
@@ -427,10 +422,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: wp(2.5),
   },
-  dangerIconText: {
-    fontSize: fontSize(18),
-    color: colors.ballWicket,
-  },
   dangerTextCol: {
     flex: 1,
     minWidth: 0,
@@ -438,7 +429,7 @@ const styles = StyleSheet.create({
   dangerTitle: {
     fontSize: fontSize(16),
     fontWeight: '800',
-    color: colors.ballWicket,
+    color: colors.live,
   },
   dangerSub: {
     marginTop: hp(0.35),

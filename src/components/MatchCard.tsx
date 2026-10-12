@@ -12,6 +12,7 @@ import {
 import type { MatchSummary } from '../types/match';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
+import { ChevronRightIcon } from './ui';
 import {
   formatMatchResult,
   formatOvers,
@@ -70,7 +71,7 @@ export function MatchCard({ match: m, onPress, onLongPress }: MatchCardProps) {
 
   const ripple =
     Platform.OS === 'android'
-      ? { color: 'rgba(1, 180, 137, 0.18)', foreground: false }
+      ? { color: colors.primarySoft, foreground: false }
       : undefined;
 
   const tied = !live && m.margin.kind === 'tie';
@@ -208,7 +209,7 @@ export function MatchCard({ match: m, onPress, onLongPress }: MatchCardProps) {
           {onPress ? (
             <View style={styles.ctaRow}>
               <Text style={styles.ctaText}>View match</Text>
-              <Text style={styles.ctaChevron}>›</Text>
+              <ChevronRightIcon size={wp(4)} color={colors.primary} />
             </View>
           ) : null}
         </Pressable>
@@ -234,9 +235,9 @@ export function MatchCard({ match: m, onPress, onLongPress }: MatchCardProps) {
                 <Text style={styles.extrasHint}> · tap to expand</Text>
               ) : null}
             </Text>
-            <Text style={[styles.extrasCaret, extrasOpen && styles.extrasCaretOpen]}>
-              {'\u25BC'}
-            </Text>
+            <View style={[styles.extrasCaret, extrasOpen && styles.extrasCaretOpen]}>
+              <ChevronRightIcon size={wp(4)} color={colors.primary} />
+            </View>
           </View>
           {extrasOpen ? (
             <View style={styles.extrasBreakdown}>
@@ -493,12 +494,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primary,
   },
-  ctaChevron: {
-    fontSize: fontSize(18),
-    fontWeight: '400',
-    color: colors.primary,
-    marginTop: -hp(0.2),
-  },
   extrasPressable: {
     paddingHorizontal: wp(4),
     paddingTop: hp(1),
@@ -533,13 +528,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   extrasCaret: {
-    fontSize: fontSize(14),
-    color: colors.primary,
-    fontWeight: '800',
+    transform: [{ rotate: '90deg' }],
     marginLeft: wp(1),
   },
   extrasCaretOpen: {
-    transform: [{ rotate: '180deg' }],
+    transform: [{ rotate: '270deg' }],
   },
   extrasInline: {
     fontSize: fontSize(11),
