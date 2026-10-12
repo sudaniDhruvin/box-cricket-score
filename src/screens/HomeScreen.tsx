@@ -464,7 +464,7 @@ export function HomeScreen() {
                   <CricketBatBallIcon size={wp(6)} color={colors.primary} />
                 </View>
               </View>
-              <Text style={styles.appTitle}>Box Cricket</Text>
+              <Text style={styles.appTitle}>Crick Shots</Text>
               <View style={[styles.headerSide, styles.headerActions]}>
                 <Pressable
                   onPress={openScanToWatch}

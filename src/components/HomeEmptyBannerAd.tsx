@@ -38,7 +38,7 @@ export function HomeEmptyBannerAd() {
       <BannerAd
         key={unitId}
         unitId={unitId}
-        size={BannerAdSize.LARGE_BANNER}
+        size={BannerAdSize.BANNER}
         onAdFailedToLoad={handleAdFailedToLoad}
       />
     </View>

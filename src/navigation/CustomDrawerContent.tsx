@@ -217,11 +217,11 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
             source={PNGs.LOGO}
             style={styles.logo}
             resizeMode="contain"
-            accessibilityLabel="Box Cricket app logo"
+            accessibilityLabel="Crick Shots app logo"
             accessibilityRole="image"
           />
         </View>
-        <Text style={styles.brandKicker}>BOX CRICKET</Text>
+        <Text style={styles.brandKicker}>CRICK SHOTS</Text>
         <Text style={styles.brandSub}>
           Watch a game, read about the app, or clear saved scores.
         </Text>
@@ -302,8 +302,9 @@ const styles = StyleSheet.create({
     marginBottom: hp(1.2),
   },
   logo: {
-    width: wp(38),
-    height: hp(12),
+    width: wp(27),
+    height: wp(27),
+    borderRadius: wp(5),
   },
   brandKicker: {
     fontSize: fontSize(11),

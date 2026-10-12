@@ -86,7 +86,7 @@ function getIosUpdateOptions(): StartUpdateOptions {
   return {
     title: 'Update available',
     message:
-      'A new version of Box Cricket Scorer is available on the App Store.',
+      'A new version of Crick Shots is available on the App Store.',
     buttonUpgradeText: 'Update',
     buttonCancelText: 'Not now',
   };

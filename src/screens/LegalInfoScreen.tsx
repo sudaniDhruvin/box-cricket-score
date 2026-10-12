@@ -11,13 +11,13 @@ import { fontSize, hp, wp } from '../utils';
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 const TERMS_PARAGRAPHS: string[] = [
-  'By using Box Cricket on this device, you agree to use the app only for lawful purposes and in line with how it is intended: recording and viewing indoor / box cricket scores stored locally on your device.',
+  'By using Crick Shots on this device, you agree to use the app only for lawful purposes and in line with how it is intended: recording and viewing indoor cricket scores stored locally on your device.',
   'The app is provided "as is" without warranties of any kind, to the fullest extent permitted by law. We are not liable for any loss or damage arising from your use of the app, including incorrect or lost score data.',
   'We may update these terms from time to time. Continued use of the app after changes means you accept the updated terms.',
 ];
 
 const PRIVACY_PARAGRAPHS: string[] = [
-  'Box Cricket is designed to work primarily on your device. Match data and preferences you save are stored locally using on-device storage unless you use features that explicitly send data elsewhere.',
+  'Crick Shots is designed to work primarily on your device. Match data and preferences you save are stored locally unless you use features that explicitly send data elsewhere.',
   'We do not sell your personal information. If the app does not require an account, we may not collect identifiers such as your name or email through the app itself.',
   "You can remove locally stored data at any time using Clear all data in the app menu. Uninstalling the app may also delete data stored by the app on this device, subject to your operating system's behaviour.",
   'If you have questions about how your data is handled, contact us using the details provided with the app or on our website (if applicable).',

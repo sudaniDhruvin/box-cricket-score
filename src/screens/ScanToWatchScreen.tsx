@@ -65,7 +65,9 @@ export function ScanToWatchScreen() {
       }
       const payload = parseJoinPayload(raw);
       if (!payload) {
-        setScanError('Not a Box Cricket live score QR. Ask the host to share again.');
+        setScanError(
+          'This QR code is not a Crick Shots live score. Ask the host to share it again.',
+        );
         return;
       }
       handledRef.current = true;

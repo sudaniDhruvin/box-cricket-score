@@ -42,7 +42,7 @@
     <resources>
         <image name="BootSplashLogo-86eb43" width="375" height="812"/>
         <namedColor name="BootSplashBackground-86eb43">
-            <color red="1.00000000000000" green="1.00000000000000" blue="1.00000000000000" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.011765" green="0.207843" blue="0.470588" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
     </resources>
 </document>

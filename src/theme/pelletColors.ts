@@ -3,7 +3,7 @@ import type { Delivery } from '../types/match';
 export const PELLET_COLORS = {
   dot: { bg: '#B1B3B4', fg: '#000000' },
   single: { bg: '#1573EA', fg: '#FFFFFF' },
-  multi: { bg: '#074089', fg: '#FFFFFF' },
+  multi: { bg: '#B1B3B4', fg: '#000000' },
   four: { bg: '#1573EA', fg: '#FFFFFF' },
   six: { bg: '#000000', fg: '#FFFFFF' },
   wicket: { bg: '#000000', fg: '#FFFFFF' },

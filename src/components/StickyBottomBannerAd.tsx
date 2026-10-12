@@ -5,8 +5,8 @@ import { BANNER_AD_UNIT_IDS } from '../config/adUnitIds';
 import { useAdFlags } from '../hooks/useAdFlags';
 
 /**
- * Anchored adaptive banner for sticky placement at the bottom of a screen
- * (e.g. live scoring). Tries H1 (high) → H2 (medium) → H3 (normal).
+ * Standard 320×50 banner for sticky placement at the bottom of a screen.
+ * Tries H1 (high) → H2 (medium) → H3 (normal).
  */
 export function StickyBottomBannerAd() {
   const { isBanner, isAds } = useAdFlags();
@@ -35,7 +35,7 @@ export function StickyBottomBannerAd() {
       <BannerAd
         key={unitId}
         unitId={unitId}
-        size={BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER}
+        size={BannerAdSize.BANNER}
         onAdFailedToLoad={handleAdFailedToLoad}
       />
     </View>
