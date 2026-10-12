@@ -12,6 +12,7 @@ import { colors } from '../theme/colors';
 import type { Delivery, TeamInnings } from '../types/match';
 import { getInningsReplay } from '../utils/buildInningsReplay';
 import { countsAsLegalBall, tallyDeliveryRuns } from '../utils/deliveryScoring';
+import { overBowlerLabel } from '../utils/playerInnings';
 import { fontSize, hp, wp } from '../utils';
 
 if (
@@ -89,11 +90,14 @@ interface InningsBallByBallProps {
   innings: TeamInnings;
   /** Live viewers see newest overs first so the current over stays on screen. */
   oversOrder?: 'oldestFirst' | 'newestFirst';
+  /** Resolves a group bowler id to the current name. */
+  bowlerNameOf?: (playerId: string) => string;
 }
 
 export function InningsBallByBall({
   innings,
   oversOrder = 'oldestFirst',
+  bowlerNameOf,
 }: InningsBallByBallProps) {
   const replay = useMemo(() => getInningsReplay(innings), [innings]);
   const orderedReplay = useMemo(
@@ -141,6 +145,7 @@ export function InningsBallByBall({
         const wkts = over.deliveries.filter(d => d.type === 'wicket').length;
         const isCollapsed = collapsed[over.overNumber];
         const legal = over.deliveries.filter(countsAsLegalBall).length;
+        const bowler = overBowlerLabel(over, bowlerNameOf);
 
         return (
           <View key={over.overNumber} style={styles.overCard}>
@@ -157,7 +162,10 @@ export function InningsBallByBall({
                   : `Collapse over ${over.overNumber}`
               }>
               <View style={styles.overHeaderLeft}>
-                <Text style={styles.overTitle}>Over {over.overNumber}</Text>
+                <Text style={styles.overTitle} numberOfLines={1}>
+                  Over {over.overNumber}
+                  {bowler ? ` · ${bowler}` : ''}
+                </Text>
                 <Text style={styles.overMeta}>
                   {runs} runs
                   {wkts > 0 ? ` · ${wkts} wkt${wkts === 1 ? '' : 's'}` : ''}

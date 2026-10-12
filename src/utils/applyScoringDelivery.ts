@@ -23,6 +23,20 @@ export function wicketsCapForMatch(m: MatchSummary): number {
   return m.wicketsPerSide ?? DEFAULT_WICKETS_PER_SIDE;
 }
 
+function copyOver(over: OverReplay, deliveries?: Delivery[]): OverReplay {
+  const next: OverReplay = {
+    overNumber: over.overNumber,
+    deliveries: deliveries ? [...deliveries] : [...over.deliveries],
+  };
+  if (over.bowlerId != null) {
+    next.bowlerId = over.bowlerId;
+  }
+  if (over.bowlerName != null && over.bowlerName !== '') {
+    next.bowlerName = over.bowlerName;
+  }
+  return next;
+}
+
 function cloneInnings(inn: TeamInnings): TeamInnings {
   return {
     ...inn,
@@ -33,10 +47,7 @@ function cloneInnings(inn: TeamInnings): TeamInnings {
       byes: inn.extras.byes ?? 0,
     },
     overReplay: inn.overReplay
-      ? inn.overReplay.map(o => ({
-          overNumber: o.overNumber,
-          deliveries: [...o.deliveries],
-        }))
+      ? inn.overReplay.map(over => copyOver(over))
       : undefined,
   };
 }
@@ -68,22 +79,27 @@ function ensureCurrentOverSlice(replay: OverReplay[]): OverReplay[] {
   return replay;
 }
 
-function appendToOverReplay(inn: TeamInnings, d: Delivery): TeamInnings {
+function appendToOverReplay(
+  inn: TeamInnings,
+  d: Delivery,
+  bowlerId: string | null,
+  bowlerName: string | null,
+): TeamInnings {
   const base: OverReplay[] =
     inn.overReplay != null
-      ? inn.overReplay.map(o => ({
-          overNumber: o.overNumber,
-          deliveries: [...o.deliveries],
-        }))
+      ? inn.overReplay.map(over => copyOver(over))
       : [{ overNumber: 1, deliveries: [] }];
 
   const withSlot = ensureCurrentOverSlice(base);
   const idx = withSlot.length - 1;
   const last = withSlot[idx];
-  const nextOver = {
-    ...last,
-    deliveries: [...last.deliveries, d],
-  };
+  const nextOver = copyOver(last, [...last.deliveries, d]);
+  if (nextOver.bowlerId == null && bowlerId != null) {
+    nextOver.bowlerId = bowlerId;
+    if (bowlerName) {
+      nextOver.bowlerName = bowlerName;
+    }
+  }
   const nextReplay = [...withSlot.slice(0, idx), nextOver];
   return { ...inn, overReplay: nextReplay };
 }
@@ -176,6 +192,7 @@ export function runsDelivery(runs: 0 | 1 | 2 | 3 | 4 | 5 | 6): Delivery {
 export function applyDeliveryToMatch(
   match: MatchSummary,
   d: Delivery,
+  bowlerName?: string | null,
 ): ApplyDeliveryResult {
   if (match.status === 'completed') {
     return { ok: false, reason: 'match_complete' };
@@ -202,16 +219,19 @@ export function applyDeliveryToMatch(
   }
 
   inn = applyStats(inn, d);
-  inn = appendToOverReplay(inn, d);
+  const creaseBowlerId = match.squad?.crease.bowlerId ?? null;
+  inn = appendToOverReplay(
+    inn,
+    d,
+    creaseBowlerId,
+    bowlerName && bowlerName !== 'Player' ? bowlerName : null,
+  );
 
   let overJustCompleted: OverReplay | undefined;
   if (countsAsLegalBall(d) && inn.overReplay && inn.overReplay.length > 0) {
     const last = inn.overReplay[inn.overReplay.length - 1];
     if (legalCountInOver(last.deliveries) === 6) {
-      overJustCompleted = {
-        overNumber: last.overNumber,
-        deliveries: [...last.deliveries],
-      };
+      overJustCompleted = copyOver(last);
     }
   }
 
@@ -246,7 +266,10 @@ export function isInningsComplete(
  * After a delivery in the second innings, set status + winner/margin when the
  * match outcome is decided (chase, all-out/overs exhausted, or tie).
  */
-export function finalizeLiveMatchIfNeeded(match: MatchSummary): MatchSummary {
+export function finalizeLiveMatchIfNeeded(
+  match: MatchSummary,
+  options?: { sideAllOut?: boolean },
+): MatchSummary {
   if (match.status === 'completed') {
     return match;
   }
@@ -277,7 +300,7 @@ export function finalizeLiveMatchIfNeeded(match: MatchSummary): MatchSummary {
     };
   }
 
-  if (!isInningsComplete(second, oversCap, wkCap)) {
+  if (!isInningsComplete(second, oversCap, wkCap) && !options?.sideAllOut) {
     return match;
   }
 
@@ -318,10 +341,7 @@ export function prepareNextOverSlot(inn: TeamInnings): TeamInnings {
   }
   const nextNum = last.overNumber + 1;
   const nextReplay: OverReplay[] = [
-    ...replay.map(o => ({
-      overNumber: o.overNumber,
-      deliveries: [...o.deliveries],
-    })),
+    ...replay.map(over => copyOver(over)),
     { overNumber: nextNum, deliveries: [] },
   ];
   return { ...inn, overReplay: nextReplay };

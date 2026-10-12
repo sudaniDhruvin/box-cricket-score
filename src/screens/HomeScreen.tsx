@@ -298,6 +298,10 @@ export function HomeScreen() {
     navigation.navigate('ScanToWatch', {});
   }, [navigation]);
 
+  const openGroups = useCallback(() => {
+    navigation.navigate('Groups');
+  }, [navigation]);
+
   const openDrawer = useCallback(() => {
     navigation.dispatch(DrawerActions.openDrawer());
   }, [navigation]);
@@ -563,6 +567,30 @@ export function HomeScreen() {
                   <Text style={styles.watchLiveText}>Watch Live</Text>
                 </Pressable>
               </View>
+              <Pressable
+                onPress={openGroups}
+                style={({ pressed }) => [
+                  styles.groupsBtn,
+                  pressed && styles.groupsBtnPressed,
+                ]}
+                android_ripple={{
+                  color: colors.primarySoft,
+                  foreground: true,
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Open groups. Pick sides and keep player stats."
+              >
+                <View style={styles.groupsIcon}>
+                  <Text style={styles.groupsIconText}>G</Text>
+                </View>
+                <View style={styles.groupsTextCol}>
+                  <Text style={styles.groupsBtnText}>Groups</Text>
+                  <Text style={styles.groupsBtnSub} numberOfLines={1}>
+                    Pick sides and keep player stats
+                  </Text>
+                </View>
+                <Text style={styles.groupsChevron}>{'\u203A'}</Text>
+              </Pressable>
             </View>
 
             {liveMatch ? (
@@ -1031,6 +1059,55 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primary,
     letterSpacing: -0.2,
+  },
+  groupsBtn: {
+    marginTop: hp(1.4),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(3),
+    borderRadius: wp(3.5),
+    borderWidth: 1,
+    borderColor: colors.primarySoft,
+    backgroundColor: colors.primaryFaint,
+    paddingVertical: hp(1.15),
+    paddingHorizontal: wp(3),
+    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
+  },
+  groupsBtnPressed: {
+    opacity: 0.92,
+  },
+  groupsIcon: {
+    width: wp(10),
+    height: wp(10),
+    borderRadius: wp(5),
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  groupsIconText: {
+    fontSize: fontSize(16),
+    fontWeight: '900',
+    color: colors.background,
+  },
+  groupsTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  groupsBtnText: {
+    fontSize: fontSize(15),
+    fontWeight: '800',
+    color: colors.text,
+  },
+  groupsBtnSub: {
+    marginTop: hp(0.15),
+    fontSize: fontSize(12),
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  groupsChevron: {
+    fontSize: fontSize(22),
+    fontWeight: '600',
+    color: colors.primary,
   },
   emptyScanBtn: {
     marginTop: hp(2),

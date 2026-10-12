@@ -4,11 +4,15 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
 
 import { CustomDrawerContent } from './CustomDrawerContent';
+import { GroupDetailScreen } from '../screens/GroupDetailScreen';
+import { GroupMatchSetupScreen } from '../screens/GroupMatchSetupScreen';
+import { GroupsScreen } from '../screens/GroupsScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { LiveSpectatorScreen } from '../screens/LiveSpectatorScreen';
 import { MatchDetailScreen } from '../screens/MatchDetailScreen';
 import { NewMatchScreen } from '../screens/NewMatchScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
+import { PlayerProfileScreen } from '../screens/PlayerProfileScreen';
 import { PrivacyScreen, TermsScreen } from '../screens/LegalInfoScreen';
 import { ScanToWatchScreen } from '../screens/ScanToWatchScreen';
 import { useUserStore } from '../store/useUserStore';
@@ -31,6 +35,10 @@ const MainStackNavigator = () => (
     }}
   >
     <MainStack.Screen name="Home" component={HomeScreen} />
+    <MainStack.Screen name="Groups" component={GroupsScreen} />
+    <MainStack.Screen name="GroupDetail" component={GroupDetailScreen} />
+    <MainStack.Screen name="GroupMatchSetup" component={GroupMatchSetupScreen} />
+    <MainStack.Screen name="PlayerProfile" component={PlayerProfileScreen} />
     <MainStack.Screen name="NewMatch" component={NewMatchScreen} />
     <MainStack.Screen name="MatchDetail" component={MatchDetailScreen} />
     <MainStack.Screen name="Terms" component={TermsScreen} />

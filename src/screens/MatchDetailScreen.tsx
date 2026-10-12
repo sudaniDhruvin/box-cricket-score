@@ -23,8 +23,9 @@ import {
 } from '../components/ui';
 import type { MainStackParamList } from '../navigation/types';
 import { useMatchStore } from '../store/useMatchStore';
+import { playerNameWithRole, useGroupStore } from '../store/useGroupStore';
 import { colors } from '../theme/colors';
-import type { TeamInnings } from '../types/match';
+import type { MatchSummary, TeamInnings } from '../types/match';
 import {
   formatMatchResult,
   formatOvers,
@@ -35,6 +36,8 @@ import {
 import { createRepeatMatch } from '../utils/createLiveMatch';
 import { wicketsCapForMatch } from '../utils/applyScoringDelivery';
 import { findSavedMatch } from '../utils/matchLookup';
+import { battingPlayerIds } from '../utils/playerInnings';
+import { formatBowlerOvers } from '../utils/playerProfile';
 import { fontSize, hp, wp } from '../utils';
 
 if (
@@ -50,14 +53,73 @@ type MatchDetailNav = NativeStackNavigationProp<
 >;
 type MatchDetailRoute = RouteProp<MainStackParamList, 'MatchDetail'>;
 
+function SquadLines({
+  match,
+  inningsIndex,
+}: {
+  match: MatchSummary;
+  inningsIndex: 0 | 1;
+}) {
+  const squad = match.squad;
+  const group = useGroupStore(s =>
+    s.groups.find(item => item.id === squad?.groupId),
+  );
+  if (squad == null) {
+    return null;
+  }
+  const battingIds = battingPlayerIds(squad, inningsIndex);
+  const batting = squad.batting[inningsIndex];
+  const bowling = squad.bowling[inningsIndex];
+  if (battingIds.length === 0 && bowling.length === 0) {
+    return null;
+  }
+  const label = (playerId: string) =>
+    playerNameWithRole(group?.players, playerId, squad.wildcardPlayerId);
+  return (
+    <View style={styles.squadCard}>
+      {battingIds.length > 0 ? (
+        <>
+          <Text style={styles.squadHeading}>Batting</Text>
+          {battingIds.map(playerId => {
+            const line = batting.find(row => row.playerId === playerId);
+            return (
+              <Text key={playerId} style={styles.squadLine}>
+                {label(playerId)}{' '}
+                {line
+                  ? `${line.runs} (${line.balls})${
+                      line.dismissal ? ` · ${line.dismissal}` : ' · not out'
+                    }`
+                  : 'yet to bat'}
+              </Text>
+            );
+          })}
+        </>
+      ) : null}
+      {bowling.length > 0 ? (
+        <>
+          <Text style={styles.squadHeading}>Bowling</Text>
+          {bowling.map(line => (
+            <Text key={line.playerId} style={styles.squadLine}>
+              {label(line.playerId)}{' '}
+              {formatBowlerOvers(line.legalBalls)}-{line.runs}-{line.wickets}
+            </Text>
+          ))}
+        </>
+      ) : null}
+    </View>
+  );
+}
+
 function InningsDetail({
   label,
   innings,
   isWinner,
+  bowlerNameOf,
 }: {
   label: string;
   innings: TeamInnings;
   isWinner: boolean;
+  bowlerNameOf?: (playerId: string) => string;
 }) {
   const e = innings.extras;
   const extrasSum = e.wides + e.noBalls + (e.byes ?? 0);
@@ -101,7 +163,7 @@ function InningsDetail({
       </Text>
 
       <Text style={styles.ballByBallTitle}>Ball-by-ball</Text>
-      <InningsBallByBall innings={innings} />
+      <InningsBallByBall innings={innings} bowlerNameOf={bowlerNameOf} />
     </View>
   );
 }
@@ -266,6 +328,7 @@ export function MatchDetailScreen() {
   const [shareOpen, setShareOpen] = useState(false);
   const savedMatches = useMatchStore(s => s.matches);
   const addMatch = useMatchStore(s => s.addMatch);
+  const groups = useGroupStore(s => s.groups);
 
   const handleTabChange = useCallback((tab: 0 | 1) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -305,6 +368,13 @@ export function MatchDetailScreen() {
   const activeIsWinner =
     matchComplete && !tied && activeInnings.teamId === match.winnerTeamId;
   const inningsLabel = activeTab === 0 ? '1st innings' : '2nd innings';
+  const squadGroup = groups.find(group => group.id === match.squad?.groupId);
+  const bowlerNameOf = (playerId: string) =>
+    playerNameWithRole(
+      squadGroup?.players,
+      playerId,
+      match.squad?.wildcardPlayerId,
+    );
   const winnerForTabs = matchComplete && !tied ? match.winnerTeamId : null;
 
   return (
@@ -454,7 +524,9 @@ export function MatchDetailScreen() {
           isWinner={
             matchComplete && activeInnings.teamId === match.winnerTeamId
           }
+          bowlerNameOf={match.squad != null ? bowlerNameOf : undefined}
         />
+        <SquadLines match={match} inningsIndex={activeTab} />
       </ScrollView>
 
       {live ? (
@@ -867,5 +939,27 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.7,
+  },
+  squadCard: {
+    marginTop: hp(1.2),
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: wp(3),
+    padding: wp(4),
+  },
+  squadHeading: {
+    marginTop: hp(0.6),
+    marginBottom: hp(0.4),
+    fontSize: fontSize(11),
+    fontWeight: '800',
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  squadLine: {
+    fontSize: fontSize(14),
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: hp(0.3),
   },
 });

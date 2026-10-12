@@ -9,6 +9,10 @@ export type MainStackParamList = {
   Home: undefined;
   NewMatch: { resumeMatchId?: string };
   MatchDetail: { matchId: string };
+  Groups: undefined;
+  GroupDetail: { groupId: string };
+  GroupMatchSetup: { groupId: string };
+  PlayerProfile: { groupId: string; playerId: string };
   Terms: undefined;
   Privacy: undefined;
   ScanToWatch: { prefillError?: string } | undefined;

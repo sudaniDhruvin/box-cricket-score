@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { checkInAppUpdate } from '../config/checkInAppUpdate';
 import { maybeRequestInAppReview } from '../config/requestInAppReview';
 import { PNGs } from '../assets/images/pngs';
+import { useGroupStore } from '../store/useGroupStore';
 import { useMatchStore } from '../store/useMatchStore';
 import { useUserStore } from '../store/useUserStore';
 import { colors } from '../theme/colors';
@@ -134,6 +135,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const insets = useSafeAreaInsets();
   const { navigation } = props;
   const clearAllMatches = useMatchStore(s => s.clearAllMatches);
+  const clearGroups = useGroupStore(s => s.clearGroups);
   const updateUser = useUserStore(s => s.updateUser);
   const resetReviewPromptState = useUserStore(s => s.resetReviewPromptState);
 
@@ -145,6 +147,11 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const goPrivacy = useCallback(() => {
     navigation.closeDrawer();
     navigation.navigate('Main', { screen: 'Privacy' });
+  }, [navigation]);
+
+  const goGroups = useCallback(() => {
+    navigation.closeDrawer();
+    navigation.navigate('Main', { screen: 'Groups' });
   }, [navigation]);
 
   const goWatchLive = useCallback(() => {
@@ -165,7 +172,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const onClearAllData = useCallback(() => {
     Alert.alert(
       'Clear all data?',
-      'This will delete all saved matches and clear profile data stored in this app on this device. This cannot be undone.',
+      'This will delete all saved matches, groups, and player records stored in this app on this device. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -173,6 +180,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
           style: 'destructive',
           onPress: () => {
             clearAllMatches();
+            clearGroups();
             updateUser(null);
             resetReviewPromptState();
             navigation.closeDrawer();
@@ -181,7 +189,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         },
       ],
     );
-  }, [clearAllMatches, navigation, resetReviewPromptState, updateUser]);
+  }, [clearAllMatches, clearGroups, navigation, resetReviewPromptState, updateUser]);
 
   return (
     <DrawerContentScrollView
@@ -233,6 +241,17 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
           iconLetter="P"
           onPress={goPrivacy}
           accessibilityLabel="Open privacy policy"
+        />
+      </View>
+
+      <Text style={styles.sectionHeading}>Groups</Text>
+      <View style={styles.legalCard}>
+        <InteractiveRow
+          label="Player groups"
+          hint="Names, batting, and bowling on this phone"
+          iconLetter="G"
+          onPress={goGroups}
+          accessibilityLabel="Open player groups"
         />
       </View>
 

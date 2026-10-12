@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Path, Circle, Polyline, Line } from 'react-native-svg';
+import Svg, { Path, Circle, Polyline, Line, Rect } from 'react-native-svg';
 import { colors } from '../../theme/colors';
 import { wp } from '../../utils';
 
@@ -82,6 +82,93 @@ export function EditIcon({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+    </Svg>
+  );
+}
+
+export function WideIcon({
+  size = DEFAULT_SIZE(),
+  color = colors.ballWideExtra,
+}: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Line
+        x1="4.5"
+        y1="10"
+        x2="4.5"
+        y2="20"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <Line
+        x1="8"
+        y1="10"
+        x2="8"
+        y2="20"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <Line
+        x1="11.5"
+        y1="10"
+        x2="11.5"
+        y2="20"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <Line
+        x1="3.6"
+        y1="10"
+        x2="12.4"
+        y2="10"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <Circle cx="18.2" cy="7.2" r="3.1" stroke={color} strokeWidth="1.8" />
+    </Svg>
+  );
+}
+
+export function NoBallIcon({
+  size = DEFAULT_SIZE(),
+  color = colors.ballNoBallRuns,
+}: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="8" stroke={color} strokeWidth="2" />
+      <Line
+        x1="7.2"
+        y1="16.8"
+        x2="16.8"
+        y2="7.2"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+export function LegByeIcon({
+  size = DEFAULT_SIZE(),
+  color = colors.text,
+}: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect
+        x="3.5"
+        y="3.5"
+        width="9"
+        height="17"
+        rx="3.2"
+        stroke={color}
+        strokeWidth="1.8"
+      />
+      <Circle cx="17.6" cy="16.2" r="3" stroke={color} strokeWidth="1.8" />
     </Svg>
   );
 }

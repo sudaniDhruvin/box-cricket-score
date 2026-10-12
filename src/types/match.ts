@@ -1,3 +1,5 @@
+import type { MatchSquad } from './squad';
+
 /** Legal balls in current over (0–5 typical for 6-ball overs). */
 export interface OversBowled {
   fullOvers: number;
@@ -50,6 +52,10 @@ export interface OverReplay {
   overNumber: number;
   /** Deliveries in chronological order for this over (legal + extras). */
   deliveries: Delivery[];
+  /** Group player who bowled this over. Absent on quick matches. */
+  bowlerId?: string | null;
+  /** Name when the over was bowled, so a shared score can still show it. */
+  bowlerName?: string | null;
 }
 
 export interface TeamInnings {
@@ -96,4 +102,6 @@ export interface MatchSummary {
   wicketsPerSide?: number;
   /** While live: which innings index is being scored (0 = first). */
   scoringActiveInnings?: 0 | 1;
+  /** Present when the match was started from a group. */
+  squad?: MatchSquad;
 }

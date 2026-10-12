@@ -5,4 +5,7 @@ export {
   UndoIcon,
   EditIcon,
   ChevronRightIcon,
+  WideIcon,
+  NoBallIcon,
+  LegByeIcon,
 } from './ToolbarIcons';
