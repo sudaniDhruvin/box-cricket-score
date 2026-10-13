@@ -124,9 +124,9 @@ function StatsTabsNavigator() {
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: { fontSize: fontSize(10), fontWeight: '700' },
         tabBarStyle: {
-          height: hp(7.4),
-          paddingTop: hp(0.8),
-          paddingBottom: hp(0.8),
+          // height: hp(7.4),
+          // paddingTop: hp(0.8),
+          // paddingBottom: hp(0.8),
           borderTopColor: colors.border,
           backgroundColor: colors.background,
         },

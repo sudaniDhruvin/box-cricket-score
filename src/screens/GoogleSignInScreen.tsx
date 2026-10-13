@@ -66,6 +66,7 @@ export function GoogleSignInScreen() {
       configureGoogleSignIn();
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const googleResponse = await GoogleSignin.signIn();
+      console.log('googleResponse =--->', googleResponse)
       if (googleResponse.type !== 'success') return;
       const googleIdToken = googleResponse.data.idToken;
       if (!googleIdToken) throw new Error('Google sign-in could not be completed. Try again.');

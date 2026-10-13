@@ -60,6 +60,7 @@ import { ScreenHeader } from '../components/ui';
 import type { MainStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Navigation = NativeStackNavigationProp<MainStackParamList>;
 type GroupTab = 'feed' | 'polls' | 'members' | 'matches' | 'reports';
@@ -131,6 +132,7 @@ function SectionTitle({ children }: { children: string }) {
 
 export function CommunityScreen() {
   const navigation = useNavigation<Navigation>();
+  const {top} = useSafeAreaInsets();
   const [user, setUser] = useState<PlayerProfile | null>(null);
   const [view, setView] = useState<ScreenView>('groups');
   const [tab, setTab] = useState<GroupTab>('feed');
@@ -465,7 +467,7 @@ export function CommunityScreen() {
 
   if (!getAccessToken()) {
     return (
-      <View style={styles.root}>
+      <View style={[styles.root, { paddingTop: top }]}>
         <ScreenHeader title="Community" backLabel="Matches" onBack={back} />
         <View style={styles.emptyState}>
           <Text style={styles.heading}>Sign in to use community features</Text>
@@ -477,7 +479,7 @@ export function CommunityScreen() {
   }
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { paddingTop: top }]}>
       <ScreenHeader
         title={view === 'group' ? group?.name ?? 'Group' : view === 'draft' ? 'Team selection' : view === 'notifications' ? 'Notifications' : 'Community'}
         backLabel={view === 'groups' ? 'Matches' : 'Community'}
@@ -654,7 +656,7 @@ export function CommunityScreen() {
                 ))}
                 {isAdmin ? (
                   <Action label="Create invitation" onPress={() => run(async () => {
-                    const result = await createGroupInvitation(group.id);
+                    const result = await createGroupInvitation(group.id, user?.email);
                     Alert.alert('Invitation code', `${result.invitationCode}\n\nShare this code with the player. It expires in seven days.`);
                   })} secondary />
                 ) : null}
