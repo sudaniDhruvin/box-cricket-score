@@ -112,6 +112,24 @@ export function CricketTrophyIcon({
   );
 }
 
+export function QrCodeIcon({
+  size = 24,
+  color = colors.primary,
+}: CricketIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 4h6v6H4V4Zm1.6 1.6v2.8h2.8V5.6H5.6ZM14 4h6v6h-6V4Zm1.6 1.6v2.8h2.8V5.6h-2.8ZM4 14h6v6H4v-6Zm1.6 1.6v2.8h2.8v-2.8H5.6Z"
+        fill={color}
+      />
+      <Path
+        d="M14 14h2.2v2.2H14V14Zm3.8 0H20v2.2h-2.2V14ZM14 17.8h2.2V20H14v-2.2Zm3.8 0H20V20h-2.2v-2.2Z"
+        fill={color}
+      />
+    </Svg>
+  );
+}
+
 export function QrScanIcon({
   size = 24,
   color = colors.primary,

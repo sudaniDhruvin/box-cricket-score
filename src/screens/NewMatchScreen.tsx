@@ -6,6 +6,7 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback, useState, type ReactNode } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -21,12 +22,11 @@ import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import { LiveScoringPanel } from '../components/LiveScoringPanel';
 import { StickyBottomBannerAd } from '../components/StickyBottomBannerAd';
+import { PNGs } from '../assets/images/pngs';
 import {
-  ArrowRightIcon,
   CricketScorebookIcon,
   CricketStumpsIcon,
   ScreenHeader,
-  TeamIcon,
 } from '../components/ui';
 import { useAdFlags } from '../hooks/useAdFlags';
 import { createLiveMatch } from '../utils/createLiveMatch';
@@ -44,7 +44,7 @@ const DEFAULT_TEAM_A_NAME = 'Team A';
 const DEFAULT_TEAM_B_NAME = 'Team B';
 
 type StepperRowProps = {
-  icon: ReactNode;
+  icon?: ReactNode;
   title: string;
   subtitle: string;
   value: number;
@@ -66,7 +66,7 @@ function StepperRow({
 }: StepperRowProps) {
   return (
     <View style={styles.paramRow}>
-      <View style={styles.paramIcon}>{icon}</View>
+      {icon ? <View style={styles.paramIcon}>{icon}</View> : null}
       <View style={styles.paramLabels}>
         <Text style={styles.paramTitle}>{title}</Text>
         <Text style={styles.paramSub}>{subtitle}</Text>
@@ -109,6 +109,7 @@ export function NewMatchScreen() {
   const addMatch = useMatchStore(s => s.addMatch);
   const { isBanner, isAds } = useAdFlags();
   const showBanner = isAds && isBanner;
+  const [bottomBannerVisible, setBottomBannerVisible] = useState(false);
 
   const [step, setStep] = useState<SetupStep>(() => params.groupLaunch ? 'toss' : 'configure');
   const [teamA, setTeamA] = useState(params.groupLaunch?.teams[0] ?? '');
@@ -224,7 +225,14 @@ export function NewMatchScreen() {
               <View style={styles.card}>
                 <Text style={styles.teamFieldLabel}>TEAM A</Text>
                 <View style={styles.inputWrap}>
-                  <TeamIcon size={wp(5)} color={colors.primary} />
+                  <Image
+                    source={PNGs.BatBallOutlineIcon}
+                    style={{
+                      width: wp(5),
+                      height: wp(5),
+                      tintColor: colors.primary,
+                    }}
+                  />
                   <TextInput
                     value={teamA}
                     onChangeText={t => {
@@ -249,7 +257,14 @@ export function NewMatchScreen() {
 
                 <Text style={styles.teamFieldLabel}>TEAM B</Text>
                 <View style={styles.inputWrap}>
-                  <TeamIcon size={wp(5)} color={colors.primary} />
+                  <Image
+                    source={PNGs.BatBallOutlineIcon}
+                    style={{
+                      width: wp(5),
+                      height: wp(5),
+                      tintColor: colors.primary,
+                    }}
+                  />
                   <TextInput
                     value={teamB}
                     onChangeText={t => {
@@ -269,12 +284,12 @@ export function NewMatchScreen() {
 
               <View style={styles.card}>
                 <StepperRow
-                  icon={
-                    <CricketScorebookIcon
-                      size={wp(5)}
-                      color={colors.primary}
-                    />
-                  }
+                  // icon={
+                  //   <CricketScorebookIcon
+                  //     size={wp(5)}
+                  //     color={colors.primary}
+                  //   />
+                  // }
                   title="Overs"
                   subtitle="Per innings"
                   value={overs}
@@ -291,12 +306,12 @@ export function NewMatchScreen() {
                 />
                 <View style={styles.paramDivider} />
                 <StepperRow
-                  icon={
-                    <CricketStumpsIcon
-                      size={wp(5)}
-                      color={colors.primary}
-                    />
-                  }
+                  // icon={
+                  //   <CricketStumpsIcon
+                  //     size={wp(5)}
+                  //     color={colors.primary}
+                  //   />
+                  // }
                   title="Players"
                   subtitle="Per team"
                   value={players}
@@ -320,7 +335,7 @@ export function NewMatchScreen() {
               style={[
                 styles.footer,
                 {
-                  paddingBottom: showBanner
+                  paddingBottom: bottomBannerVisible
                     ? hp(1.2)
                     : Math.max(insets.bottom, hp(2)),
                 },
@@ -337,7 +352,14 @@ export function NewMatchScreen() {
                 accessibilityLabel="Choose who bats first"
               >
                 <Text style={styles.ctaText}>Choose who bats first</Text>
-                <ArrowRightIcon size={wp(4)} color={colors.background} />
+                <Image
+                  source={PNGs.RightArrowIcon}
+                  style={{
+                    width: wp(4),
+                    height: wp(4),
+                    tintColor: colors.background,
+                  }}
+                />
               </Pressable>
             </View>
           </>
@@ -346,7 +368,7 @@ export function NewMatchScreen() {
             contentContainerStyle={[
               styles.scroll,
               {
-                paddingBottom: showBanner
+                paddingBottom: bottomBannerVisible
                   ? hp(2)
                   : Math.max(insets.bottom, hp(4)),
               },
@@ -421,16 +443,26 @@ export function NewMatchScreen() {
               accessibilityLabel="Create match and start scoring"
             >
               <Text style={styles.ctaText}>Start match</Text>
-              <ArrowRightIcon size={wp(4)} color={colors.background} />
+              <Image
+                source={PNGs.RightArrowIcon}
+                style={{
+                  width: wp(4),
+                  height: wp(4),
+                  tintColor: colors.background,
+                }}
+              />
             </Pressable>
           </ScrollView>
         )}
       </KeyboardAvoidingView>
       {showBanner ? (
         <View
-          style={[styles.bannerStrip, { paddingBottom: insets.bottom }]}
-        >
-          <StickyBottomBannerAd />
+          style={
+            bottomBannerVisible
+              ? [styles.bannerStrip, { paddingBottom: insets.bottom }]
+              : undefined
+          }>
+          <StickyBottomBannerAd onVisibilityChange={setBottomBannerVisible} />
         </View>
       ) : null}
     </View>

@@ -3,6 +3,7 @@ import {
   Animated,
   Alert,
   Easing,
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -11,9 +12,11 @@ import {
   Text,
   TextInput,
   View,
+  type ImageSourcePropType,
 } from 'react-native';
 import { useInterstitialAd } from 'react-native-google-mobile-ads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PNGs } from '../assets/images/pngs';
 import { INTERSTITIAL_AD_UNIT_ID } from '../config/adUnitIds';
 import {
   maybeRequestInAppReview,
@@ -29,7 +32,7 @@ import {
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import { GOLDEN_SPACING } from '../theme/golden';
-import { PELLET_COLORS } from '../theme/pelletColors';
+import { PELLET_COLORS, RUN_BUBBLE_COLORS } from '../theme/pelletColors';
 import type {
   Delivery,
   MatchSummary,
@@ -64,15 +67,12 @@ import { StickyBottomBannerAd } from './StickyBottomBannerAd';
 import { ShareLiveScoreModal } from './ShareLiveScoreModal';
 import { LiveShareNoticeModal } from './LiveShareNoticeModal';
 import {
-  ArrowLeftIcon,
   ChevronRightIcon,
   CloseIcon,
   CricketStumpsIcon,
-  DismissalIcon,
   EditIcon,
-  ShareIcon,
+  QrCodeIcon,
   UndoIcon,
-  type DismissalKind,
 } from './ui';
 import { Pellet } from './Pellet';
 
@@ -244,19 +244,19 @@ function overReplayOverview(over: OverReplay) {
 const WICKET_OPTIONS: {
   id: WicketDismissal;
   label: string;
-  icon: DismissalKind;
+  icon: ImageSourcePropType;
 }[] = [
-  { id: 'bowled', label: 'Bowled', icon: 'bowled' },
-  { id: 'caught', label: 'Caught', icon: 'caught' },
-  { id: 'run-out', label: 'Run Out', icon: 'run-out' },
-  { id: 'stumped', label: 'Stumped', icon: 'stumped' },
-  { id: 'lbw', label: 'LBW', icon: 'lbw' },
-  { id: 'hit-wicket', label: 'Hit Wicket', icon: 'hit-wicket' },
+  { id: 'bowled', label: 'Bowled', icon: PNGs.StumpedOutIcon },
+  { id: 'caught', label: 'Caught', icon: PNGs.CaughtOutIcon },
+  { id: 'run-out', label: 'Run Out', icon: PNGs.RunOutIcon },
+  { id: 'stumped', label: 'Stumped', icon: PNGs.StumpedOutIcon },
+  { id: 'lbw', label: 'LBW', icon: PNGs.LBWOutIcon },
+  { id: 'hit-wicket', label: 'Hit Wicket', icon: PNGs.WarningIcon },
 ];
 
 type WicketTypeTileProps = {
   label: string;
-  icon: DismissalKind;
+  icon: ImageSourcePropType;
   selected: boolean;
   onPress: () => void;
 };
@@ -285,10 +285,13 @@ function WicketTypeTile({
         </View>
       ) : null}
 
-      <DismissalIcon
-        kind={icon}
-        size={wp(8)}
-        color={selected ? colors.primary : colors.textSecondary}
+      <Image
+        source={icon}
+        style={{
+          width: wp(8),
+          height: wp(8),
+          tintColor: selected ? colors.primary : undefined,
+        }}
       />
       <Text
         style={[
@@ -353,46 +356,40 @@ function ScoringPad({
         <Text style={styles.padSectionHint}>Choose this ball's result</Text>
       </View>
       <View style={styles.scoringRunsGrid}>
-        {RUNS_ROW.map(r => (
-          <Pressable
-            key={r}
-            onPress={() => apply(runsDelivery(r))}
-            style={({ pressed }) => [
-              styles.runBtn,
-              r === 0 && styles.runBtnDot,
-              (r === 4 || r === 6) && styles.runBtnBoundary,
-              r === 4 && styles.runBtnFour,
-              r === 6 && styles.runBtnSix,
-              pressed && styles.runCellPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={
-              r === 0 ? 'Dot ball' : r === 1 ? 'One run' : `${r} runs`
-            }>
-            <Text
-              style={[
-                styles.runBtnText,
-                (r === 4 || r === 6) && styles.runBtnTextBoundary,
-              ]}>
-              {r}
-            </Text>
-            <Text
-              style={[
-                styles.runBtnLabel,
-                (r === 4 || r === 6) && styles.runBtnTextBoundary,
-              ]}>
-              {r === 0
-                ? 'DOT'
-                : r === 1
-                  ? 'RUN'
-                  : r === 4
-                    ? 'FOUR'
-                    : r === 6
-                      ? 'SIX'
-                      : 'RUNS'}
-            </Text>
-          </Pressable>
-        ))}
+        {RUNS_ROW.map(r => {
+          const tone = RUN_BUBBLE_COLORS[r];
+          return (
+            <Pressable
+              key={r}
+              onPress={() => apply(runsDelivery(r))}
+              style={({ pressed }) => [
+                styles.runBtn,
+                {
+                  backgroundColor: tone.bg,
+                  borderColor:
+                    tone.bg === colors.background ? tone.fg : tone.bg,
+                },
+                pressed && styles.runCellPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={
+                r === 0 ? 'Dot ball' : r === 1 ? 'One run' : `${r} runs`
+              }>
+              <Text style={[styles.runBtnText, { color: tone.fg }]}>{r}</Text>
+              <Text style={[styles.runBtnLabel, { color: tone.fg }]}>
+                {r === 0
+                  ? 'DOT'
+                  : r === 1
+                    ? 'RUN'
+                    : r === 4
+                      ? 'FOUR'
+                      : r === 6
+                        ? 'SIX'
+                        : 'RUNS'}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
       <Pressable
         onPress={onWicket}
@@ -532,6 +529,8 @@ function ExtrasSheet({
   );
 }
 
+const THIS_OVER_BALL = wp(8.5);
+
 function ThisOverRow({
   deliveries,
   legalInOver,
@@ -543,10 +542,23 @@ function ThisOverRow({
   return (
     <View style={styles.thisOverRow}>
       {deliveries.map((d, i) => (
-        <Pellet key={`cb-${i}`} ball={d} size={wp(10)} />
+        <View key={`cb-${i}`} style={styles.thisOverSlot}>
+          <Pellet ball={d} size={THIS_OVER_BALL} />
+        </View>
       ))}
       {Array.from({ length: emptySlots }).map((_, i) => (
-        <View key={`empty-${i}`} style={styles.emptyBallSlot} />
+        <View key={`empty-${i}`} style={styles.thisOverSlot}>
+          <View
+            style={[
+              styles.emptyBallSlot,
+              {
+                width: THIS_OVER_BALL,
+                height: THIS_OVER_BALL,
+                borderRadius: THIS_OVER_BALL / 2,
+              },
+            ]}
+          />
+        </View>
       ))}
     </View>
   );
@@ -573,6 +585,7 @@ export function LiveScoringPanel({
   const [extrasExpanded, setExtrasExpanded] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [bottomBannerVisible, setBottomBannerVisible] = useState(false);
   const [sharingActive, setSharingActive] = useState(() =>
     isSharingMatch(matchId),
   );
@@ -1079,25 +1092,34 @@ export function LiveScoringPanel({
           accessibilityRole="button"
           accessibilityLabel="Back to home"
         >
-          <ArrowLeftIcon size={wp(5)} color={colors.primary} />
+          <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
           <Text style={styles.backLbl}>Home</Text>
         </Pressable>
         <View style={styles.toolbarRight}>
           <Pressable
             onPress={() => setShareOpen(true)}
             style={({ pressed }) => [
-              styles.iconHit,
+              styles.shareBtn,
               sharingActive && styles.iconHitActive,
-              pressed && styles.backPressed,
+              pressed && !sharingActive && styles.backPressed,
+              pressed && sharingActive && styles.shareBtnPressed,
             ]}
             accessibilityRole="button"
             accessibilityLabel={
-              sharingActive ? 'Live sharing active' : 'Share live score'
+              sharingActive ? 'Sharing live score' : 'Share live score'
             }
           >
-            <ShareIcon
+            <QrCodeIcon
+              size={wp(4.5)}
               color={sharingActive ? colors.background : colors.primary}
             />
+            <Text
+              style={[
+                styles.shareBtnLabel,
+                sharingActive && styles.shareBtnLabelActive,
+              ]}>
+              {sharingActive ? 'Sharing' : 'Share'}
+            </Text>
           </Pressable>
           <Pressable
             onPress={undo}
@@ -1160,24 +1182,86 @@ export function LiveScoringPanel({
         >
           <View style={styles.scoreboardCard}>
             <View style={styles.scoreboardTop}>
-              {chase != null ? (
-                <Text style={styles.targetLabel}>Target {chase.target}</Text>
-              ) : (
-                <Text style={styles.inningsTagInline}>
-                  {activeIdx === 0 ? '1st innings' : '2nd innings'}
-                </Text>
-              )}
+              <Text style={styles.inningsTagInline}>
+                {activeIdx === 0 ? '1st innings' : '2nd innings'}
+              </Text>
               <View style={styles.liveBadge}>
                 <Text style={styles.liveBadgeText}>LIVE</Text>
               </View>
             </View>
 
-            <View style={styles.scoreMainRow}>
+            <Text style={styles.activeTeamName} numberOfLines={1}>
+              {activeInn.teamName}
+            </Text>
+            {chase != null ? (
+              <View style={styles.scoreMainRow}>
+                <View
+                  style={styles.scoreStat}
+                  accessible
+                  accessibilityLabel={`${activeInn.runs} for ${activeInn.wickets}, overs ${formatOvers(activeInn.overs)}`}>
+                  <Text style={styles.scoreStatLabel}>SCORE</Text>
+                  <Text
+                    style={styles.scoreStatValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.55}>
+                    {activeInn.runs}/{activeInn.wickets}
+                  </Text>
+                  <Text style={styles.scoreStatDetail} numberOfLines={1}>
+                    {formatOvers(activeInn.overs)}
+                    {oversCap > 0 ? ` / ${oversCap}` : ''} ov
+                  </Text>
+                </View>
+                <View style={styles.scoreMainDivider} />
+                <View
+                  style={styles.scoreStat}
+                  accessible
+                  accessibilityLabel={
+                    chase.need === 0
+                      ? `Target ${chase.target} reached`
+                      : `Target ${chase.target}, need ${chase.need}`
+                  }>
+                  <Text style={styles.scoreStatLabel}>TARGET</Text>
+                  <Text
+                    style={styles.scoreStatValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.55}>
+                    {chase.target}
+                  </Text>
+                  <Text style={styles.scoreStatDetail} numberOfLines={1}>
+                    {chase.need === 0 ? 'Reached' : `Need ${chase.need}`}
+                  </Text>
+                </View>
+                {legalBallsRemaining != null ? (
+                  <>
+                    <View style={styles.scoreMainDivider} />
+                    <View
+                      style={styles.scoreStat}
+                      accessible
+                      accessibilityLabel={`${legalBallsRemaining} balls left`}>
+                      <Text style={styles.scoreStatLabel}>BALLS</Text>
+                      <Text
+                        style={styles.scoreStatValue}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.55}>
+                        {legalBallsRemaining}
+                      </Text>
+                      <Text style={styles.scoreStatDetail} numberOfLines={1}>
+                        left
+                      </Text>
+                    </View>
+                  </>
+                ) : null}
+              </View>
+            ) : (
               <View style={styles.scoreMainColumn}>
-                <Text style={styles.activeTeamName} numberOfLines={1}>
-                  {activeInn.teamName}
-                </Text>
-                <Text style={styles.scoreMain} numberOfLines={1}>
+                <Text
+                  style={styles.scoreMain}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}>
                   {activeInn.runs}/{activeInn.wickets}
                 </Text>
                 <Text style={styles.oversLine}>
@@ -1185,35 +1269,7 @@ export function LiveScoringPanel({
                   {oversCap > 0 ? ` / ${oversCap}` : ''}
                 </Text>
               </View>
-              {chase != null ? (
-                <>
-                  <View style={styles.scoreMainDivider} />
-                  <View
-                    style={styles.chaseTargetCard}
-                    accessible
-                    accessibilityLabel={
-                      chase.need === 0
-                        ? 'Target reached'
-                        : legalBallsRemaining == null
-                          ? `${chase.need} runs to win`
-                          : `${chase.need} runs to win from ${legalBallsRemaining} balls`
-                    }>
-                    <Text style={styles.chaseTargetValue}>
-                      {chase.need}
-                    </Text>
-                    <Text style={styles.chaseTargetLabel}>
-                      {chase.need === 0 ? 'TARGET REACHED' : 'RUNS TO WIN'}
-                    </Text>
-                    {chase.need > 0 && legalBallsRemaining != null ? (
-                      <Text style={styles.chaseTargetBalls}>
-                        {legalBallsRemaining}{' '}
-                        {legalBallsRemaining === 1 ? 'BALL' : 'BALLS'} LEFT
-                      </Text>
-                    ) : null}
-                  </View>
-                </>
-              ) : null}
-            </View>
+            )}
 
             <View style={styles.rateRow}>
               <View style={styles.rateCell}>
@@ -1237,18 +1293,10 @@ export function LiveScoringPanel({
 
             <View style={styles.thisOverBlock}>
               <Text style={styles.thisOverLabel}>THIS OVER</Text>
-              {currentBalls.length === 0 && legalInCurrent === 0 ? (
-                <View style={styles.thisOverRow}>
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <View key={`empty-${i}`} style={styles.emptyBallSlot} />
-                  ))}
-                </View>
-              ) : (
-                <ThisOverRow
-                  deliveries={currentBalls}
-                  legalInOver={legalInCurrent}
-                />
-              )}
+              <ThisOverRow
+                deliveries={currentBalls}
+                legalInOver={legalInCurrent}
+              />
             </View>
 
             {recentOvers.length > 0 ? (
@@ -1304,8 +1352,8 @@ export function LiveScoringPanel({
             />
           )}
         </ScrollView>
-        <View style={styles.bottomAdStrip}>
-          <StickyBottomBannerAd />
+        <View style={bottomBannerVisible ? styles.bottomAdStrip : undefined}>
+          <StickyBottomBannerAd onVisibilityChange={setBottomBannerVisible} />
         </View>
       </View>
 
@@ -1347,7 +1395,7 @@ export function LiveScoringPanel({
                 accessibilityRole="button"
                 accessibilityLabel="Close recent overs"
               >
-                <CloseIcon size={wp(4.5)} color={colors.textMuted} />
+                <CloseIcon size={wp(4.5)} color={colors.primary} />
               </Pressable>
             </View>
             <ScrollView
@@ -1990,8 +2038,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: wp(2.5),
   },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: wp(1),
+    // height: wp(11),
+    paddingVertical: hp(0.6),
+    paddingHorizontal: wp(2.2),
+    borderRadius: wp(2.5),
+  },
+  shareBtnPressed: {
+    opacity: 0.85,
+  },
+  shareBtnLabel: {
+    fontSize: fontSize(13),
+    fontWeight: '800',
+    color: colors.primary,
+  },
+  shareBtnLabelActive: {
+    color: colors.background,
+  },
   iconHitActive: {
     backgroundColor: colors.primary,
+  },
+  backArrow: {
+    width: wp(4),
+    height: wp(4),
+    tintColor: colors.primary,
   },
   backPressed: {
     backgroundColor: colors.primaryFaint,
@@ -2071,11 +2144,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: hp(0.8),
   },
-  targetLabel: {
-    fontSize: fontSize(13),
-    fontWeight: '800',
-    color: colors.background,
-  },
   liveBadge: {
     paddingHorizontal: wp(2.7),
     paddingVertical: hp(0.5),
@@ -2090,53 +2158,49 @@ const styles = StyleSheet.create({
   },
   scoreMainRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: wp(3),
+    alignItems: 'stretch',
+    gap: wp(1.5),
     marginBottom: hp(1.2),
+  },
+  scoreStat: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: hp(0.4),
+  },
+  scoreStatLabel: {
+    fontSize: fontSize(10),
+    fontWeight: '800',
+    color: 'rgba(255, 255, 255, 0.72)',
+    letterSpacing: 0.6,
+    marginBottom: hp(0.2),
+  },
+  scoreStatValue: {
+    fontSize: fontSize(26),
+    lineHeight: fontSize(30),
+    fontWeight: '900',
+    color: colors.background,
+    textAlign: 'center',
+  },
+  scoreStatDetail: {
+    marginTop: hp(0.15),
+    fontSize: fontSize(11),
+    lineHeight: fontSize(14),
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.78)',
+    textAlign: 'center',
   },
   scoreMainColumn: {
     flex: 1,
     minWidth: 0,
+    marginBottom: hp(1.2),
   },
   scoreMainDivider: {
     width: 1,
     alignSelf: 'stretch',
-    marginVertical: hp(0.6),
+    marginVertical: hp(0.4),
     backgroundColor: 'rgba(255, 255, 255, 0.35)',
-  },
-  chaseTargetCard: {
-    flex: 0.95,
-    minWidth: wp(31),
-    minHeight: hp(8.5),
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: wp(2),
-    paddingVertical: hp(0.8),
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.48)',
-    borderRadius: wp(2.5),
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  chaseTargetValue: {
-    fontSize: fontSize(30),
-    lineHeight: fontSize(34),
-    fontWeight: '900',
-    color: colors.background,
-  },
-  chaseTargetLabel: {
-    fontSize: fontSize(9),
-    fontWeight: '800',
-    color: 'rgba(255, 255, 255, 0.78)',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
-  chaseTargetBalls: {
-    marginTop: hp(0.2),
-    fontSize: fontSize(8),
-    fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.68)',
-    letterSpacing: 0.3,
-    textAlign: 'center',
   },
   activeTeamName: {
     marginBottom: hp(0.2),
@@ -2199,16 +2263,17 @@ const styles = StyleSheet.create({
   },
   thisOverRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
     flexWrap: 'wrap',
+    alignItems: 'center',
     width: '100%',
-    minHeight: hp(5.8),
+    rowGap: hp(0.7),
+  },
+  thisOverSlot: {
+    width: '16.66%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyBallSlot: {
-    width: wp(10),
-    height: wp(10),
-    borderRadius: wp(5),
     borderWidth: 1.5,
     borderColor: 'rgba(255, 255, 255, 0.35)',
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
@@ -2251,19 +2316,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: hp(0.1),
   },
-  runBtnDot: {
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  runBtnBoundary: {
-    borderWidth: 0,
-  },
-  runBtnFour: {
-    backgroundColor: PELLET_COLORS.four.bg,
-  },
-  runBtnSix: {
-    backgroundColor: colors.primary,
-  },
   runBtnText: {
     fontSize: fontSize(23),
     fontWeight: '900',
@@ -2276,9 +2328,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     letterSpacing: 0.6,
     lineHeight: fontSize(11),
-  },
-  runBtnTextBoundary: {
-    color: colors.background,
   },
   wicketBtnFull: {
     minHeight: hp(5.8),

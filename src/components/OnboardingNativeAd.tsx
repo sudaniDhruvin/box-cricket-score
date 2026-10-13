@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   Image,
   Platform,
@@ -88,23 +87,8 @@ export function OnboardingNativeAd() {
     ]).start();
   }, [nativeAd, cardFade, cardLift]);
 
-  if (!isNative || failed) {
+  if (!isAds || !isNative || failed || !nativeAd) {
     return null;
-  }
-
-  if (!nativeAd) {
-    return (
-      <View style={styles.skeleton} accessibilityLabel="Loading advertisement">
-        <View style={styles.adsTag} pointerEvents="none">
-          <Text style={styles.adsTagText}>Ad</Text>
-        </View>
-        <View style={styles.skeletonInner}>
-          <View style={styles.skeletonLineShort} />
-          <View style={styles.skeletonBlock} />
-          <ActivityIndicator size="small" color={colors.primary} />
-        </View>
-      </View>
-    );
   }
 
   return (
@@ -180,49 +164,7 @@ export function OnboardingNativeAd() {
 const styles = StyleSheet.create({
   root: {
     width: '100%',
-  },
-  skeleton: {
-    minHeight: hp(10),
-    marginTop: hp(0.5),
-    marginBottom: hp(0.5),
-    borderRadius: wp(4),
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-    position: 'relative',
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.text,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-    overflow: 'hidden',
-  },
-  skeletonInner: {
-    flex: 1,
-    minHeight: hp(8),
-    padding: wp(3),
-  },
-  skeletonLineShort: {
-    width: '38%',
-    height: hp(1),
-    borderRadius: hp(0.5),
-    backgroundColor: colors.primaryFaint,
-    marginBottom: hp(1.2),
-  },
-  skeletonBlock: {
-    position: 'absolute',
-    right: wp(3),
-    top: '22%',
-    width: wp(28),
-    height: hp(5.5),
-    borderRadius: wp(2),
-    backgroundColor: colors.primaryFaint,
+    marginTop: hp(2.5),
   },
   adsTag: {
     position: 'absolute',

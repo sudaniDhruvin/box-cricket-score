@@ -20,9 +20,17 @@ describe('getPelletStyle', () => {
       a11yLabel: 'One run',
     });
     expect(getPelletStyle(ball('two', '2'))).toMatchObject({
-      ...PELLET_COLORS.multi,
+      ...PELLET_COLORS.two,
       label: '2',
       a11yLabel: 'Two runs',
+    });
+    expect(getPelletStyle(ball('three', '3'))).toMatchObject({
+      ...PELLET_COLORS.three,
+      label: '3',
+    });
+    expect(getPelletStyle(ball('five', '5'))).toMatchObject({
+      ...PELLET_COLORS.five,
+      label: '5',
     });
     expect(getPelletStyle(ball('four', '4'))).toMatchObject({
       ...PELLET_COLORS.four,

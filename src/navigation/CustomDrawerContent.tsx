@@ -24,7 +24,6 @@ import {
   ChevronRightIcon,
   CloseIcon,
   CricketScorebookIcon,
-  CricketTrophyIcon,
   QrScanIcon,
   RefreshIcon,
   ShieldIcon,
@@ -208,20 +207,33 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.brandBlock}>
-        <Pressable
-          style={styles.closeIconWrap}
-          onPress={() => navigation.closeDrawer()}
-        >
-          <CloseIcon size={wp(5)} color={colors.textSecondary} />
-        </Pressable>
-        <View style={styles.logoWrap}>
-          <Image
-            source={PNGs.LOGO}
-            style={styles.logo}
-            resizeMode="contain"
-            accessibilityLabel="Crick Shots app logo"
-            accessibilityRole="image"
-          />
+        <View>
+          <View style={styles.bannerWrap}>
+            <Image
+              source={PNGs.AppBanner}
+              style={styles.banner}
+              resizeMode="cover"
+              accessibilityLabel="Box Cricket Score banner"
+              accessibilityRole="image"
+            />
+            <Pressable
+              style={styles.closeIconWrap}
+              onPress={() => navigation.closeDrawer()}
+              accessibilityRole="button"
+              accessibilityLabel="Close menu"
+            >
+              <CloseIcon size={wp(4.5)} color={colors.primary} />
+            </Pressable>
+          </View>
+          <View style={styles.logoBadge}>
+            <Image
+              source={PNGs.LOGO}
+              style={styles.logo}
+              resizeMode="cover"
+              accessibilityLabel="Crick Shots app logo"
+              accessibilityRole="image"
+            />
+          </View>
         </View>
         <Text style={styles.brandKicker}>CRICK SHOTS</Text>
         <Text style={styles.brandSub}>
@@ -280,7 +292,12 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         <InteractiveRow
           label="Rate this app"
           hint="Share feedback on the app store"
-          icon={<CricketTrophyIcon size={wp(5)} color={colors.primary} />}
+          icon={
+            <Image
+              source={PNGs.TrophyIcon}
+              style={{ width: wp(5), height: wp(5), tintColor: colors.primary }}
+            />
+          }
           onPress={onRateApp}
           accessibilityLabel="Rate this app"
         />
@@ -301,20 +318,40 @@ const styles = StyleSheet.create({
   brandBlock: {
     marginBottom: hp(2),
   },
+  bannerWrap: {
+    marginHorizontal: -wp(5),
+    marginBottom: hp(1.6),
+    overflow: 'hidden',
+  },
+  banner: {
+    width: '100%',
+    height: hp(17)
+  },
   closeIconWrap: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-  },
-  logoWrap: {
-    width: '100%',
+    top: wp(2.5),
+    right: wp(3),
+    width: wp(8),
+    height: wp(8),
+    borderRadius: wp(4),
     alignItems: 'center',
-    marginBottom: hp(1.2),
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+  },
+  logoBadge: {
+    width: wp(24),
+    height: wp(24),
+    borderRadius: 100,
+    borderWidth: 4,
+    borderColor: colors.background,
+    overflow: 'hidden',
+    backgroundColor: 'red',
+    marginTop: hp(-6.5),
+    alignSelf: 'center',
   },
   logo: {
-    width: wp(27),
-    height: wp(27),
-    borderRadius: wp(5),
+    width: '100%',
+    height: '100%',
   },
   brandKicker: {
     fontSize: fontSize(11),

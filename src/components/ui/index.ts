@@ -17,6 +17,7 @@ export {
   CricketStumpsIcon,
   CricketTrophyIcon,
   DismissalIcon,
+  QrCodeIcon,
   QrScanIcon,
   RefreshIcon,
   SettingsSlidersIcon,

@@ -10,6 +10,7 @@ import React, {
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import {
   Alert,
+  Image,
   ListRenderItemInfo,
   Platform,
   Pressable,
@@ -23,15 +24,8 @@ import { useInterstitialAd } from 'react-native-google-mobile-ads';
 import { HomeEmptyBannerAd } from '../components/HomeEmptyBannerAd';
 import { HomeListNativeAd } from '../components/HomeListNativeAd';
 import { MatchCard } from '../components/MatchCard';
-import {
-  CricketBatBallIcon,
-  CricketScorebookIcon,
-  CricketStumpsIcon,
-  CricketTrophyIcon,
-  MenuIcon,
-  QrScanIcon,
-  TrashIcon,
-} from '../components/ui';
+import { CricketScorebookIcon, MenuIcon, QrScanIcon, TrashIcon } from '../components/ui';
+import { PNGs } from '../assets/images/pngs';
 import type { MainStackParamList } from '../navigation/types';
 import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
@@ -194,7 +188,10 @@ function LastMatchPreview({
 
       <View style={styles.lastMatchResultRow}>
         <View style={styles.lastMatchTrophy}>
-          <CricketTrophyIcon size={wp(4.5)} color={colors.primary} />
+          <Image
+            source={PNGs.TrophyIcon}
+            style={{ width: wp(4), height: wp(4), tintColor: colors.primary }}
+          />
         </View>
         <Text style={styles.lastMatchResult} numberOfLines={2}>
           {headline}
@@ -232,7 +229,10 @@ function SeasonOverview({
     <View style={styles.seasonGrid}>
       <View style={[styles.seasonCard, styles.seasonMatchesCard]}>
         <View style={styles.seasonIconWrap}>
-          <CricketBatBallIcon size={wp(4.5)} color={colors.primary} />
+          <Image
+            source={PNGs.BatBallIcon}
+            style={{ width: wp(4), height: wp(4), tintColor: colors.primary }}
+          />
         </View>
         <Text style={styles.seasonBigValue}>{matchCount}</Text>
         <Text style={styles.seasonLabel}>MATCHES</Text>
@@ -242,7 +242,10 @@ function SeasonOverview({
         <View style={[styles.seasonCard, styles.seasonStatCard]}>
           <View style={styles.seasonStatTop}>
             <Text style={styles.seasonStatLabel}>TOTAL RUNS</Text>
-            <CricketScorebookIcon size={wp(4.5)} color={colors.primary} />
+            <Image
+              source={PNGs.GraphIcon}
+              style={{ width: wp(4), height: wp(4), tintColor: colors.primary }}
+            />
           </View>
           <Text style={[styles.seasonStatValue, styles.seasonRunsValue]}>
             {totalRuns.toLocaleString()}
@@ -252,7 +255,14 @@ function SeasonOverview({
         <View style={[styles.seasonCard, styles.seasonStatCard]}>
           <View style={styles.seasonStatTop}>
             <Text style={styles.seasonStatLabel}>WICKETS</Text>
-            <CricketStumpsIcon size={wp(4.5)} color={colors.live} />
+            <Image
+              source={PNGs.DotCircleIcon}
+              style={{
+                width: wp(5),
+                height: wp(5),
+                tintColor: colors.live,
+              }}
+            />
           </View>
           <Text style={[styles.seasonStatValue, styles.seasonWicketsValue]}>
             {totalWickets.toLocaleString()}
@@ -461,7 +471,12 @@ export function HomeScreen() {
             <View style={styles.headerBar}>
               <View style={styles.headerSide}>
                 <View style={styles.avatarWrap}>
-                  <CricketBatBallIcon size={wp(6)} color={colors.primary} />
+                  <Image
+                    source={PNGs.LOGO}
+                    style={styles.headerLogo}
+                    resizeMode="cover"
+                    accessibilityLabel="Crick Shots logo"
+                  />
                 </View>
               </View>
               <Text style={styles.appTitle}>Crick Shots</Text>
@@ -522,7 +537,14 @@ export function HomeScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="New match. Set up a match and begin scoring."
                 >
-                  <CricketBatBallIcon size={wp(4.5)} color={colors.primary} />
+                  <Image
+                    source={PNGs.PLAY_ICON}
+                    style={{
+                      width: wp(4),
+                      height: wp(4),
+                      tintColor: colors.primary,
+                    }}
+                  />
                   <Text style={styles.quickStartText}>New Match</Text>
                 </Pressable>
 
@@ -617,9 +639,7 @@ export function HomeScreen() {
               Your scorecards will show up here when the game gets going.
             </Text>
 
-            <View style={styles.emptyBannerWrap}>
-              <HomeEmptyBannerAd />
-            </View>
+            <HomeEmptyBannerAd />
           </View>
         }
       />
@@ -640,7 +660,14 @@ export function HomeScreen() {
           accessibilityRole="button"
           accessibilityLabel="Start new match"
         >
-          <CricketBatBallIcon size={wp(5)} color={colors.background} />
+          <Image
+            source={PNGs.BatBallIcon}
+            style={{
+              width: wp(5),
+              height: wp(5),
+              tintColor: colors.background,
+            }}
+          />
           <Text style={styles.fabPlus}>New Match</Text>
         </Pressable>
       ) : null}
@@ -716,6 +743,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  headerLogo: {
+    width: '100%',
+    height: '100%',
   },
   appTitle: {
     flex: 1,
@@ -1195,9 +1226,5 @@ const styles = StyleSheet.create({
     fontSize: fontSize(14),
     fontWeight: '500',
     color: colors.background,
-  },
-  emptyBannerWrap: {
-    marginTop: hp(4),
-    alignItems: 'center',
   },
 });

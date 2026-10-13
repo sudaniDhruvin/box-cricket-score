@@ -1,5 +1,6 @@
 import React, { type ReactNode } from 'react';
 import {
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -7,9 +8,9 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { PNGs } from '../../assets/images/pngs';
 import { colors } from '../../theme/colors';
 import { fontSize, hp, wp } from '../../utils';
-import { ArrowLeftIcon } from './CricketIcons';
 
 type ScreenHeaderProps = {
   backLabel?: string;
@@ -34,7 +35,7 @@ export function ScreenHeader({
         accessibilityRole="button"
         accessibilityLabel={backLabel === 'Back' ? 'Go back' : `Back to ${backLabel}`}
       >
-        <ArrowLeftIcon size={wp(4.5)} color={colors.primary} />
+        <Image source={PNGs.LEFT_ARROW} style={styles.backArrow} />
         <Text style={styles.backLabel}>{backLabel}</Text>
       </Pressable>
       {title ? (
@@ -71,6 +72,11 @@ const styles = StyleSheet.create({
   },
   pressed: {
     backgroundColor: colors.primaryFaint,
+  },
+  backArrow: {
+    width: wp(4),
+    height: wp(4),
+    tintColor: colors.primary,
   },
   backLabel: {
     fontSize: fontSize(16),
