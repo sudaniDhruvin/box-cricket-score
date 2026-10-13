@@ -27,7 +27,7 @@ export async function syncMatches(ownerId: number): Promise<{
   downloaded: number;
   deleted: number;
 }> {
-  if (!getAccessToken()) throw new Error('Sign in before syncing matches.');
+  if (!getAccessToken()) throw new Error('Sign in before updating your matches.');
   const store = useMatchStore.getState();
   let uploaded = 0;
   let deleted = 0;

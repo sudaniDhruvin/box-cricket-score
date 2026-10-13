@@ -25,11 +25,11 @@ export function ModeSelectionScreen({ onSelect }: Props) {
           style={({ pressed }) => [styles.card, styles.quickCard, pressed && styles.pressed]}
           onPress={() => onSelect('quick')}
           accessibilityRole="button"
-          accessibilityLabel="Open Quick Mode. Offline score calculator with no account or API."
+          accessibilityLabel="Open Quick Mode. Score matches on this phone with no account."
         >
           <Text style={styles.cardKicker}>NO ACCOUNT NEEDED</Text>
           <Text style={styles.cardTitle}>Quick Mode</Text>
-          <Text style={styles.cardBody}>Score a match offline with the calculator you already use. No API connection.</Text>
+          <Text style={styles.cardBody}>Score a match on this phone. No account needed.</Text>
           <View style={styles.cardFooter}>
             <Text style={styles.cardAction}>Continue offline</Text>
             <Text style={styles.arrow}>›</Text>

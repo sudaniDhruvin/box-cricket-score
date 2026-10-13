@@ -89,7 +89,7 @@ export async function startHostShareSession(
   const hostIp = await getLocalIpAddress();
   if (!hostIp) {
     throw new Error(
-      'Could not find this phone’s Wi‑Fi IP. Turn Wi‑Fi/hotspot on, then try Share again.',
+      'Turn on Wi-Fi or a hotspot, then try sharing again.',
     );
   }
 
@@ -216,7 +216,7 @@ export async function startHostShareSession(
         const message = parseMessage(line);
         if (!authed) {
           if (message == null || message.type !== 'session.hello') {
-            fail('invalid_message', 'Expected session.hello');
+            fail('invalid_message', 'This code could not be read. Ask them to share again.');
             return;
           }
           if (message.v !== LIVE_SHARE_PROTOCOL_VERSION) {
@@ -224,11 +224,11 @@ export async function startHostShareSession(
             return;
           }
           if (message.sessionId !== args.matchId) {
-            fail('bad_session', 'Session mismatch');
+            fail('bad_session', 'This code is for a different match. Ask them to share again.');
             return;
           }
           if (message.token !== token) {
-            fail('bad_token', 'Invalid token. Scan a fresh QR code.');
+            fail('bad_token', 'This code is no longer valid. Ask them to share again.');
             return;
           }
 
@@ -308,7 +308,7 @@ export async function startHostShareSession(
 
     const ended: LiveShareServerMessage = {
       type: 'session.ended',
-      reason: 'Host stopped sharing',
+      reason: 'The scorer stopped sharing',
     };
     const sockets = Array.from(viewers.values()).map(entry => entry.socket);
     viewers.clear();

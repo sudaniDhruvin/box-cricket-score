@@ -65,6 +65,10 @@ type Navigation = NativeStackNavigationProp<MainStackParamList>;
 type GroupTab = 'feed' | 'polls' | 'members' | 'matches' | 'reports';
 type ScreenView = 'groups' | 'group' | 'notifications' | 'draft';
 
+function plainLabel(value: string): string {
+  return value.replace(/[-_]/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
 function Field({
   value,
   onChangeText,
@@ -177,7 +181,7 @@ export function CommunityScreen() {
     try {
       await task();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'The request could not be completed.');
+      setError(cause instanceof Error ? cause.message : 'That could not be completed. Try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -310,7 +314,7 @@ export function CommunityScreen() {
         quality: 0.8,
       });
       if (result.didCancel) return;
-      if (result.errorMessage) throw new Error(result.errorMessage);
+      if (result.errorMessage) throw new Error('Could not open your photos. Try again.');
       const assets = result.assets ?? [];
       if (assets.length > 8) throw new Error('Select no more than eight photos for one post.');
       const bytes = assets.reduce((sum, asset) => sum + (asset.fileSize ?? 0), 0);
@@ -397,8 +401,8 @@ export function CommunityScreen() {
     run(async () => {
       const oversValue = Number(overs);
       const teamSizeValue = Number(teamSize);
-      if (!Number.isInteger(oversValue) || oversValue < 1 || oversValue > 50) throw new Error('The mobile scorer supports 1 to 50 overs per side.');
-      if (!Number.isInteger(teamSizeValue) || teamSizeValue < 1 || teamSizeValue > 20) throw new Error('The mobile scorer supports 1 to 20 players per side.');
+      if (!Number.isInteger(oversValue) || oversValue < 1 || oversValue > 50) throw new Error('Use 1 to 50 overs per side.');
+      if (!Number.isInteger(teamSizeValue) || teamSizeValue < 1 || teamSizeValue > 20) throw new Error('Use 1 to 20 players per side.');
       const title = matchTitle.trim();
       const created = await createGroupMatch(group.id, {
         title,
@@ -445,7 +449,7 @@ export function CommunityScreen() {
       await finalizeMatchTeams(selectedMatch.id);
       await refreshSelectedGroup(group.id);
       setSelectedMatch(current => current ? { ...current, status: 'scheduled' } : current);
-      setNotice('Teams finalized and frozen for this scheduled match.');
+      setNotice('Teams are set for this match.');
     });
   };
 
@@ -511,7 +515,7 @@ export function CommunityScreen() {
                 <Field value={groupDescription} onChangeText={setGroupDescription} placeholder="Description (optional)" multiline />
                 <View style={styles.inlineRow}>
                   {(['public', 'private', 'invite-only'] as const).map(value => (
-                    <Action key={value} label={value} onPress={() => setGroupVisibility(value)} secondary={groupVisibility !== value} />
+                    <Action key={value} label={plainLabel(value)} onPress={() => setGroupVisibility(value)} secondary={groupVisibility !== value} />
                   ))}
                 </View>
                 <Action label="Create group" onPress={createNewGroup} disabled={!groupName.trim()} />
@@ -522,7 +526,7 @@ export function CommunityScreen() {
                 <View key={row.id} style={styles.listItem}>
                   <Pressable style={styles.flex} onPress={() => openGroup(row)} disabled={row.membershipStatus !== 'active'}>
                     <Text style={styles.itemTitle}>{row.name}</Text>
-                    <Text style={styles.muted}>{row.description || row.visibility} · {row.membershipStatus === 'active' ? row.myRole : row.membershipStatus ?? row.visibility}</Text>
+                    <Text style={styles.muted}>{row.description || plainLabel(row.visibility)} · {plainLabel(row.membershipStatus === 'active' ? row.myRole : row.membershipStatus ?? row.visibility)}</Text>
                   </Pressable>
                   {row.membershipStatus !== 'active' ? <Action label={row.membershipStatus === 'pending' ? 'Requested' : 'Join'} onPress={() => join(row)} disabled={row.membershipStatus === 'pending'} secondary /> : null}
                 </View>
@@ -540,7 +544,7 @@ export function CommunityScreen() {
           <>
             <View style={styles.topRow}>
               <View style={styles.welcome}>
-                <Text style={styles.eyebrow}>{group.visibility.toUpperCase()} GROUP · {group.myRole}</Text>
+                <Text style={styles.eyebrow}>{plainLabel(group.visibility).toUpperCase()} GROUP · {plainLabel(group.myRole).toUpperCase()}</Text>
                 <Text style={styles.heading}>{group.description || 'Group activity and match planning'}</Text>
               </View>
               <Action label={`Inbox${unreadCount ? ` · ${unreadCount}` : ''}`} onPress={loadNotifications} secondary />
@@ -548,7 +552,7 @@ export function CommunityScreen() {
             <View style={styles.tabs}>
               {(['feed', 'polls', 'members', 'matches', ...(isAdmin ? ['reports' as const] : [])] as const).map(value => (
                 <Pressable key={value} onPress={() => setTab(value)} style={[styles.tab, tab === value && styles.activeTab]}>
-                  <Text style={[styles.tabText, tab === value && styles.activeTabText]}>{value}</Text>
+                  <Text style={[styles.tabText, tab === value && styles.activeTabText]}>{plainLabel(value)}</Text>
                 </Pressable>
               ))}
             </View>
@@ -604,7 +608,7 @@ export function CommunityScreen() {
                   const selected = voteSelections[poll.id] ?? poll.myOptionIds;
                   return (
                     <View key={poll.id} style={styles.card}>
-                      <View style={styles.topRow}><Text style={[styles.itemTitle, styles.flex]}>{poll.question}</Text><Text style={styles.pill}>{poll.status}</Text></View>
+                      <View style={styles.topRow}><Text style={[styles.itemTitle, styles.flex]}>{poll.question}</Text><Text style={styles.pill}>{plainLabel(poll.status)}</Text></View>
                       {poll.description ? <Text style={styles.muted}>{poll.description}</Text> : null}
                       {poll.options.map(option => {
                         const chosen = selected.includes(option.id);
@@ -642,7 +646,7 @@ export function CommunityScreen() {
                   <View key={member.userId} style={styles.memberRow}>
                     <View style={styles.flex}>
                       <Text style={styles.itemTitle}>{member.displayName}</Text>
-                      <Text style={styles.muted}>@{member.username} · {member.role} · {member.status}</Text>
+                      <Text style={styles.muted}>@{member.username} · {plainLabel(member.role)} · {plainLabel(member.status)}</Text>
                     </View>
                     {isAdmin && member.status === 'pending' ? <Action label="Approve" onPress={() => moderateMember(member, 'active')} /> : null}
                     {isAdmin && member.status === 'pending' ? <Action label="Reject" onPress={() => moderateMember(member, 'rejected')} secondary /> : null}
@@ -662,7 +666,7 @@ export function CommunityScreen() {
               <>
                 {isAdmin ? (
                   <View style={styles.card}>
-                    <SectionTitle>Schedule a match and start the draft</SectionTitle>
+                    <SectionTitle>Schedule a match and pick the teams</SectionTitle>
                     <Field value={matchTitle} onChangeText={setMatchTitle} placeholder="Match title" />
                     <View style={styles.inlineRow}><View style={styles.flex}><Field value={teamOneName} onChangeText={setTeamOneName} placeholder="First team" /></View><View style={styles.flex}><Field value={teamTwoName} onChangeText={setTeamTwoName} placeholder="Second team" /></View></View>
                     <View style={styles.inlineRow}><View style={styles.flex}><Field value={overs} onChangeText={setOvers} placeholder="Overs per side" keyboardType="number-pad" /></View><View style={styles.flex}><Field value={teamSize} onChangeText={setTeamSize} placeholder="Players per side" keyboardType="number-pad" /></View></View>
@@ -675,9 +679,9 @@ export function CommunityScreen() {
                     <View key={match.id} style={styles.listItem}>
                       <View style={styles.flex}>
                         <Text style={styles.itemTitle}>{match.title}</Text>
-                        <Text style={styles.muted}>{match.teams.join(' vs ')} · {match.status} · {match.teamSize} per side</Text>
+                        <Text style={styles.muted}>{match.teams.join(' vs ')} · {plainLabel(match.status)} · {match.teamSize} per side</Text>
                       </View>
-                      <Action label={match.status === 'draft' ? 'Open draft' : 'View teams'} onPress={() => openDraft(match)} secondary />
+                      <Action label={match.status === 'draft' ? 'Pick teams' : 'View teams'} onPress={() => openDraft(match)} secondary />
                       {match.status === 'live' || match.status === 'completed' ? <Action label="Scorecard" onPress={() => openScorecard(match)} /> : null}
                     </View>
                   ))}
@@ -702,10 +706,10 @@ export function CommunityScreen() {
             ) : null}
             {tab === 'reports' && isAdmin ? (
               <View style={styles.card}>
-                <SectionTitle>Moderation reports</SectionTitle>
+                <SectionTitle>Reports</SectionTitle>
                 {reports.map(report => (
                   <View key={report.id} style={styles.reportItem}>
-                    <Text style={styles.itemTitle}>{report.resourceType} #{report.resourceId} · {report.status}</Text>
+                    <Text style={styles.itemTitle}>{plainLabel(report.resourceType)} · {plainLabel(report.status)}</Text>
                     <Text style={styles.body}>{report.reason}{report.details ? ` — ${report.details}` : ''}</Text>
                     {report.status === 'open' ? (
                       <View style={styles.inlineRow}>
@@ -724,7 +728,7 @@ export function CommunityScreen() {
         {view === 'draft' && selectedMatch ? (
           <>
             <View style={styles.card}>
-              <Text style={styles.eyebrow}>{selectedMatch.status.toUpperCase()} · {selectedMatch.oversPerSide} OVERS · {selectedMatch.teamSize} PLAYERS PER SIDE</Text>
+              <Text style={styles.eyebrow}>{plainLabel(selectedMatch.status).toUpperCase()} · {selectedMatch.oversPerSide} OVERS · {selectedMatch.teamSize} PLAYERS PER SIDE</Text>
               <Text style={styles.heading}>{selectedMatch.title}</Text>
               <Text style={styles.muted}>{selectedMatch.teams.join(' vs ')}</Text>
             </View>
@@ -760,7 +764,7 @@ export function CommunityScreen() {
                 ))}
               </View>
             ) : selectedMatch.status === 'draft' && draftTeams.length === 2 && draftTeams.some(team => team.captain) ? (
-              <View style={styles.card}><Text style={styles.muted}>The captain for Side {nextSide} makes the next alternating pick from their own signed-in account.</Text></View>
+              <View style={styles.card}><Text style={styles.muted}>The captain for Side {nextSide} picks the next player.</Text></View>
             ) : null}
             {isAdmin && selectedMatch.status === 'draft' ? <Action label="Finalize teams" onPress={finalize} /> : null}
             {isAdmin && selectedMatch.status === 'scheduled' ? (

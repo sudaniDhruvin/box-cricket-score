@@ -66,7 +66,7 @@ export function ScanToWatchScreen() {
       const payload = parseJoinPayload(raw);
       if (!payload) {
         setScanError(
-          'This QR code is not a Crick Shots live score. Ask the host to share it again.',
+          'This is not a Crick Shots live score code. Ask them to share it again.',
         );
         return;
       }
@@ -85,8 +85,8 @@ export function ScanToWatchScreen() {
       />
 
       <Text style={styles.hint}>
-        Join the host Wi‑Fi or hotspot first, then fill the square with their
-        Share live score QR.
+        Join the same Wi-Fi or hotspot first, then fill the square with their
+        live score code.
       </Text>
 
       {hasPermission == null ? (
@@ -96,7 +96,7 @@ export function ScanToWatchScreen() {
       ) : !hasPermission ? (
         <View style={styles.center}>
           <Text style={styles.errorText}>
-            Camera permission is required to scan the QR code.
+            Allow camera access to scan the code.
           </Text>
         </View>
       ) : (

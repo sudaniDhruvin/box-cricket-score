@@ -1154,17 +1154,17 @@ export function LiveScoringPanel({
             pressed && styles.backPressed,
           ]}
           accessibilityRole="button"
-          accessibilityLabel="Live sharing is on. Tap to show the QR code."
+          accessibilityLabel="Live sharing is on. Tap to show the code."
         >
           <View style={styles.sharingDot} />
           <Text style={styles.sharingBarText} numberOfLines={1}>
             {viewerCount > 0
               ? `Sharing live · ${viewerCount} watching`
               : hadViewers
-                ? 'Sharing live · viewer disconnected'
-                : 'Sharing live · waiting for viewers'}
+                ? 'Sharing live · someone left'
+                : 'Sharing live · waiting to be scanned'}
           </Text>
-          <Text style={styles.sharingBarCta}>QR</Text>
+          <Text style={styles.sharingBarCta}>Code</Text>
         </Pressable>
       ) : null}
 
@@ -1904,11 +1904,11 @@ export function LiveScoringPanel({
       ) : null}
       <LiveShareNoticeModal
         visible={viewerDroppedOpen}
-        title="Viewer disconnected"
-        message="A phone dropped from live scoring. Tap Connect again to rejoin with the same QR code. There is no need to refresh it."
+        title="Someone stopped watching"
+        message="They can tap Connect again and scan the same code. You do not need to refresh it."
         primaryLabel="OK"
         onPrimary={() => setViewerDroppedOpen(false)}
-        secondaryLabel="Show QR"
+        secondaryLabel="Show code"
         onSecondary={() => {
           setViewerDroppedOpen(false);
           setShareOpen(true);

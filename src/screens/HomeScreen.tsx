@@ -492,7 +492,7 @@ export function HomeScreen() {
                     borderless: true,
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel="Watch live. Scan a host QR code."
+                  accessibilityLabel="Watch live. Scan the scorer's code."
                 >
                   <QrScanIcon size={wp(5.5)} color={colors.primary} />
                 </Pressable>
@@ -559,7 +559,7 @@ export function HomeScreen() {
                     foreground: true,
                   }}
                   accessibilityRole="button"
-                  accessibilityLabel="Watch live. Scan a host QR on the same Wi-Fi."
+                  accessibilityLabel="Watch live. Scan the scorer's code on the same Wi-Fi."
                 >
                   <QrScanIcon size={wp(4.5)} color={colors.background} />
                   <Text style={styles.watchLiveText}>Watch Live</Text>

@@ -51,15 +51,17 @@ export function StatsDashboardScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {!loading && !error && statistics ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>{statistics.available ? 'Statistics loaded' : 'Player stats are not available yet'}</Text>
+            <Text style={styles.emptyTitle}>{statistics.available ? 'Your statistics' : 'Player stats are not available yet'}</Text>
             <Text style={styles.emptyBody}>
-              {statistics.message ?? 'The current scorecard records team totals and delivery labels, but not which player faced or bowled each delivery. Individual statistics will appear when scorecards include player attribution.'}
+              {statistics.available
+                ? 'Your batting and bowling numbers are ready.'
+                : 'Personal batting and bowling numbers will show here once a scorecard records who faced and bowled each ball.'}
             </Text>
           </View>
         ) : null}
         <View style={styles.noteCard}>
           <Text style={styles.noteTitle}>Your scorecards</Text>
-          <Text style={styles.noteBody}>Quick Mode continues to save match totals on this device. Sign in here to view your profile and connected group features.</Text>
+          <Text style={styles.noteBody}>Quick Mode keeps match totals on this phone. Sign in to see your profile and groups.</Text>
         </View>
       </ScrollView>
     </View>

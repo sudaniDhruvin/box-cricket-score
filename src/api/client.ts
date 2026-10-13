@@ -26,12 +26,28 @@ type RequestOptions = {
 
 const baseUrl = API_BASE_URL.replace(/\/+$/, '');
 
+function isTechnicalMessage(message: string): boolean {
+  return /json|boolean|integer|\bobject\b|\burl\b|\bfield\b|oauth|firebase|\bapi\b|sql|exception|payload|endpoint|yyyy-mm-dd|bytes|clientUpdatedAt|profilePublic|scheduledAt|src\/|token|stack|undefined|\bnull\b|status code|\(\d{3}\)/i.test(message);
+}
+
+function toUserMessage(message: string | undefined, status: number, fallback: string): string {
+  const text = message?.trim() ?? '';
+  if (text && !isTechnicalMessage(text)) return text;
+  if (status === 401) return 'Please sign in again.';
+  if (status === 403) return 'You cannot do that.';
+  if (status === 404) return 'That could not be found.';
+  if (status === 409) return 'That is already saved or no longer available.';
+  if (status === 422) return 'Check the details and try again.';
+  if (status === 429) return 'Too many attempts. Wait a few minutes and try again.';
+  return fallback;
+}
+
 export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
   if (!baseUrl) {
-    throw new ApiError('Set the API address in src/config/api.ts first.', 0);
+    throw new ApiError('Sign-in is not available right now. Try again later.', 0);
   }
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
@@ -49,7 +65,7 @@ export async function apiRequest<T>(
     });
   } catch {
     throw new ApiError(
-      'Could not reach the cricket API. Check the server address and network.',
+      'Could not connect. Check your internet and try again.',
       0,
     );
   }
@@ -58,11 +74,11 @@ export async function apiRequest<T>(
   try {
     envelope = (await response.json()) as ApiEnvelope<T>;
   } catch {
-    throw new ApiError('The API returned an invalid response.', response.status);
+    throw new ApiError('Something went wrong. Try again.', response.status);
   }
   if (!response.ok || envelope.error) {
     throw new ApiError(
-      envelope.error?.message ?? `API request failed (${response.status}).`,
+      toUserMessage(envelope.error?.message, response.status, 'Something went wrong. Try again.'),
       response.status,
       envelope.error?.details,
     );
@@ -198,12 +214,12 @@ export type PlayerProfile = ApiUser & {
   };
 };
 
-/** Exchange a verified Firebase ID token for the cricket API session token. */
-export function exchangeFirebaseToken(firebaseIdToken: string): Promise<AuthResult> {
+/** Exchange a Google ID token for the cricket API session token. */
+export function exchangeGoogleIdToken(idToken: string): Promise<AuthResult> {
   return apiRequest('/auth/google', {
     method: 'POST',
     authenticated: false,
-    body: { firebaseIdToken },
+    body: { idToken },
   });
 }
 
@@ -367,16 +383,20 @@ export async function uploadPostPhotos(
       body: form,
     });
   } catch {
-    throw new ApiError('Could not reach the cricket API to upload photos.', 0);
+    throw new ApiError('Could not upload the photos. Check your internet and try again.', 0);
   }
   let envelope: ApiEnvelope<Array<{ id: number; mimeType: string; width: number; height: number }>>;
   try {
     envelope = (await response.json()) as typeof envelope;
   } catch {
-    throw new ApiError('The API returned an invalid photo upload response.', response.status);
+    throw new ApiError('The photos could not be uploaded. Try again.', response.status);
   }
   if (!response.ok || envelope.error) {
-    throw new ApiError(envelope.error?.message ?? `Photo upload failed (${response.status}).`, response.status, envelope.error?.details);
+    throw new ApiError(
+      toUserMessage(envelope.error?.message, response.status, 'The photos could not be uploaded. Try again.'),
+      response.status,
+      envelope.error?.details,
+    );
   }
   return envelope.data;
 }

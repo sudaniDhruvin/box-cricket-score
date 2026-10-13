@@ -24,6 +24,6 @@ yarn android-AAB
 
 ## Stats Mode setup
 
-Set the API host in `src/config/api.ts` and the Web OAuth client ID in `src/config/googleAuth.ts`. Enable Google sign-in in Firebase Authentication and configure the backend to accept `POST /api/v1/auth/google` with a Firebase ID token. iOS also requires its Firebase `GoogleService-Info.plist` and URL scheme.
+Set the API host in `src/config/api.ts` and the Web client ID in `src/config/googleAuth.ts`. The API accepts that same client ID at `POST /api/v1/auth/google` and checks the Google ID token itself. iOS also needs the reversed client ID as a URL scheme.
 
 The PHP 8.2+/MariaDB API lives in a separate backend repository and is deployed locally to `C:\wamp64\www\bcs`. Follow that repository's setup guide and API documentation.

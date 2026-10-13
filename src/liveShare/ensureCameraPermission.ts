@@ -15,8 +15,8 @@ export async function ensureCameraPermission(): Promise<boolean> {
   const result = await PermissionsAndroid.request(
     PermissionsAndroid.PERMISSIONS.CAMERA,
     {
-      title: 'Camera permission',
-      message: 'Camera access is needed to scan the live score QR code.',
+      title: 'Camera access',
+      message: 'The camera is needed to scan a live score code.',
       buttonPositive: 'Allow',
       buttonNegative: 'Cancel',
     },

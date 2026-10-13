@@ -43,7 +43,7 @@ function statusLabel(status: ViewerConnectionStatus): string {
     case 'connected':
       return 'Watching live';
     case 'ended':
-      return 'Host ended sharing';
+      return 'Sharing has stopped';
     case 'error':
       return 'Disconnected';
     default:
@@ -54,11 +54,11 @@ function statusLabel(status: ViewerConnectionStatus): string {
 function bannerTitle(status: ViewerConnectionStatus): string {
   switch (status) {
     case 'connecting':
-      return 'Connecting to the host…';
+      return 'Connecting to the scorer…';
     case 'reconnecting':
       return 'You got disconnected';
     case 'ended':
-      return 'The host stopped sharing';
+      return 'The scorer stopped sharing';
     case 'error':
       return 'You got disconnected';
     default:
@@ -146,7 +146,7 @@ export function LiveSpectatorScreen() {
         <Text style={styles.bannerTitle}>{bannerTitle(status)}</Text>
         <Text style={styles.bannerBody}>
           {statusDetail ??
-            'Stay on this screen or tap Connect again. The host does not need a new QR.'}
+            'Stay on this screen or tap Connect again. The scorer does not need a new code.'}
         </Text>
         {showConnectAgain ? (
           <Pressable
@@ -169,9 +169,9 @@ export function LiveSpectatorScreen() {
               pressed && styles.pressed,
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Scan QR again"
+            accessibilityLabel="Scan the code again"
           >
-            <Text style={styles.bannerSecondaryText}>Scan QR again</Text>
+            <Text style={styles.bannerSecondaryText}>Scan again</Text>
           </Pressable>
         ) : null}
       </View>
@@ -207,7 +207,7 @@ export function LiveSpectatorScreen() {
       {!match ? (
         <View style={styles.center}>
           <Text style={styles.waiting}>
-            {statusDetail ?? 'Waiting for match data…'}
+            {statusDetail ?? 'Waiting for the score…'}
           </Text>
         </View>
       ) : (

@@ -1,14 +1,29 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { getAuth, getIdToken, GoogleAuthProvider, signInWithCredential, signOut as firebaseSignOut } from '@react-native-firebase/auth';
+import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
 import { PNGs } from '../assets/images/pngs';
-import { exchangeFirebaseToken } from '../api/client';
+import { ApiError, exchangeGoogleIdToken } from '../api/client';
 import { setAccessToken } from '../api/session';
 import { GOOGLE_WEB_CLIENT_ID } from '../config/googleAuth';
 import { useAppRuntime } from '../navigation/AppRuntimeContext';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
+
+function configureGoogleSignIn(): void {
+  GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID.trim() });
+}
+
+function signInMessage(cause: unknown): string {
+  if (cause instanceof ApiError) return cause.message;
+  if (isErrorWithCode(cause)) {
+    if (cause.code === statusCodes.SIGN_IN_CANCELLED) return 'Google sign-in was cancelled.';
+    if (cause.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) return 'Update Google Play services, then try again.';
+    if (cause.code === statusCodes.IN_PROGRESS) return 'Google sign-in is already in progress.';
+  }
+  const raw = cause instanceof Error ? cause.message : '';
+  if (/network|internet|offline/i.test(raw)) return 'Check your internet connection and try again.';
+  return 'Google sign-in could not be completed. Try again.';
+}
 
 export function GoogleSignInScreen() {
   const { setAuthenticated, selectMode } = useAppRuntime();
@@ -17,19 +32,25 @@ export function GoogleSignInScreen() {
   const configured = GOOGLE_WEB_CLIENT_ID.trim().length > 0;
 
   useEffect(() => {
-    const currentUser = getAuth().currentUser;
-    if (!configured || !currentUser) return;
+    if (!configured) return;
     let active = true;
+    configureGoogleSignIn();
     setLoading(true);
-    getIdToken(currentUser, true)
-      .then(exchangeFirebaseToken)
+    GoogleSignin.signInSilently()
+      .then(response => {
+        if (!active || response.type !== 'success') return null;
+        if (!response.data.idToken) throw new Error('Google sign-in could not be completed. Try again.');
+        return exchangeGoogleIdToken(response.data.idToken);
+      })
       .then(session => {
-        if (!active) return;
+        if (!active || !session) return;
         setAccessToken(session.token);
         setAuthenticated(true);
       })
       .catch(cause => {
-        if (active) setError(cause instanceof Error ? cause.message : 'Could not restore the Google session.');
+        if (!active) return;
+        if (isErrorWithCode(cause) && cause.code === statusCodes.SIGN_IN_REQUIRED) return;
+        setError(signInMessage(cause));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -42,23 +63,18 @@ export function GoogleSignInScreen() {
     setLoading(true);
     setError(null);
     try {
-      GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID.trim() });
+      configureGoogleSignIn();
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const googleResponse = await GoogleSignin.signIn();
       if (googleResponse.type !== 'success') return;
       const googleIdToken = googleResponse.data.idToken;
-      if (!googleIdToken) throw new Error('Google did not return an ID token. Check the Web OAuth client ID.');
-
-      const credential = GoogleAuthProvider.credential(googleIdToken);
-      const { user } = await signInWithCredential(getAuth(), credential);
-      const firebaseIdToken = await getIdToken(user, true);
-      const session = await exchangeFirebaseToken(firebaseIdToken);
+      if (!googleIdToken) throw new Error('Google sign-in could not be completed. Try again.');
+      const session = await exchangeGoogleIdToken(googleIdToken);
       setAccessToken(session.token);
       setAuthenticated(true);
     } catch (cause) {
-      await firebaseSignOut(getAuth()).catch(() => undefined);
       await GoogleSignin.signOut().catch(() => undefined);
-      setError(cause instanceof Error ? cause.message : 'Google sign-in failed.');
+      setError(signInMessage(cause));
     } finally {
       setLoading(false);
     }
@@ -83,7 +99,7 @@ export function GoogleSignInScreen() {
       </Pressable>
 
       {!configured ? (
-        <Text style={styles.setupNote}>Add the Web OAuth client ID in `src/config/googleAuth.ts` to enable Google sign-in. The backend must exchange a verified Firebase ID token at `/auth/google`.</Text>
+        <Text style={styles.setupNote}>Google sign-in is unavailable right now. You can still score matches in Quick Mode.</Text>
       ) : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
 

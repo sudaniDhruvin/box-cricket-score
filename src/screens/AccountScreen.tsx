@@ -13,7 +13,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { getAuth, signOut as firebaseSignOut } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getMyProfile, logoutAccount, updateMyProfile, type PlayerProfile } from '../api/client';
@@ -72,7 +71,7 @@ export function AccountScreen() {
         clearAccessToken();
         setUser(null);
         setAuthenticated(false);
-        setError(cause instanceof Error ? cause.message : 'Your session has expired. Sign in again with Google.');
+        setError(cause instanceof Error ? cause.message : 'Please sign in again with Google.');
       })
       .finally(() => setLoading(false));
   }, [loadProfileFields, setAuthenticated]);
@@ -110,23 +109,22 @@ export function AccountScreen() {
     setLoading(true);
     try {
       const result = await syncMatches(user.id);
-      setMessage(`${result.uploaded} uploaded · ${result.downloaded} restored · ${result.deleted} removed`);
+      setMessage(`${result.uploaded} saved · ${result.downloaded} brought back · ${result.deleted} removed`);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Match sync failed.');
+      setError(cause instanceof Error ? cause.message : 'Could not update your matches.');
     } finally {
       setLoading(false);
     }
   }, [user]);
 
   const signOut = useCallback(() => {
-    Alert.alert('Sign out?', 'Quick Mode will remain available offline.', [
+    Alert.alert('Sign out?', 'You can still score matches in Quick Mode.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign out',
         onPress: () => {
           logoutAccount().catch(() => undefined);
           clearAccessToken();
-          firebaseSignOut(getAuth()).catch(() => undefined);
           GoogleSignin.signOut().catch(() => undefined);
           setUser(null);
           setMessage(null);
@@ -149,7 +147,7 @@ export function AccountScreen() {
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + hp(3) }]} keyboardShouldPersistTaps="handled">
           <View style={styles.apiCard}>
             <Text style={styles.eyebrow}>GOOGLE ACCOUNT</Text>
-            <Text style={styles.apiHint}>Stats Mode uses Google sign-in. Quick Mode continues to work without an account or API connection.</Text>
+            <Text style={styles.apiHint}>Stats Mode uses your Google account. Quick Mode works without signing in.</Text>
           </View>
 
           {user ? (
@@ -163,22 +161,32 @@ export function AccountScreen() {
               <TextInput value={location} onChangeText={setLocation} placeholder="Location (optional)" placeholderTextColor={colors.textMuted} style={styles.input} maxLength={120} />
               <Text style={styles.inputLabel}>Playing role</Text>
               <View style={styles.choiceRow}>
-                {['batter', 'bowler', 'all-rounder', 'wicketkeeper', 'unspecified'].map(value => (
+                {([
+                  ['batter', 'Batter'],
+                  ['bowler', 'Bowler'],
+                  ['all-rounder', 'All-rounder'],
+                  ['wicketkeeper', 'Wicketkeeper'],
+                  ['unspecified', 'Not set'],
+                ] as const).map(([value, label]) => (
                   <Pressable key={value} onPress={() => setPlayingRole(value)} style={[styles.choice, playingRole === value && styles.choiceSelected]}>
-                    <Text style={[styles.choiceText, playingRole === value && styles.choiceTextSelected]}>{value}</Text>
+                    <Text style={[styles.choiceText, playingRole === value && styles.choiceTextSelected]}>{label}</Text>
                   </Pressable>
                 ))}
               </View>
               <Text style={styles.inputLabel}>Batting style</Text>
               <View style={styles.choiceRow}>
-                {['right-handed', 'left-handed', 'unspecified'].map(value => (
+                {([
+                  ['right-handed', 'Right-handed'],
+                  ['left-handed', 'Left-handed'],
+                  ['unspecified', 'Not set'],
+                ] as const).map(([value, label]) => (
                   <Pressable key={value} onPress={() => setBattingStyle(value)} style={[styles.choice, battingStyle === value && styles.choiceSelected]}>
-                    <Text style={[styles.choiceText, battingStyle === value && styles.choiceTextSelected]}>{value}</Text>
+                    <Text style={[styles.choiceText, battingStyle === value && styles.choiceTextSelected]}>{label}</Text>
                   </Pressable>
                 ))}
               </View>
               <TextInput value={bowlingStyle} onChangeText={setBowlingStyle} placeholder="Bowling style (optional)" placeholderTextColor={colors.textMuted} style={styles.input} maxLength={80} />
-              <TextInput value={dateOfBirth} onChangeText={setDateOfBirth} placeholder="Date of birth (YYYY-MM-DD, optional)" placeholderTextColor={colors.textMuted} style={styles.input} />
+              <TextInput value={dateOfBirth} onChangeText={setDateOfBirth} placeholder="Date of birth, like 1998-04-12 (optional)" placeholderTextColor={colors.textMuted} style={styles.input} />
               <View style={styles.switchRow}><Text style={styles.body}>Public profile</Text><Switch value={profilePublic} onValueChange={setProfilePublic} /></View>
               <Text style={styles.inputLabel}>Profile privacy</Text>
               {([
@@ -197,7 +205,7 @@ export function AccountScreen() {
                 <Text style={styles.secondaryButtonText}>Save profile</Text>
               </Pressable>
               <Pressable onPress={sync} disabled={loading} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed, loading && styles.disabled]} accessibilityRole="button">
-                {loading ? <ActivityIndicator color={colors.background} /> : <Text style={styles.primaryText}>Sync matches</Text>}
+                {loading ? <ActivityIndicator color={colors.background} /> : <Text style={styles.primaryText}>Update matches</Text>}
               </Pressable>
               {message ? <Text style={styles.success}>{message}</Text> : null}
               {error ? <Text style={styles.error}>{error}</Text> : null}

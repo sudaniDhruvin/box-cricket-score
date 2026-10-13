@@ -425,7 +425,7 @@ export function MatchDetailScreen() {
                 label="Share live"
                 variant="outline"
                 onPress={() => setShareOpen(true)}
-                accessibilityLabel="Share live score with QR"
+                accessibilityLabel="Share the live score"
               />
             </View>
           ) : matchComplete ? (

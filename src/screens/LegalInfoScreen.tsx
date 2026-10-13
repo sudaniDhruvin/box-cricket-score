@@ -18,8 +18,8 @@ const TERMS_PARAGRAPHS: string[] = [
 
 const PRIVACY_PARAGRAPHS: string[] = [
   'Crick Shots is designed to work primarily on your device. Match data and preferences you save are stored locally unless you use features that explicitly send data elsewhere.',
-  'We do not sell your personal information. If the app does not require an account, we may not collect identifiers such as your name or email through the app itself.',
-  "You can remove locally stored data at any time using Clear all data in the app menu. Uninstalling the app may also delete data stored by the app on this device, subject to your operating system's behaviour.",
+  'We do not sell your personal information. If you use the app without an account, we do not ask for your name or email.',
+  'You can remove saved scores at any time with Clear all data in the menu. Removing the app from your phone may also delete what it saved.',
   'If you have questions about how your data is handled, contact us using the details provided with the app or on our website (if applicable).',
 ];
 

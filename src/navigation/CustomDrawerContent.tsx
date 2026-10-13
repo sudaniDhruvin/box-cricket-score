@@ -176,7 +176,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const onClearAllData = useCallback(() => {
     Alert.alert(
       'Clear all data?',
-      'This will delete all saved matches and clear profile data stored in this app on this device. This cannot be undone.',
+      'This removes every saved match and the profile saved in the app. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -253,7 +253,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         <View style={styles.hairline} />
         <InteractiveRow
           label="Privacy policy"
-          hint="How we handle your data on device"
+          hint="How your information is used"
           icon={<ShieldIcon size={wp(5)} color={colors.primary} />}
           onPress={goPrivacy}
           accessibilityLabel="Open privacy policy"
@@ -264,10 +264,10 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
       <View style={styles.legalCard}>
         <InteractiveRow
           label="Watch live"
-          hint="Scan host QR on the same Wi‑Fi"
+          hint="Scan the scorer's code on the same Wi-Fi"
           icon={<QrScanIcon size={wp(5)} color={colors.primary} />}
           onPress={goWatchLive}
-          accessibilityLabel="Watch a live match by scanning QR"
+          accessibilityLabel="Watch a live match by scanning a code"
         />
       </View>
 

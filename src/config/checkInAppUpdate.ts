@@ -98,8 +98,8 @@ export async function checkInAppUpdate(
   if (shouldSkipInAppUpdateCheck()) {
     if (options.notifyWhenUpToDate) {
       Alert.alert(
-        'Not available in development',
-        'In-app updates only work in release builds installed from the Play Store or App Store.',
+        'Update unavailable',
+        'Updates can only be checked from the store version of Crick Shots.',
       );
     }
     return;
@@ -133,7 +133,7 @@ export async function checkInAppUpdate(
       if (options.notifyWhenUpToDate) {
         Alert.alert(
           'Update unavailable',
-          'Updates can only be checked on production builds installed from the app store.',
+          'Updates can only be checked from the store version of Crick Shots.',
         );
       }
       return;

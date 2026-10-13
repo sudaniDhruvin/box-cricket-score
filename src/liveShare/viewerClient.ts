@@ -44,7 +44,7 @@ function dataToString(data: string | Uint8Array): string {
 const RECONNECT_DETAIL =
   'You got disconnected. Connecting again… Stay on this screen.';
 const RETRY_DETAIL =
-  'You got disconnected. Tap Connect again to rejoin with the same QR code, as long as the host is still sharing.';
+  'You got disconnected. Tap Connect again to rejoin with the same code, as long as sharing is still on.';
 
 /**
  * Viewer TCP client (Claude LocalScoreClient pattern):
@@ -207,7 +207,7 @@ export function connectViewer(
           handlers.onEnded(message.reason);
           handlers.onStatus(
             'ended',
-            message.reason ?? 'The host stopped sharing.',
+            message.reason ?? 'The scorer stopped sharing.',
           );
           try {
             next.destroy();

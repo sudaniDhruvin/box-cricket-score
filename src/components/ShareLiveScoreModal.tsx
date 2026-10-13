@@ -87,16 +87,16 @@ export function ShareLiveScoreModal({
               pressed && styles.pressed,
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Hide QR and keep sharing"
+            accessibilityLabel="Hide the code and keep sharing"
           >
             <Text style={styles.closeText}>Done</Text>
           </Pressable>
         </View>
 
         <Text style={styles.hint}>
-          Keep both phones on the same Wi-Fi or hotspot. Scan this QR and tap
-          Done to hide it while sharing continues. Viewers can scan the same QR
-          to reconnect. Refresh the QR only after changing networks.
+          Keep both phones on the same Wi-Fi or hotspot. Ask the other person to
+          scan this code, then tap Done. Sharing continues after the code is
+          hidden. If you change Wi-Fi, tap Refresh code.
         </Text>
 
         <View style={styles.qrCard}>
@@ -114,29 +114,17 @@ export function ShareLiveScoreModal({
           ) : null}
         </View>
 
-        {share.hostLabel ? (
-          <>
-            <Text style={styles.hostMeta} selectable>
-              Host: {share.hostLabel}
-            </Text>
-            <Text style={styles.hostHint}>
-              Should look like 192.168.x.x:8899. If you switched network, tap
-              Refresh QR.
-            </Text>
-          </>
-        ) : null}
-
         <Text style={styles.viewers}>
           {!share.active
             ? share.starting
               ? 'Starting…'
               : share.error
-                ? 'Share failed'
+                ? 'Sharing could not start'
                 : 'Not sharing'
             : share.viewerCount === 0
               ? share.hadViewers
-                ? 'Viewer disconnected. They can reconnect with this same QR.'
-                : 'Waiting for viewers…'
+                ? 'Someone stopped watching. They can scan this same code again.'
+                : 'Waiting for someone to join…'
               : `${share.viewerCount} watching`}
         </Text>
 
@@ -150,9 +138,9 @@ export function ShareLiveScoreModal({
               pressed && styles.pressed,
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Refresh share QR"
+            accessibilityLabel="Refresh the share code"
           >
-            <Text style={styles.refreshBtnText}>Refresh QR</Text>
+            <Text style={styles.refreshBtnText}>Refresh code</Text>
           </Pressable>
         ) : null}
 
@@ -160,7 +148,7 @@ export function ShareLiveScoreModal({
           onPress={onDone}
           style={({ pressed }) => [styles.doneBtn, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel="Hide QR and keep sharing"
+          accessibilityLabel="Hide the code and keep sharing"
         >
           <Text style={styles.doneBtnText}>Done, keep sharing</Text>
         </Pressable>
@@ -222,21 +210,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: '#FFFFFF',
-  },
-  hostMeta: {
-    marginTop: hp(1.5),
-    textAlign: 'center',
-    fontSize: fontSize(13),
-    fontWeight: '700',
-    color: colors.text,
-  },
-  hostHint: {
-    marginTop: hp(0.6),
-    textAlign: 'center',
-    fontSize: fontSize(12),
-    color: colors.textMuted,
-    lineHeight: fontSize(17),
-    paddingHorizontal: wp(2),
   },
   viewers: {
     marginTop: hp(2),
