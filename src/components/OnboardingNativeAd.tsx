@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import mobileAds, {
+import {
   NativeAd,
   NativeAdView,
   NativeAsset,
@@ -64,7 +64,7 @@ export function OnboardingNativeAd() {
     return () => {
       nativeAd.destroy();
     };
-  }, [nativeAd]);
+  }, [nativeAd, isAds]);
 
   useEffect(() => {
     if (!nativeAd) {

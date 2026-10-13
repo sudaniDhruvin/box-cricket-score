@@ -17,6 +17,7 @@ import { maybeRequestInAppReview } from '../config/requestInAppReview';
 import { PNGs } from '../assets/images/pngs';
 import { useMatchStore } from '../store/useMatchStore';
 import { useUserStore } from '../store/useUserStore';
+import { useAppRuntime } from './AppRuntimeContext';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
 import {
@@ -146,6 +147,7 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const clearAllMatches = useMatchStore(s => s.clearAllMatches);
   const updateUser = useUserStore(s => s.updateUser);
   const resetReviewPromptState = useUserStore(s => s.resetReviewPromptState);
+  const { mode, selectMode } = useAppRuntime();
 
   const goTerms = useCallback(() => {
     navigation.closeDrawer();
@@ -257,8 +259,16 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
         />
       </View>
 
-      <Text style={styles.sectionHeading}>App</Text>
+      {mode === 'stats' ? <Text style={styles.sectionHeading}>Stats mode</Text> : null}
       <View style={styles.legalCard}>
+        <InteractiveRow
+          label="Change app mode"
+          hint="Choose offline scoring or stats and groups"
+          icon={<CricketScorebookIcon size={wp(5)} color={colors.primary} />}
+          onPress={() => { navigation.closeDrawer(); selectMode(null); }}
+          accessibilityLabel="Return to app mode selection"
+        />
+        <View style={styles.hairline} />
         <InteractiveRow
           label="Check for updates"
           hint="See if a newer version is available"

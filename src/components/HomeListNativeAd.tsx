@@ -50,7 +50,7 @@ export function HomeListNativeAd() {
     return () => {
       cancelled = true;
     };
-  }, [isNative]);
+  }, [isNative, isAds]);
 
   useEffect(() => {
     if (!nativeAd) {

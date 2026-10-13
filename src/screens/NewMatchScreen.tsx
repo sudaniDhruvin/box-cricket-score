@@ -110,11 +110,11 @@ export function NewMatchScreen() {
   const { isBanner, isAds } = useAdFlags();
   const showBanner = isAds && isBanner;
 
-  const [step, setStep] = useState<SetupStep>('configure');
-  const [teamA, setTeamA] = useState('');
-  const [teamB, setTeamB] = useState('');
-  const [overs, setOvers] = useState(10);
-  const [players, setPlayers] = useState(11);
+  const [step, setStep] = useState<SetupStep>(() => params.groupLaunch ? 'toss' : 'configure');
+  const [teamA, setTeamA] = useState(params.groupLaunch?.teams[0] ?? '');
+  const [teamB, setTeamB] = useState(params.groupLaunch?.teams[1] ?? '');
+  const [overs, setOvers] = useState(params.groupLaunch?.oversPerSide ?? 10);
+  const [players, setPlayers] = useState(params.groupLaunch?.teamSize ?? 11);
   const [batFirst, setBatFirst] = useState<0 | 1>(0);
   const [error, setError] = useState<string | null>(null);
   const [scoringMatchId, setScoringMatchId] = useState<string | null>(
@@ -162,6 +162,8 @@ export function NewMatchScreen() {
 
     setError(null);
     const match = createLiveMatch({
+      id: params.groupLaunch?.clientId,
+      groupId: params.groupLaunch?.groupId,
       teamAName: a,
       teamBName: b,
       oversPerSide: overs,
@@ -170,7 +172,7 @@ export function NewMatchScreen() {
     });
     addMatch(match);
     setScoringMatchId(match.id);
-  }, [teamA, teamB, overs, players, batFirst, addMatch]);
+  }, [teamA, teamB, overs, players, batFirst, addMatch, params.groupLaunch]);
 
   if (scoringMatchId) {
     return (

@@ -81,6 +81,17 @@ export type MatchStatus = 'live' | 'completed';
 
 export interface MatchSummary {
   id: string;
+  /** Optional link to a group match session created by the community API. */
+  groupId?: number;
+  visibility?: 'private' | 'group' | 'public';
+  /** Local/cloud sync bookkeeping. It is stripped before a match is sent to the API. */
+  syncMeta?: {
+    state: 'pending' | 'synced';
+    updatedAt: string;
+    ownerId?: number;
+    clientId?: string;
+    revision?: number;
+  };
   /** ISO 8601 value used for day grouping and ordering */
   playedAt: string;
   innings: [TeamInnings, TeamInnings];

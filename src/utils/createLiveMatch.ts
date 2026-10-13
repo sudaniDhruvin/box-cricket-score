@@ -16,6 +16,8 @@ function emptyInnings(teamId: string, teamName: string): TeamInnings {
 }
 
 export interface NewMatchInput {
+  id?: string;
+  groupId?: number;
   teamAName: string;
   teamBName: string;
   oversPerSide: number;
@@ -36,7 +38,8 @@ export function createLiveMatch(input: NewMatchInput): MatchSummary {
   const [first, second] = input.batFirst === 0 ? [innA, innB] : [innB, innA];
 
   return {
-    id: `m-${ts}`,
+    id: input.id ?? `m-${ts}`,
+    ...(input.groupId ? { groupId: input.groupId, visibility: 'group' as const } : {}),
     playedAt: new Date().toISOString(),
     innings: [first, second],
     winnerTeamId: first.teamId,

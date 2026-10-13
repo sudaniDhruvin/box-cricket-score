@@ -39,6 +39,8 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is used to scan a live score QR code from the match organizer.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Select photos to share with members of your cricket groups.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
 	<key>RCTNewArchEnabled</key>
