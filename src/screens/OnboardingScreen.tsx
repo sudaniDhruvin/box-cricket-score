@@ -1,15 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
 import { useUserStore } from '../store/useUserStore';
 import { OnboardingNativeAd } from '../components/OnboardingNativeAd';
-import {
-  CricketBatBallIcon,
-  CricketScorebookIcon,
-  PrimaryButton,
-} from '../components/ui';
+import { PNGs } from '../assets/images/pngs';
+import { CricketScorebookIcon, PrimaryButton } from '../components/ui';
 
 export function OnboardingScreen() {
   const insets = useSafeAreaInsets();
@@ -55,7 +52,14 @@ export function OnboardingScreen() {
               <Text style={styles.previewOvers}>0.0 overs</Text>
             </View>
             <View style={styles.previewDivider}>
-              <CricketBatBallIcon size={wp(7)} color={colors.accent} />
+              <Image
+                source={PNGs.BatBallIcon}
+                style={{
+                  width: wp(7),
+                  height: wp(7),
+                  tintColor: colors.accent,
+                }}
+              />
             </View>
             <View style={[styles.previewTeam, styles.previewTeamRight]}>
               <Text style={styles.previewTeamLabel}>TARGET</Text>
@@ -73,9 +77,7 @@ export function OnboardingScreen() {
           style={styles.cta}
         />
 
-        <View style={styles.adBelow}>
-          <OnboardingNativeAd />
-        </View>
+        <OnboardingNativeAd />
       </ScrollView>
     </View>
   );
@@ -220,8 +222,5 @@ const styles = StyleSheet.create({
   },
   cta: {
     marginTop: hp(1),
-  },
-  adBelow: {
-    marginTop: hp(2.5),
   },
 });

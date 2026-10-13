@@ -16,4 +16,5 @@ export const PNGs = {
   RunOutIcon: require('./runOutIcon.png'),
   LBWOutIcon: require('./LBWOutIcon.png'),
   WarningIcon: require('./warningIcon.png'),
+  AppBanner: require('./Box_Cricket_Score_ Live_Banner.png'),
 };

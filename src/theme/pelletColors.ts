@@ -1,16 +1,28 @@
 import type { Delivery } from '../types/match';
 
 export const PELLET_COLORS = {
-  dot: { bg: '#B1B3B4', fg: '#000000' },
-  single: { bg: '#1573EA', fg: '#FFFFFF' },
-  multi: { bg: '#B1B3B4', fg: '#000000' },
+  dot: { bg: '#EAF2FC', fg: '#074089' },
+  single: { bg: '#C9DDF8', fg: '#074089' },
+  two: { bg: '#7EADF0', fg: '#074089' },
+  three: { bg: '#2B74E0', fg: '#FFFFFF' },
   four: { bg: '#1573EA', fg: '#FFFFFF' },
+  five: { bg: '#0B569F', fg: '#FFFFFF' },
   six: { bg: '#000000', fg: '#FFFFFF' },
   wicket: { bg: '#000000', fg: '#FFFFFF' },
   wide: { bg: '#B1B3B4', fg: '#000000' },
   noBall: { bg: '#074089', fg: '#FFFFFF' },
   bye: { bg: '#074089', fg: '#FFFFFF' },
   penalty: { bg: '#000000', fg: '#FFFFFF' },
+} as const;
+
+export const RUN_BUBBLE_COLORS = {
+  0: PELLET_COLORS.dot,
+  1: PELLET_COLORS.single,
+  2: PELLET_COLORS.two,
+  3: PELLET_COLORS.three,
+  4: PELLET_COLORS.four,
+  5: PELLET_COLORS.five,
+  6: PELLET_COLORS.six,
 } as const;
 
 export interface PelletStyle {
@@ -81,11 +93,11 @@ export function getPelletStyle(ball: Delivery): PelletStyle {
     case 'single':
       return { ...PELLET_COLORS.single, label: '1', a11yLabel: 'One run' };
     case 'two':
-      return { ...PELLET_COLORS.multi, label: '2', a11yLabel: 'Two runs' };
+      return { ...PELLET_COLORS.two, label: '2', a11yLabel: 'Two runs' };
     case 'three':
-      return { ...PELLET_COLORS.multi, label: '3', a11yLabel: 'Three runs' };
+      return { ...PELLET_COLORS.three, label: '3', a11yLabel: 'Three runs' };
     case 'five':
-      return { ...PELLET_COLORS.multi, label: '5', a11yLabel: 'Five runs' };
+      return { ...PELLET_COLORS.five, label: '5', a11yLabel: 'Five runs' };
     case 'four':
       return { ...PELLET_COLORS.four, label: '4', a11yLabel: 'Four runs' };
     case 'six':
