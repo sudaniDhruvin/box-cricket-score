@@ -1,0 +1,6 @@
+{
+  "react-native": {
+    "messaging_android_notification_channel_id": "crick-shots",
+    "messaging_ios_foreground_presentation_options": []
+  }
+}

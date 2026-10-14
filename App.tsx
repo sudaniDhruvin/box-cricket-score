@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { checkInAppUpdate } from './src/config/checkInAppUpdate';
 import { initializeAdRemoteConfig } from './src/config/fetchAdRemoteConfig';
 import { APP_OPEN_AD_UNIT_ID } from './src/config/adUnitIds';
+import { startPushListeners } from './src/notifications/push';
 import { getAdFlags } from './src/store/useAdConfigStore';
 import RootNavigator from './src/navigation';
 
@@ -131,6 +132,8 @@ const App = () => {
     }
     hideSplashScreen();
   }, [appOpenClosed, hideSplashScreen]);
+
+  useEffect(() => startPushListeners(), []);
 
   useEffect(() => {
     if (!appOpenError) {

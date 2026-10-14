@@ -22,6 +22,7 @@ import { CommunityScreen } from '../screens/CommunityScreen';
 import { GoogleSignInScreen } from '../screens/GoogleSignInScreen';
 import { CompleteProfileScreen } from '../screens/CompleteProfileScreen';
 import { getMyProfile, type PlayerProfile } from '../api/client';
+import { syncPushRegistration } from '../notifications/push';
 import { clearAccessToken } from '../api/session';
 import { isProfileComplete } from '../social/labels';
 import { ModeSelectionScreen } from '../screens/ModeSelectionScreen';
@@ -181,6 +182,7 @@ function StatsEntry() {
       .then(next => {
         setProfile(next);
         setReady(true);
+        void syncPushRegistration();
       })
       .catch(() => {
         clearAccessToken();

@@ -14,7 +14,7 @@
   "dependencies": {
     "@notifee/react-native": "^9.1.8",
     "@react-native-firebase/app": "23.7.0",
-    "@react-native-firebase/messaging": "^26.4.0",
+    "@react-native-firebase/messaging": "23.7.0",
     "@react-native-firebase/remote-config": "23.7.0",
     "@react-native-google-signin/google-signin": "^16.1.5",
     "@react-navigation/bottom-tabs": "^7.20.0",

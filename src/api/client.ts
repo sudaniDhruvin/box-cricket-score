@@ -317,6 +317,23 @@ export function logoutAccount(): Promise<{ loggedOut: boolean }> {
   return apiRequest('/auth/logout', { method: 'POST' });
 }
 
+export function registerPushDevice(
+  registration: string,
+  platform: 'android' | 'ios',
+): Promise<{ saved: boolean }> {
+  return apiRequest('/devices/push-token', {
+    method: 'PUT',
+    body: { token: registration, platform },
+  });
+}
+
+export function unregisterPushDevice(registration: string): Promise<{ removed: boolean }> {
+  return apiRequest('/devices/push-token', {
+    method: 'DELETE',
+    body: { token: registration },
+  });
+}
+
 export function listCloudMatches(): Promise<CloudMatch[]> {
   return apiRequest('/matches?limit=100');
 }

@@ -17,5 +17,7 @@ module.exports = {
     '^react-native-google-mobile-ads$': '<rootDir>/__mocks__/react-native-google-mobile-ads.js',
     '^sp-react-native-in-app-updates$': '<rootDir>/__mocks__/sp-react-native-in-app-updates.js',
     '^@react-native-firebase/remote-config$': '<rootDir>/__mocks__/firebase-remote-config.js',
+    '^@react-native-firebase/messaging$': '<rootDir>/__mocks__/firebase-messaging.js',
+    '^@notifee/react-native$': '<rootDir>/__mocks__/notifee.js',
   },
 };

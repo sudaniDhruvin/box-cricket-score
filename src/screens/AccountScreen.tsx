@@ -23,6 +23,7 @@ import {
 } from '../api/client';
 import { syncMatches } from '../api/cloudSync';
 import { clearAccessToken, getAccessToken } from '../api/session';
+import { clearPushRegistration } from '../notifications/push';
 import { CareerStats, ChoiceRow, ConfirmSheet, PlayerAvatar, PrimaryButton, AppSheet, showToast } from '../components/ui';
 import { useMatchStore } from '../store/useMatchStore';
 import { hasExpandedCareer, phoneCareer } from '../utils/playerStats';
@@ -157,13 +158,21 @@ export function AccountScreen() {
   }, [user]);
 
   const signOut = useCallback(() => {
-    logoutAccount().catch(() => undefined);
-    clearAccessToken();
-    GoogleSignin.signOut().catch(() => undefined);
-    setUser(null);
-    setConfirmSignOut(false);
-    setAuthenticated(false);
-    showToast('Signed out.');
+    void (async () => {
+      await Promise.race([
+        clearPushRegistration(),
+        new Promise<void>(resolve => {
+          setTimeout(resolve, 8000);
+        }),
+      ]);
+      logoutAccount().catch(() => undefined);
+      clearAccessToken();
+      GoogleSignin.signOut().catch(() => undefined);
+      setUser(null);
+      setConfirmSignOut(false);
+      setAuthenticated(false);
+      showToast('Signed out.');
+    })();
   }, [setAuthenticated]);
 
   const bowlingOptions = [
