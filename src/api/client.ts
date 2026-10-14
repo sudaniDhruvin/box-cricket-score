@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config/api';
+import type { BattingTotals, BowlingTotals, FieldingTotals, GroupLeaderboard } from '../utils/playerStats';
 import { getAccessToken } from './session';
 
 type ApiEnvelope<T> = {
@@ -109,15 +110,42 @@ export type CloudMatch = {
   updatedAt: string;
 };
 
+export type GroupJoinType = 'open' | 'request' | 'approval';
+
 export type CommunityGroup = {
   id: number;
   name: string;
   description: string | null;
   location: string | null;
   visibility: 'public' | 'private' | 'invite-only';
+  joinType?: GroupJoinType;
+  photoUrl?: string | null;
+  coverUrl?: string | null;
+  memberCount?: number;
   myRole: 'owner' | 'admin' | 'scorer' | 'member' | null;
   membershipStatus: 'active' | 'pending' | null;
 };
+
+export type PlayerSearchResult = {
+  userId: number;
+  username: string;
+  displayName: string;
+  playingRole: string;
+  photoUrl: string | null;
+};
+
+export type CareerStats = {
+  matches: number;
+  runs: number;
+  wickets: number;
+  groups: number;
+  captaincies: number;
+  batting?: BattingTotals;
+  bowling?: BowlingTotals;
+  fielding?: FieldingTotals;
+};
+
+export type { GroupLeaderboard };
 
 export type GroupMember = {
   userId: number;
@@ -126,6 +154,7 @@ export type GroupMember = {
   role: string;
   status: string;
   joinedAt: string | null;
+  photoUrl?: string | null;
 };
 
 export type GroupPoll = {
@@ -140,19 +169,43 @@ export type GroupPoll = {
   closesAt: string | null;
   status: 'open' | 'closed';
   myRole: string;
+  author?: { userId: number; username: string; displayName: string; photoUrl: string | null } | null;
   myOptionIds: number[];
   options: Array<{ id: number; label: string; position: number; votes: number }>;
   createdAt: string;
 };
 
+export type PostTopic = 'match' | 'practice' | 'meme' | 'announcement' | 'talk';
+
 export type GroupPost = {
   id: number;
   groupId: number;
   body: string;
-  author: { userId: number; username: string; displayName: string };
-  photos: Array<{ id: number; url: string; mimeType: string; width: number | null; height: number | null }>;
+  topic?: PostTopic | string;
+  pinned?: boolean;
+  pinnedAt?: string | null;
+  likeCount?: number;
+  likedByMe?: boolean;
+  commentCount?: number;
+  author: { userId: number; username: string; displayName: string; photoUrl?: string | null };
+  photos: Array<{
+    id: number;
+    url: string;
+    mimeType: string;
+    width: number | null;
+    height: number | null;
+    kind?: 'photo' | 'video';
+  }>;
   createdAt: string;
   updatedAt: string | null;
+};
+
+export type PostComment = {
+  id: number;
+  postId: number;
+  body: string;
+  author: { userId: number; username: string; displayName: string; photoUrl?: string | null };
+  createdAt: string;
 };
 
 export type GroupMatch = {
@@ -165,6 +218,7 @@ export type GroupMatch = {
   teamSize: number;
   oversPerSide: number;
   teams: [string, string];
+  scorerUserId?: number | null;
 };
 
 export type NotificationItem = {
@@ -176,6 +230,14 @@ export type NotificationItem = {
   resourceId: number | null;
   readAt: string | null;
   createdAt: string;
+};
+
+export type NotificationInbox = {
+  items: NotificationItem[];
+  unreadCount: number;
+  offset: number;
+  limit: number;
+  postActivity?: boolean;
 };
 
 export type ContentReport = {
@@ -205,6 +267,8 @@ export type PlayerProfile = ApiUser & {
   bowlingStyle: string | null;
   dateOfBirth: string | null;
   profilePublic: boolean;
+  photoUrl?: string | null;
+  profileCompleted?: boolean;
   privacy: {
     showLocation: boolean;
     showGroups: boolean;
@@ -225,12 +289,24 @@ export function exchangeGoogleIdToken(idToken: string): Promise<AuthResult> {
 
 export function getPlayerStatistics(username: string): Promise<{
   available: boolean;
-  data: unknown;
+  data: CareerStats | null;
   message?: string;
 }> {
   return apiRequest(`/players/${encodeURIComponent(username)}/statistics`, {
     authenticated: false,
   });
+}
+
+export function getMyStatistics(): Promise<{
+  available: boolean;
+  data: CareerStats | null;
+  message?: string;
+}> {
+  return apiRequest('/me/statistics');
+}
+
+export function searchPlayers(search: string): Promise<PlayerSearchResult[]> {
+  return apiRequest(`/players?search=${encodeURIComponent(search.trim())}`);
 }
 
 export function getMyProfile(): Promise<PlayerProfile> {
@@ -278,9 +354,35 @@ export function createGroup(input: {
   name: string;
   description?: string;
   location?: string;
-  visibility: CommunityGroup['visibility'];
+  visibility: 'public' | 'private';
+  joinType: GroupJoinType;
 }): Promise<CommunityGroup> {
   return apiRequest('/groups', { method: 'POST', body: input });
+}
+
+export function updateGroup(
+  groupId: number,
+  input: {
+    name?: string;
+    description?: string;
+    location?: string;
+    visibility?: 'public' | 'private';
+    joinType?: GroupJoinType;
+  },
+): Promise<CommunityGroup> {
+  return apiRequest(`/groups/${groupId}`, { method: 'PATCH', body: input });
+}
+
+export function addGroupMember(groupId: number, username: string): Promise<GroupMember> {
+  return apiRequest(`/groups/${groupId}/members`, { method: 'POST', body: { username } });
+}
+
+export function removeGroupMember(groupId: number, userId: number): Promise<{ removed: boolean }> {
+  return apiRequest(`/groups/${groupId}/members/${userId}`, { method: 'DELETE' });
+}
+
+export function transferGroupAdmin(groupId: number, userId: number): Promise<{ userId: number; role: string }> {
+  return apiRequest(`/groups/${groupId}/transfer-admin`, { method: 'POST', body: { userId } });
 }
 
 export function joinGroup(groupId: number): Promise<{ status: string }> {
@@ -357,22 +459,54 @@ export function listGroupPosts(groupId: number, offset = 0): Promise<GroupPost[]
   return apiRequest(`/groups/${groupId}/posts?limit=20&offset=${offset}`);
 }
 
-export function createGroupPost(groupId: number, body: string): Promise<GroupPost> {
-  return apiRequest(`/groups/${groupId}/posts`, { method: 'POST', body: { body } });
+export function createGroupPost(groupId: number, body: string, topic: PostTopic = 'talk'): Promise<GroupPost> {
+  return apiRequest(`/groups/${groupId}/posts`, { method: 'POST', body: { body, topic } });
+}
+
+export function deleteGroupPost(postId: number): Promise<{ deleted: boolean }> {
+  return apiRequest(`/posts/${postId}`, { method: 'DELETE' });
+}
+
+export function togglePostLike(postId: number): Promise<GroupPost> {
+  return apiRequest(`/posts/${postId}/like`, { method: 'POST', body: {} });
+}
+
+export function listPostComments(postId: number): Promise<PostComment[]> {
+  return apiRequest(`/posts/${postId}/comments`);
+}
+
+export function createPostComment(postId: number, body: string): Promise<PostComment> {
+  return apiRequest(`/posts/${postId}/comments`, { method: 'POST', body: { body } });
+}
+
+export function deletePostComment(commentId: number): Promise<{ deleted: boolean }> {
+  return apiRequest(`/comments/${commentId}`, { method: 'DELETE' });
+}
+
+export function pinGroupPost(postId: number, pinned: boolean): Promise<GroupPost> {
+  return apiRequest(`/posts/${postId}/pin`, { method: 'POST', body: { pinned } });
 }
 
 export async function uploadPostPhotos(
   postId: number,
-  photos: Array<{ uri: string; type: string; fileName: string }>,
-): Promise<Array<{ id: number; mimeType: string; width: number; height: number }>> {
+  photos: UploadFile[],
+  videos: UploadFile[] = [],
+): Promise<Array<{ id: number; mimeType: string; width: number | null; height: number | null; kind?: 'photo' | 'video' }>> {
   const token = getAccessToken();
-  if (!token) throw new ApiError('Sign in before uploading group photos.', 401);
+  if (!token) throw new ApiError('Sign in before sharing a photo or video.', 401);
   const form = new FormData();
   for (const photo of photos) {
     form.append('photos[]', {
       uri: photo.uri,
       type: photo.type,
       name: photo.fileName,
+    } as unknown as Blob);
+  }
+  for (const video of videos) {
+    form.append('videos[]', {
+      uri: video.uri,
+      type: video.type,
+      name: video.fileName,
     } as unknown as Blob);
   }
   let response: Response;
@@ -383,17 +517,17 @@ export async function uploadPostPhotos(
       body: form,
     });
   } catch {
-    throw new ApiError('Could not upload the photos. Check your internet and try again.', 0);
+    throw new ApiError('Could not upload the photo or video. Check your internet and try again.', 0);
   }
-  let envelope: ApiEnvelope<Array<{ id: number; mimeType: string; width: number; height: number }>>;
+  let envelope: ApiEnvelope<Array<{ id: number; mimeType: string; width: number | null; height: number | null; kind?: 'photo' | 'video' }>>;
   try {
     envelope = (await response.json()) as typeof envelope;
   } catch {
-    throw new ApiError('The photos could not be uploaded. Try again.', response.status);
+    throw new ApiError('The photo or video could not be uploaded. Try again.', response.status);
   }
   if (!response.ok || envelope.error) {
     throw new ApiError(
-      toUserMessage(envelope.error?.message, response.status, 'The photos could not be uploaded. Try again.'),
+      toUserMessage(envelope.error?.message, response.status, 'The photo or video could not be uploaded. Try again.'),
       response.status,
       envelope.error?.details,
     );
@@ -405,6 +539,10 @@ export function listGroupMatches(groupId: number): Promise<GroupMatch[]> {
   return apiRequest(`/groups/${groupId}/matches`);
 }
 
+export function getGroupLeaderboard(groupId: number): Promise<GroupLeaderboard> {
+  return apiRequest(`/groups/${groupId}/leaderboard`);
+}
+
 export function getGroupMatchScorecard(
   groupId: number,
   matchId: number,
@@ -414,7 +552,7 @@ export function getGroupMatchScorecard(
 
 export function createGroupMatch(
   groupId: number,
-  input: { title: string; teams: [string, string]; oversPerSide: number; teamSize: number; format?: string },
+  input: { title: string; teams: [string, string]; oversPerSide: number; teamSize: number; format?: string; scheduledAt?: string },
 ): Promise<{ id: number; clientId: string; status: string; teams: [string, string]; teamSize: number; oversPerSide: number }> {
   return apiRequest(`/groups/${groupId}/matches`, { method: 'POST', body: input });
 }
@@ -435,8 +573,16 @@ export function finalizeMatchTeams(matchId: number): Promise<{ status: string; t
   return apiRequest(`/matches/${matchId}/finalize-teams`, { method: 'POST', body: {} });
 }
 
-export function listNotifications(): Promise<{ items: NotificationItem[]; unreadCount: number; offset: number; limit: number }> {
+export function assignMatchScorer(matchId: number, userId: number): Promise<{ scorerUserId: number }> {
+  return apiRequest(`/matches/${matchId}/scorer`, { method: 'POST', body: { userId } });
+}
+
+export function listNotifications(): Promise<NotificationInbox> {
   return apiRequest('/notifications?limit=50');
+}
+
+export function updateNotificationSettings(postActivity: boolean): Promise<{ postActivity: boolean }> {
+  return apiRequest('/notifications/settings', { method: 'PATCH', body: { postActivity } });
 }
 
 export function markNotificationRead(id: number): Promise<{ read: boolean }> {
@@ -447,5 +593,57 @@ export function updateMyProfile(input: Partial<Pick<PlayerProfile,
   'username' | 'displayName' | 'biography' | 'location' | 'playingRole' | 'battingStyle' | 'bowlingStyle' | 'dateOfBirth' | 'profilePublic' | 'privacy'
 >>): Promise<PlayerProfile> {
   return apiRequest('/me', { method: 'PATCH', body: input });
+}
+
+export type UploadFile = { uri: string; type: string; fileName: string };
+
+async function uploadMultipart<T>(path: string, field: string, file: UploadFile): Promise<T> {
+  const token = getAccessToken();
+  if (!token) throw new ApiError('Please sign in again.', 401);
+  const form = new FormData();
+  form.append(field, { uri: file.uri, type: file.type, name: file.fileName } as unknown as Blob);
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}${path}`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+      body: form,
+    });
+  } catch {
+    throw new ApiError('Could not upload the photo. Check your internet and try again.', 0);
+  }
+  let envelope: ApiEnvelope<T>;
+  try {
+    envelope = (await response.json()) as ApiEnvelope<T>;
+  } catch {
+    throw new ApiError('The photo could not be uploaded. Try again.', response.status);
+  }
+  if (!response.ok || envelope.error) {
+    throw new ApiError(
+      toUserMessage(envelope.error?.message, response.status, 'The photo could not be uploaded. Try again.'),
+      response.status,
+      envelope.error?.details ?? {},
+    );
+  }
+  return envelope.data;
+}
+
+export function uploadProfilePhoto(file: UploadFile): Promise<PlayerProfile> {
+  return uploadMultipart('/me/photo', 'photo', file);
+}
+
+export function uploadGroupPhoto(groupId: number, file: UploadFile): Promise<CommunityGroup> {
+  return uploadMultipart(`/groups/${groupId}/photo`, 'photo', file);
+}
+
+export function uploadGroupCover(groupId: number, file: UploadFile): Promise<CommunityGroup> {
+  return uploadMultipart(`/groups/${groupId}/cover`, 'photo', file);
+}
+
+export function mediaUri(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  const origin = baseUrl.replace(/\/api\/v1\/?$/, '');
+  return `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 

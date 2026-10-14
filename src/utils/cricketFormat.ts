@@ -117,6 +117,20 @@ export function formatMatchResult(m: MatchSummary): {
   headline: string;
   loserDetail: string;
 } {
+  if (m.result === 'draw') {
+    return {
+      headline: 'Match drawn',
+      loserDetail: `${m.innings[0].teamName} ${m.innings[0].runs}/${m.innings[0].wickets} · ${m.innings[1].teamName} ${m.innings[1].runs}/${m.innings[1].wickets}`,
+    };
+  }
+
+  if (m.result === 'no-result') {
+    return {
+      headline: 'No result',
+      loserDetail: 'The match ended without a winner.',
+    };
+  }
+
   if (m.status === 'live') {
     const wk = m.wicketsPerSide ?? 10;
     const lim =

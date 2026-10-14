@@ -15,6 +15,12 @@ export type MainStackParamList = {
       teams: [string, string];
       oversPerSide: number;
       teamSize: number;
+      scheduledAt?: string;
+      scorerUserId?: number;
+      squads?: [
+        { players: Array<{ userId: number; name: string }> },
+        { players: Array<{ userId: number; name: string }> },
+      ];
     };
   };
   MatchDetail: { matchId: string };

@@ -65,7 +65,7 @@ export function ShareLiveScoreModal({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       presentationStyle="pageSheet"
       onRequestClose={onDone}
     >

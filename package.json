@@ -12,7 +12,9 @@
     "android-AAB": "cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
+    "@notifee/react-native": "^9.1.8",
     "@react-native-firebase/app": "23.7.0",
+    "@react-native-firebase/messaging": "^26.4.0",
     "@react-native-firebase/remote-config": "23.7.0",
     "@react-native-google-signin/google-signin": "^16.1.5",
     "@react-navigation/bottom-tabs": "^7.20.0",
@@ -37,8 +39,11 @@
     "react-native-responsive-screen": "^1.4.2",
     "react-native-safe-area-context": "^5.7.0",
     "react-native-screens": "^4.24.0",
+    "react-native-share": "^12.3.1",
     "react-native-svg": "^15.15.5",
     "react-native-tcp-socket": "^6.4.2",
+    "react-native-video": "^6.19.3",
+    "react-native-view-shot": "^6.1.1",
     "react-native-worklets": "^0.8.1",
     "sp-react-native-in-app-updates": "^1.5.0",
     "zustand": "^5.0.12"

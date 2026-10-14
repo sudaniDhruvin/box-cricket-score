@@ -24,9 +24,11 @@ import { LiveScoringPanel } from '../components/LiveScoringPanel';
 import { StickyBottomBannerAd } from '../components/StickyBottomBannerAd';
 import { PNGs } from '../assets/images/pngs';
 import {
+  ChoiceRow,
   CricketScorebookIcon,
   CricketStumpsIcon,
   ScreenHeader,
+  showToast,
 } from '../components/ui';
 import { useAdFlags } from '../hooks/useAdFlags';
 import { createLiveMatch } from '../utils/createLiveMatch';
@@ -117,7 +119,10 @@ export function NewMatchScreen() {
   const [overs, setOvers] = useState(params.groupLaunch?.oversPerSide ?? 10);
   const [players, setPlayers] = useState(params.groupLaunch?.teamSize ?? 11);
   const [batFirst, setBatFirst] = useState<0 | 1>(0);
-  const [error, setError] = useState<string | null>(null);
+  const [tossWinner, setTossWinner] = useState<0 | 1>(0);
+  const [elected, setElected] = useState<'bat' | 'bowl'>('bat');
+  const [skipToss, setSkipToss] = useState(false);
+  const groupSquads = params.groupLaunch?.squads;
   const [scoringMatchId, setScoringMatchId] = useState<string | null>(
     () => params.resumeMatchId ?? null,
   );
@@ -129,10 +134,9 @@ export function NewMatchScreen() {
     const a = teamA.trim() || DEFAULT_TEAM_A_NAME;
     const b = teamB.trim() || DEFAULT_TEAM_B_NAME;
     if (a.toLowerCase() === b.toLowerCase()) {
-      setError('Team names must be different (change one side or both).');
+      showToast('Team names must be different (change one side or both).', 'error');
       return false;
     }
-    setError(null);
     return true;
   }, [teamA, teamB]);
 
@@ -147,33 +151,37 @@ export function NewMatchScreen() {
     const a = teamA.trim() || DEFAULT_TEAM_A_NAME;
     const b = teamB.trim() || DEFAULT_TEAM_B_NAME;
     if (a.toLowerCase() === b.toLowerCase()) {
-      setError('Team names must be different (change one side or both).');
+      showToast('Team names must be different (change one side or both).', 'error');
       return;
     }
     if (overs < OVERS_MIN || overs > OVERS_MAX) {
-      setError(`Overs must be between ${OVERS_MIN} and ${OVERS_MAX}.`);
+      showToast(`Overs must be between ${OVERS_MIN} and ${OVERS_MAX}.`, 'error');
       return;
     }
     if (players < WICKETS_MIN || players > WICKETS_MAX) {
-      setError(
-        `Players per team must be between ${WICKETS_MIN} and ${WICKETS_MAX}.`,
-      );
+      showToast(`Players per team must be between ${WICKETS_MIN} and ${WICKETS_MAX}.`, 'error');
       return;
     }
 
-    setError(null);
+    const launch = params.groupLaunch;
+    const recordToss = Boolean(launch?.squads) && !skipToss;
     const match = createLiveMatch({
-      id: params.groupLaunch?.clientId,
-      groupId: params.groupLaunch?.groupId,
+      id: launch?.clientId,
+      groupId: launch?.groupId,
       teamAName: a,
       teamBName: b,
       oversPerSide: overs,
       wicketsPerSide: players,
-      batFirst,
+      batFirst: recordToss ? undefined : batFirst,
+      toss: recordToss ? { winnerSide: tossWinner, elected } : undefined,
+      squads: launch?.squads,
+      scorerUserId: launch?.scorerUserId,
+      playedAt: launch?.scheduledAt,
     });
     addMatch(match);
+    showToast('Match started.');
     setScoringMatchId(match.id);
-  }, [teamA, teamB, overs, players, batFirst, addMatch, params.groupLaunch]);
+  }, [teamA, teamB, overs, players, batFirst, tossWinner, elected, skipToss, addMatch, params.groupLaunch]);
 
   if (scoringMatchId) {
     return (
@@ -189,12 +197,15 @@ export function NewMatchScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <ScreenHeader
-        title={step === 'toss' ? 'First innings' : 'New match'}
-        backLabel={step === 'toss' ? 'Setup' : 'Home'}
+        title={step === 'toss' ? (groupSquads ? 'Toss' : 'First innings') : 'New match'}
+        backLabel={step === 'toss' ? (groupSquads ? 'Group' : 'Setup') : 'Home'}
         onBack={() => {
           if (step === 'toss') {
+            if (groupSquads) {
+              navigation.goBack();
+              return;
+            }
             setStep('configure');
-            setError(null);
             return;
           }
           navigation.goBack();
@@ -235,10 +246,7 @@ export function NewMatchScreen() {
                   />
                   <TextInput
                     value={teamA}
-                    onChangeText={t => {
-                      setTeamA(t);
-                      setError(null);
-                    }}
+                    onChangeText={setTeamA}
                     placeholder="Enter team name"
                     placeholderTextColor={colors.textMuted}
                     style={styles.input}
@@ -267,10 +275,7 @@ export function NewMatchScreen() {
                   />
                   <TextInput
                     value={teamB}
-                    onChangeText={t => {
-                      setTeamB(t);
-                      setError(null);
-                    }}
+                    onChangeText={setTeamB}
                     placeholder="Enter team name"
                     placeholderTextColor={colors.textMuted}
                     style={styles.input}
@@ -293,14 +298,8 @@ export function NewMatchScreen() {
                   title="Overs"
                   subtitle="Per innings"
                   value={overs}
-                  onDecrement={() => {
-                    setOvers(v => Math.max(OVERS_MIN, v - 1));
-                    setError(null);
-                  }}
-                  onIncrement={() => {
-                    setOvers(v => Math.min(OVERS_MAX, v + 1));
-                    setError(null);
-                  }}
+                  onDecrement={() => setOvers(v => Math.max(OVERS_MIN, v - 1))}
+                  onIncrement={() => setOvers(v => Math.min(OVERS_MAX, v + 1))}
                   decrementLabel="Decrease overs"
                   incrementLabel="Increase overs"
                 />
@@ -315,20 +314,13 @@ export function NewMatchScreen() {
                   title="Players"
                   subtitle="Per team"
                   value={players}
-                  onDecrement={() => {
-                    setPlayers(v => Math.max(WICKETS_MIN, v - 1));
-                    setError(null);
-                  }}
-                  onIncrement={() => {
-                    setPlayers(v => Math.min(WICKETS_MAX, v + 1));
-                    setError(null);
-                  }}
+                  onDecrement={() => setPlayers(v => Math.max(WICKETS_MIN, v - 1))}
+                  onIncrement={() => setPlayers(v => Math.min(WICKETS_MAX, v + 1))}
                   decrementLabel="Decrease players"
                   incrementLabel="Increase players"
                 />
               </View>
 
-              {error ? <Text style={styles.error}>{error}</Text> : null}
             </ScrollView>
 
             <View
@@ -376,13 +368,49 @@ export function NewMatchScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.eyebrow}>MATCH ORDER</Text>
-            <Text style={styles.title}>Who bats first?</Text>
+            <Text style={styles.eyebrow}>{groupSquads && !skipToss ? 'TOSS' : 'MATCH ORDER'}</Text>
+            <Text style={styles.title}>{groupSquads && !skipToss ? 'Who won the toss?' : 'Who bats first?'}</Text>
             <Text style={styles.lead}>
-              Choose which team starts at the crease.
+              {groupSquads && !skipToss
+                ? 'Record who won and whether they bat or bowl. You can skip this.'
+                : 'Choose which team starts at the crease.'}
             </Text>
 
-            <View style={styles.card}>
+            {groupSquads && !skipToss ? (
+              <View style={styles.card}>
+                <Pressable
+                  onPress={() => setTossWinner(0)}
+                  style={({ pressed }) => [styles.tossOption, tossWinner === 0 && styles.tossOptionActive, pressed && styles.tossOptionPressed]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: tossWinner === 0 }}
+                >
+                  <Text style={[styles.tossOptionTitle, tossWinner === 0 && styles.tossOptionTitleActive]} numberOfLines={1}>{teamALabel}</Text>
+                  <Text style={styles.tossOptionSub}>Won the toss</Text>
+                </Pressable>
+                <View style={styles.paramDivider} />
+                <Pressable
+                  onPress={() => setTossWinner(1)}
+                  style={({ pressed }) => [styles.tossOption, tossWinner === 1 && styles.tossOptionActive, pressed && styles.tossOptionPressed]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: tossWinner === 1 }}
+                >
+                  <Text style={[styles.tossOptionTitle, tossWinner === 1 && styles.tossOptionTitleActive]} numberOfLines={1}>{teamBLabel}</Text>
+                  <Text style={styles.tossOptionSub}>Won the toss</Text>
+                </Pressable>
+                <View style={styles.paramDivider} />
+                <Text style={styles.teamFieldLabel}>THEY CHOSE TO</Text>
+                <ChoiceRow
+                  options={[{ value: 'bat', label: 'Bat' }, { value: 'bowl', label: 'Bowl' }]}
+                  value={elected}
+                  onChange={value => setElected(value === 'bowl' ? 'bowl' : 'bat')}
+                />
+                <Pressable onPress={() => setSkipToss(true)} accessibilityRole="button">
+                  <Text style={styles.skipLink}>Skip toss</Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            {groupSquads && !skipToss ? null : <View style={styles.card}>
               <Pressable
                 onPress={() => setBatFirst(0)}
                 style={({ pressed }) => [
@@ -428,9 +456,13 @@ export function NewMatchScreen() {
                 </Text>
                 <Text style={styles.tossOptionSub}>Bats first</Text>
               </Pressable>
-            </View>
+            </View>}
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {groupSquads && skipToss ? (
+              <Pressable onPress={() => setSkipToss(false)} accessibilityRole="button">
+                <Text style={styles.skipLink}>Record the toss</Text>
+              </Pressable>
+            ) : null}
 
             <Pressable
               onPress={startMatch}
@@ -442,7 +474,7 @@ export function NewMatchScreen() {
               accessibilityRole="button"
               accessibilityLabel="Create match and start scoring"
             >
-              <Text style={styles.ctaText}>Start match</Text>
+              <Text style={styles.ctaText}>{groupSquads ? 'Start scoring' : 'Start match'}</Text>
               <Image
                 source={PNGs.RightArrowIcon}
                 style={{
@@ -653,6 +685,13 @@ const styles = StyleSheet.create({
   },
   tossOptionTitleActive: {
     color: colors.text,
+  },
+  skipLink: {
+    color: colors.primary,
+    fontSize: fontSize(14),
+    fontWeight: '800',
+    textAlign: 'center',
+    marginTop: hp(1.2),
   },
   tossOptionSub: {
     fontSize: fontSize(12),

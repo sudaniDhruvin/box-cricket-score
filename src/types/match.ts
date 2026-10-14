@@ -33,7 +33,18 @@ export type WicketDismissal =
   | 'run-out'
   | 'stumped'
   | 'hit-wicket'
+  | 'retired-hurt'
   | 'other';
+
+/** Players involved in one delivery. Omitted for team-total scoring. */
+export interface DeliveryPlayers {
+  strikerId: number;
+  nonStrikerId?: number;
+  bowlerId: number;
+  dismissedId?: number;
+  /** Catcher, wicketkeeper, or the fielders in a run-out. */
+  fielderIds?: number[];
+}
 
 export interface Delivery {
   type: DeliveryType;
@@ -46,7 +57,37 @@ export interface Delivery {
   wicketDismissal?: WicketDismissal;
   /** Team runs completed on this ball before the wicket (e.g. run-out after one run). */
   wicketRuns?: number;
+  players?: DeliveryPlayers;
 }
+
+export interface SquadPlayer {
+  userId: number;
+  name: string;
+}
+
+/** Playing side for one team, aligned by teamId with an innings. */
+export interface MatchSquad {
+  teamId: string;
+  name: string;
+  players: SquadPlayer[];
+}
+
+/** Who is at the crease and who has the ball for one innings. */
+export interface InningsCrew {
+  strikerId: number | null;
+  nonStrikerId: number | null;
+  bowlerId: number | null;
+  /** Batting side still to come in. */
+  yetToBat: number[];
+  dismissedIds: number[];
+}
+
+export interface MatchToss {
+  winnerTeamId: string;
+  elected: 'bat' | 'bowl';
+}
+
+export type MatchResultKind = 'win' | 'tie' | 'draw' | 'no-result';
 
 export interface OverReplay {
   overNumber: number;
@@ -109,4 +150,15 @@ export interface MatchSummary {
   wicketsPerSide?: number;
   /** While live: which innings index is being scored (0 = first). */
   scoringActiveInnings?: 0 | 1;
+  /** Playing sides. Absent for quick team-total matches. */
+  squads?: MatchSquad[];
+  /** Crease and bowler for each innings. Index matches `innings`. */
+  crews?: [InningsCrew, InningsCrew];
+  toss?: MatchToss;
+  /** Set when the scorer closes the match. */
+  result?: MatchResultKind;
+  /** Ball-by-ball can no longer change. */
+  locked?: boolean;
+  /** Group member allowed to enter the live score. */
+  scorerUserId?: number;
 }

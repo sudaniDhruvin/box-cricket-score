@@ -16,5 +16,8 @@ export const colors = {
   primarySoft: 'rgba(21, 115, 234, 0.14)',
   primaryFaint: 'rgba(21, 115, 234, 0.08)',
   loserMuted: 'rgba(0, 0, 0, 0.45)',
-  gray100: '#FFFFFF'
+  gray100: '#FFFFFF',
+  canvas: '#F0F2F5',
+  chip: '#E4E6EB',
+  inkSecondary: '#65676B',
 } as const;

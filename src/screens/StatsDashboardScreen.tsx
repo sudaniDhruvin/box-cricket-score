@@ -1,16 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getMyProfile, getPlayerStatistics, type PlayerProfile } from '../api/client';
+import { getMyProfile, getMyStatistics, type CareerStats as CareerStatsData, type PlayerProfile } from '../api/client';
+import { CareerStats, PlayerAvatar, showToast } from '../components/ui';
+import { playingRoleLabel } from '../social/labels';
+import { useMatchStore } from '../store/useMatchStore';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
-
-type PlayerStatistics = { available: boolean; data: unknown; message?: string };
+import { hasExpandedCareer, phoneCareer } from '../utils/playerStats';
 
 export function StatsDashboardScreen() {
   const insets = useSafeAreaInsets();
+  const matches = useMatchStore(state => state.matches);
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
-  const [statistics, setStatistics] = useState<PlayerStatistics | null>(null);
+  const [statistics, setStatistics] = useState<CareerStatsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,15 +22,20 @@ export function StatsDashboardScreen() {
     try {
       const nextProfile = await getMyProfile();
       setProfile(nextProfile);
-      setStatistics(await getPlayerStatistics(nextProfile.username));
+      const career = await getMyStatistics();
+      setStatistics(career.data);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not load your statistics.');
+      const message = cause instanceof Error ? cause.message : 'Could not load your statistics.';
+      setError(message);
+      showToast(message, 'error');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => { load().catch(() => undefined); }, [load]);
+
+  const phone = profile && !hasExpandedCareer(statistics) ? phoneCareer(matches, profile.id) : null;
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -39,26 +47,17 @@ export function StatsDashboardScreen() {
         <Text style={styles.title}>Your stats</Text>
         {profile ? (
           <View style={styles.profileCard}>
-            <View style={styles.avatar}><Text style={styles.avatarText}>{profile.displayName.slice(0, 1).toUpperCase()}</Text></View>
+            <PlayerAvatar name={profile.displayName} photoUrl={profile.photoUrl} size={wp(13)} />
             <View style={styles.profileText}>
               <Text style={styles.displayName}>{profile.displayName}</Text>
-              <Text style={styles.username}>@{profile.username}</Text>
+              <Text style={styles.username}>@{profile.username} · {playingRoleLabel(profile.playingRole)}</Text>
             </View>
           </View>
         ) : null}
 
         {loading && !profile ? <ActivityIndicator style={styles.spinner} color={colors.primary} /> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        {!loading && !error && statistics ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>{statistics.available ? 'Your statistics' : 'Player stats are not available yet'}</Text>
-            <Text style={styles.emptyBody}>
-              {statistics.available
-                ? 'Your batting and bowling numbers are ready.'
-                : 'Personal batting and bowling numbers will show here once a scorecard records who faced and bowled each ball.'}
-            </Text>
-          </View>
-        ) : null}
+        {!loading && (statistics || phone) ? <CareerStats stats={statistics} phone={phone} /> : null}
         <View style={styles.noteCard}>
           <Text style={styles.noteTitle}>Your scorecards</Text>
           <Text style={styles.noteBody}>Quick Mode keeps match totals on this phone. Sign in to see your profile and groups.</Text>
@@ -74,15 +73,10 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.primary, fontSize: fontSize(10), fontWeight: '900', letterSpacing: 1.2 },
   title: { color: colors.text, fontSize: fontSize(29), fontWeight: '900' },
   profileCard: { flexDirection: 'row', alignItems: 'center', padding: wp(4), borderRadius: wp(3.5), borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  avatar: { width: wp(13), height: wp(13), borderRadius: wp(7), backgroundColor: colors.primaryFaint, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: colors.primary, fontSize: fontSize(20), fontWeight: '900' },
   profileText: { marginLeft: wp(3), flex: 1 },
   displayName: { color: colors.text, fontSize: fontSize(17), fontWeight: '800' },
   username: { marginTop: hp(0.3), color: colors.textMuted, fontSize: fontSize(13) },
   spinner: { marginTop: hp(4) },
-  emptyCard: { padding: wp(4.5), borderRadius: wp(3), backgroundColor: colors.surfaceMuted, borderWidth: 1, borderColor: colors.border },
-  emptyTitle: { color: colors.text, fontSize: fontSize(16), fontWeight: '800' },
-  emptyBody: { marginTop: hp(0.8), color: colors.textMuted, fontSize: fontSize(14), lineHeight: fontSize(21) },
   noteCard: { padding: wp(4.5), borderRadius: wp(3), backgroundColor: colors.primary, marginTop: 'auto' },
   noteTitle: { color: colors.background, fontSize: fontSize(16), fontWeight: '800' },
   noteBody: { marginTop: hp(0.7), color: 'rgba(255,255,255,0.78)', fontSize: fontSize(13), lineHeight: fontSize(19) },

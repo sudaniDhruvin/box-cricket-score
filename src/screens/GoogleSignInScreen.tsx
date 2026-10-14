@@ -6,6 +6,7 @@ import { ApiError, exchangeGoogleIdToken } from '../api/client';
 import { setAccessToken } from '../api/session';
 import { GOOGLE_WEB_CLIENT_ID } from '../config/googleAuth';
 import { useAppRuntime } from '../navigation/AppRuntimeContext';
+import { showToast } from '../components/ui';
 import { colors } from '../theme/colors';
 import { fontSize, hp, wp } from '../utils';
 
@@ -28,7 +29,7 @@ function signInMessage(cause: unknown): string {
 export function GoogleSignInScreen() {
   const { setAuthenticated, selectMode } = useAppRuntime();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
   const configured = GOOGLE_WEB_CLIENT_ID.trim().length > 0;
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export function GoogleSignInScreen() {
       .catch(cause => {
         if (!active) return;
         if (isErrorWithCode(cause) && cause.code === statusCodes.SIGN_IN_REQUIRED) return;
-        setError(signInMessage(cause));
+        showToast(signInMessage(cause), 'error');
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -61,7 +62,6 @@ export function GoogleSignInScreen() {
   const signIn = useCallback(async () => {
     if (!configured) return;
     setLoading(true);
-    setError(null);
     try {
       configureGoogleSignIn();
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
@@ -75,7 +75,7 @@ export function GoogleSignInScreen() {
       setAuthenticated(true);
     } catch (cause) {
       await GoogleSignin.signOut().catch(() => undefined);
-      setError(signInMessage(cause));
+      showToast(signInMessage(cause), 'error');
     } finally {
       setLoading(false);
     }
@@ -102,8 +102,6 @@ export function GoogleSignInScreen() {
       {!configured ? (
         <Text style={styles.setupNote}>Google sign-in is unavailable right now. You can still score matches in Quick Mode.</Text>
       ) : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
       <Pressable onPress={() => selectMode(null)} style={styles.backButton} accessibilityRole="button">
         <Text style={styles.backText}>Choose another mode</Text>
       </Pressable>

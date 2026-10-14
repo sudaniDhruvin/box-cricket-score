@@ -6,6 +6,7 @@ import type {
   WicketDismissal,
 } from '../types/match';
 import { countsAsLegalBall, tallyDeliveryRuns } from './deliveryScoring';
+import { applyCrewAfterDelivery, crewReady, deliveryWithCrew } from './playerScoring';
 
 export type ApplyDeliveryResult =
   | { ok: true; match: MatchSummary; overJustCompleted?: OverReplay }
@@ -14,7 +15,9 @@ export type ApplyDeliveryResult =
       reason:
         | 'innings_overs_complete'
         | 'all_out'
-        | 'match_complete';
+        | 'match_complete'
+        | 'crew_not_ready'
+        | 'dismissal_incomplete';
     };
 
 export const DEFAULT_WICKETS_PER_SIDE = 10;
@@ -141,7 +144,11 @@ export function wicketDelivery(
   const roRuns =
     dismissal === 'run-out' ? (opts?.runOutRuns ?? 0) : 0;
   const label =
-    dismissal === 'run-out' ? (roRuns > 0 ? `RO+${roRuns}` : 'RO') : 'W';
+    dismissal === 'run-out'
+      ? (roRuns > 0 ? `RO+${roRuns}` : 'RO')
+      : dismissal === 'retired-hurt'
+        ? 'Ret'
+        : 'W';
   const d: Delivery = {
     type: 'wicket',
     label,
@@ -178,7 +185,10 @@ export function applyDeliveryToMatch(
   match: MatchSummary,
   d: Delivery,
 ): ApplyDeliveryResult {
-  if (match.status === 'completed') {
+  if (match.status === 'completed' || match.locked) {
+    return { ok: false, reason: 'match_complete' };
+  }
+  if ((match.scoringActiveInnings ?? 0) === 1 && match.innings[1].runs > match.innings[0].runs) {
     return { ok: false, reason: 'match_complete' };
   }
 
@@ -189,6 +199,19 @@ export function applyDeliveryToMatch(
   }
 
   const wkCap = wicketsCapForMatch(match);
+
+  let ball = d;
+  if (match.crews) {
+    const squadSize = match.squads?.find(squad => squad.teamId === match.innings[idx].teamId)?.players.length ?? wkCap;
+    if (!crewReady(match.crews[idx], squadSize)) {
+      return { ok: false, reason: 'crew_not_ready' };
+    }
+    const stamped = deliveryWithCrew(match.crews[idx], d);
+    if (stamped == null) {
+      return { ok: false, reason: 'dismissal_incomplete' };
+    }
+    ball = stamped;
+  }
 
   let inn = cloneInnings(match.innings[idx]);
 
@@ -202,11 +225,11 @@ export function applyDeliveryToMatch(
     return { ok: false, reason: 'all_out' };
   }
 
-  inn = applyStats(inn, d);
-  inn = appendToOverReplay(inn, d);
+  inn = applyStats(inn, ball);
+  inn = appendToOverReplay(inn, ball);
 
   let overJustCompleted: OverReplay | undefined;
-  if (countsAsLegalBall(d) && inn.overReplay && inn.overReplay.length > 0) {
+  if (countsAsLegalBall(ball) && inn.overReplay && inn.overReplay.length > 0) {
     const last = inn.overReplay[inn.overReplay.length - 1];
     if (legalCountInOver(last.deliveries) === 6) {
       overJustCompleted = {
@@ -219,12 +242,17 @@ export function applyDeliveryToMatch(
   const nextInnings: [TeamInnings, TeamInnings] =
     idx === 0 ? [inn, match.innings[1]] : [match.innings[0], inn];
 
+  let nextMatch: MatchSummary = { ...match, innings: nextInnings };
+  if (match.crews) {
+    const nextCrew = applyCrewAfterDelivery(match.crews[idx], ball, overJustCompleted != null);
+    const crews: [typeof nextCrew, typeof nextCrew] =
+      idx === 0 ? [nextCrew, match.crews[1]] : [match.crews[0], nextCrew];
+    nextMatch = { ...nextMatch, crews };
+  }
+
   return {
     ok: true,
-    match: {
-      ...match,
-      innings: nextInnings,
-    },
+    match: nextMatch,
     ...(overJustCompleted != null ? { overJustCompleted } : {}),
   };
 }
@@ -248,7 +276,11 @@ export function isInningsComplete(
  * match outcome is decided (chase, all-out/overs exhausted, or tie).
  */
 export function finalizeLiveMatchIfNeeded(match: MatchSummary): MatchSummary {
-  if (match.status === 'completed') {
+  if (match.status === 'completed' || match.locked) {
+    return match;
+  }
+  // A playing side is closed by the scorer, so the chase does not lock itself.
+  if (match.crews) {
     return match;
   }
   if (match.scoringActiveInnings !== 1) {

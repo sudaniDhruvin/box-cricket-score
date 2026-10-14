@@ -58,6 +58,13 @@ import {
 } from '../utils/cricketFormat';
 import { createRepeatMatch } from '../utils/createLiveMatch';
 import { countsAsLegalBall, tallyDeliveryRuns } from '../utils/deliveryScoring';
+import {
+  battingSquad,
+  crewReady,
+  declareMatchResult,
+  suggestedResult,
+  type SuggestedResult,
+} from '../utils/playerScoring';
 import { fontSize, hp, wp } from '../utils';
 import {
   OverCompleteNativeAd,
@@ -66,9 +73,11 @@ import {
 import { StickyBottomBannerAd } from './StickyBottomBannerAd';
 import { ShareLiveScoreModal } from './ShareLiveScoreModal';
 import { LiveShareNoticeModal } from './LiveShareNoticeModal';
+import { CrewStrip, EndMatchSheet, PlayerWicketSheet } from './PlayerScoring';
 import {
   ChevronRightIcon,
   CloseIcon,
+  ConfirmSheet,
   CricketStumpsIcon,
   EditIcon,
   QrCodeIcon,
@@ -608,6 +617,10 @@ export function LiveScoringPanel({
   const [matchOverModal, setMatchOverModal] = useState<MatchSummary | null>(
     null,
   );
+  const [undoOpen, setUndoOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
+  const [playerWicketOpen, setPlayerWicketOpen] = useState(false);
+  const endPrompted = useRef(false);
   const [editA, setEditA] = useState('');
   const [editB, setEditB] = useState('');
   const [editOvers, setEditOvers] = useState(10);
@@ -633,6 +646,20 @@ export function LiveScoringPanel({
       prevViewerCountRef.current = s.viewerCount;
     });
   }, [matchId]);
+
+  const suggestion = useMemo<SuggestedResult | null>(
+    () => (match?.crews ? suggestedResult(match) : null),
+    [match],
+  );
+
+  useEffect(() => {
+    if (!match?.crews || match.status === 'completed') return;
+    if (suggestion && !endPrompted.current) {
+      endPrompted.current = true;
+      setEndOpen(true);
+    }
+    if (!suggestion) endPrompted.current = false;
+  }, [match, suggestion]);
 
   const handleClose = useCallback(() => {
     if (getHostShareState().matchId === matchId) {
@@ -823,7 +850,11 @@ export function LiveScoringPanel({
       const result = applyDeliveryToMatch(cur, d);
       if (!result.ok) {
         stack.pop();
-        if (result.reason === 'match_complete') {
+        if (
+          result.reason === 'match_complete' ||
+          result.reason === 'crew_not_ready' ||
+          result.reason === 'dismissal_incomplete'
+        ) {
           return;
         }
         if (result.reason === 'innings_overs_complete') {
@@ -910,12 +941,27 @@ export function LiveScoringPanel({
 
   const undo = useCallback(() => {
     const prev = undoRef.current.pop();
+    setUndoOpen(false);
     if (!prev) {
       return;
     }
     setOverCompleteModal(null);
     setMatchOverModal(null);
+    setEndOpen(false);
     updateMatch(matchId, () => prev);
+  }, [matchId, updateMatch]);
+
+  const closeAs = useCallback((outcome: 'win' | 'tie' | 'draw' | 'no-result') => {
+    const cur = useMatchStore.getState().matches.find(m => m.id === matchId);
+    if (!cur) return;
+    const declared = declareMatchResult(cur, outcome);
+    if (declared === cur) return;
+    updateMatch(matchId, () => declared);
+    setEndOpen(false);
+    setOverCompleteModal(null);
+    undoRef.current = [];
+    setMatchOverModal(declared);
+    recordCompletedMatchForReview();
   }, [matchId, updateMatch]);
 
   const startSecond = useCallback(() => {
@@ -1122,7 +1168,10 @@ export function LiveScoringPanel({
             </Text>
           </Pressable>
           <Pressable
-            onPress={undo}
+            onPress={() => {
+              if (match.locked || match.status === 'completed' || undoRef.current.length === 0) return;
+              setUndoOpen(true);
+            }}
             style={({ pressed }) => [
               styles.iconHit,
               pressed && styles.backPressed,
@@ -1326,7 +1375,12 @@ export function LiveScoringPanel({
               </Pressable>
             ) : null}
           </View>
-          {showStartSecondCta ? (
+          {match.status === 'completed' || match.locked ? (
+            <View style={styles.secondInningsDock}>
+              <Text style={styles.secondInningsDockText}>{formatMatchResult(match).headline}</Text>
+              <Text style={styles.secondInningsDockText}>Ball-by-ball is locked.</Text>
+            </View>
+          ) : showStartSecondCta ? (
             <View style={styles.secondInningsDock}>
               <Text style={styles.secondInningsDockText}>
                 First innings complete. Start the chase when the teams are ready.
@@ -1343,13 +1397,39 @@ export function LiveScoringPanel({
                   Start 2nd innings
                 </Text>
               </Pressable>
+              {match.crews ? (
+                <Pressable onPress={() => setEndOpen(true)} accessibilityRole="button" accessibilityLabel="End match">
+                  <Text style={styles.endMatchLink}>End match</Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : (
-            <ScoringPad
-              apply={apply}
-              onMoreExtras={() => setExtrasExpanded(true)}
-              onWicket={openWicketModal}
-            />
+            <>
+              {match.crews ? (
+                <CrewStrip
+                  match={match}
+                  inningsIndex={activeIdx}
+                  onCrew={crew => {
+                    updateMatch(match.id, current => {
+                      if (!current.crews) return current;
+                      const crews: [typeof crew, typeof crew] = activeIdx === 0
+                        ? [crew, current.crews[1]]
+                        : [current.crews[0], crew];
+                      return { ...current, crews };
+                    });
+                  }}
+                  onEndMatch={() => setEndOpen(true)}
+                  decided={suggestion != null}
+                />
+              ) : null}
+              {match.crews && (suggestion != null || !crewReady(match.crews[activeIdx], battingSquad(match, activeIdx)?.players.length ?? wkCap)) ? null : (
+                <ScoringPad
+                  apply={apply}
+                  onMoreExtras={() => setExtrasExpanded(true)}
+                  onWicket={match.crews ? () => setPlayerWicketOpen(true) : openWicketModal}
+                />
+              )}
+            </>
           )}
         </ScrollView>
         <View style={bottomBannerVisible ? styles.bottomAdStrip : undefined}>
@@ -1363,6 +1443,33 @@ export function LiveScoringPanel({
           onSelect={apply}
         />
       ) : null}
+
+      <ConfirmSheet
+        visible={undoOpen}
+        title="Undo the last ball?"
+        body="The last ball is removed and the batters return to where they were."
+        confirmLabel="Undo"
+        onConfirm={undo}
+        onClose={() => setUndoOpen(false)}
+      />
+      {match.crews ? (
+        <PlayerWicketSheet
+          visible={playerWicketOpen}
+          match={match}
+          inningsIndex={activeIdx}
+          onClose={() => setPlayerWicketOpen(false)}
+          onConfirm={delivery => {
+            setPlayerWicketOpen(false);
+            apply(delivery);
+          }}
+        />
+      ) : null}
+      <EndMatchSheet
+        visible={endOpen}
+        suggestion={suggestion}
+        onClose={() => setEndOpen(false)}
+        onOutcome={closeAs}
+      />
 
       <Modal
         visible={recentOpen}
@@ -1772,17 +1879,21 @@ export function LiveScoringPanel({
               </Text>
             ) : null}
             <View style={styles.matchOverCtaRow}>
-              <Pressable
-                onPress={() => runAfterInterstitial('repeatMatch')}
-                style={({ pressed }) => [
-                  styles.matchOverCta,
-                  pressed && styles.matchOverCtaPressed,
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel="Repeat match with same overs and players"
-              >
-                <Text style={styles.matchOverCtaText}>Repeat match</Text>
-              </Pressable>
+              {matchOverModal?.groupId == null ? (
+                <Pressable
+                  onPress={() => runAfterInterstitial('repeatMatch')}
+                  style={({ pressed }) => [
+                    styles.matchOverCta,
+                    pressed && styles.matchOverCtaPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Repeat match with same overs and players"
+                >
+                  <Text style={styles.matchOverCtaText}>Repeat match</Text>
+                </Pressable>
+              ) : (
+                <Text style={styles.matchOverRepeatHint}>Ball-by-ball is locked.</Text>
+              )}
               <Pressable
                 onPress={dismissMatchOver}
                 style={({ pressed }) => [
@@ -2387,6 +2498,12 @@ const styles = StyleSheet.create({
   },
   moreExtrasChevron: {
     transform: [{ rotate: '90deg' }],
+  },
+  endMatchLink: {
+    color: colors.primary,
+    fontSize: fontSize(13),
+    fontWeight: '800',
+    textAlign: 'center',
   },
   secondInningsButtonText: {
     fontSize: fontSize(15),
